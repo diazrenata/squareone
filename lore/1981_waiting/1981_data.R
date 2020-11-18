@@ -42,7 +42,7 @@ rats <- rats %>%
     )
   ))
 
-write.csv(rats, here::here("lore", "waiting", "1981_data_complete.csv"), row.names = F)
+write.csv(rats, here::here("lore", "1981_waiting", "1981_data_complete.csv"), row.names = F)
 
 rats_totals <- rats %>%
   group_by(year, month, period, brown_trtmnt, type) %>%
@@ -58,5 +58,5 @@ rats_zeros <- left_join(rats_all_possible, select(rats_totals, period, year, mon
   mutate(nind = ifelse(is.na(nind), 0, nind),
          biomass = ifelse(is.na(biomass), 0, biomass))
 
-write.csv(rats_zeros, here::here("lore", "waiting", "1981_data_statevars.csv"), row.names = F)
+write.csv(rats_zeros, here::here("lore", "1981_waiting", "1981_data_statevars.csv"), row.names = F)
 
