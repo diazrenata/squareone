@@ -42,12 +42,16 @@ rats <- rats %>%
     )
   ))
 
-write.csv(rats, here::here("lore", "1981_waiting", "1981_data_complete.csv"), row.names = F)
+rats <- rats %>%
+  mutate(energy = 5.69 * (wgt^0.75))
+
+write.csv(rats, here::here("lore", "1981_competition", "1981_data_complete.csv"), row.names = F)
 
 rats_totals <- rats %>%
   group_by(year, month, period, brown_trtmnt, type) %>%
   summarize(nind = dplyr::n(),
-            biomass = sum(wgt, na.rm = T)) %>%
+            biomass = sum(wgt, na.rm = T),
+            energy = sum(energy, na.rm = T)) %>%
   ungroup()
 
 rats_all_possible <- expand.grid(period = unique(rats$period), brown_trtmnt = unique(rats$brown_trtmnt), type = unique(rats$type)) 
@@ -56,7 +60,8 @@ rats_zeros <- left_join(rats_all_possible, select(rats_totals, period, year, mon
   distinct() %>%
   left_join(rats_totals) %>%
   mutate(nind = ifelse(is.na(nind), 0, nind),
-         biomass = ifelse(is.na(biomass), 0, biomass))
+         biomass = ifelse(is.na(biomass), 0, biomass),
+         energy = ifelse(is.na(energy), 0, energy))
 
-write.csv(rats_zeros, here::here("lore", "1981_waiting", "1981_data_statevars.csv"), row.names = F)
+write.csv(rats_zeros, here::here("lore", "1981_competition", "1981_data_statevars.csv"), row.names = F)
 

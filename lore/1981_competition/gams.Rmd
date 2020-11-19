@@ -1,0 +1,65 @@
+---
+title: "New plots with 81 data"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rats <- read.csv(here::here("lore", "1981_competition", "1981_data_complete.csv"), stringsAsFactors = F)
+rat_totals <- read.csv(here::here("lore", "1981_competition", "1981_data_statevars.csv"), stringsAsFactors = F)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r, echo = F}
+
+ggplot(filter(rat_totals, type != "other"), aes(period, nind, color = brown_trtmnt)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_vline(xintercept = 3.5) +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8)
+
+```
+```{r}
+# Code based on https://github.com/emchristensen/PlotSwitch/blob/master/FinalAnalysis/rodent-GAM-analyses.R 
+library(dplyr)
+library(mgcv)
+library(ggplot2)
+library(cowplot)
+
+rat_plot_totals <- rats %>%
+  group_by(plot, period) %>%
+  mutate(nind = dplyr::n(),
+         biomass = sum(wgt, na.rm = T),
+         energy = sum(energy, na.rm = T)) %>%
+  select(-day, -stake, -species, -sex, -hfl, -wgt, -tag, -ltag, -granivore, -omnivore, -small_granivore, -small_omnivore, -dipo, -type) %>%
+  distinct()
+
+rat_treatment_totals <- rats %>%
+  group_by(brown_trtmnt, period) %>%
+  summarize(nind = dplyr::n(),
+         biomass = sum(wgt, na.rm = T),
+         energy = sum(energy, na.rm = T))
+
+# create variables needed for GAM
+rat_plot_totals <- rat_plot_totals %>% 
+  ungroup() %>%
+  mutate(oTreatment = ordered(brown_trtmnt),
+                 oPlot      = ordered(plot),
+                 plot       = factor(plot))
+
+# GAM model --- includes plot-specific smooths
+nind.gam <- gam(nind ~ oPlot + oTreatment + s(newmoonnumber, k = 20) +
+                  s(newmoonnumber, by = oTreatment, k = 15) +
+                  s(newmoonnumber, by = oPlot),
+                data = rat_plot_totals, method = 'REML', family = poisson, select = TRUE, control = gam.control(nthreads = 4))
+
+# could try this with gratia
+
+# just playing, not 100% sure where I'm aiming
+
+```

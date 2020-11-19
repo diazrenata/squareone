@@ -1,0 +1,105 @@
+---
+title: "New plots with 81 data"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rats <- read.csv(here::here("lore", "1981_competition", "1981_data_complete.csv"), stringsAsFactors = F)
+rat_totals <- read.csv(here::here("lore", "1981_competition", "1981_data_statevars.csv"), stringsAsFactors = F)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r, echo = F}
+
+ggplot(filter(rat_totals, type != "other"), aes(period, nind, color = brown_trtmnt)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_vline(xintercept = 3.5) +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8)
+
+```
+
+## Biomass and energy use
+```{r}
+
+ggplot(filter(rat_totals, type != "other"), aes(period, biomass, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  facet_wrap(vars(type),scales = "free_y", ncol = 1)
+
+ggplot(filter(rat_totals, type != "other"), aes(period, energy, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  facet_wrap(vars(type),scales = "free_y", ncol = 1)
+
+
+
+
+```
+
+### Plot totals
+
+```{r}
+
+rat_plot_totals <- rats %>%
+  group_by(plot, period) %>%
+  mutate(nind = dplyr::n(),
+         biomass = sum(wgt, na.rm = T),
+         energy = sum(energy, na.rm = T)) %>%
+  select(-day, -stake, -species, -sex, -hfl, -wgt, -tag, -ltag, -granivore, -omnivore, -small_granivore, -small_omnivore, -dipo, -type) %>%
+  distinct()
+
+rat_treatment_totals <- rats %>%
+  group_by(brown_trtmnt, period) %>%
+  summarize(nind = dplyr::n(),
+         biomass = sum(wgt, na.rm = T),
+         energy = sum(energy, na.rm = T))
+
+ggplot(rat_plot_totals, aes(period, nind, group = plot, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  scale_color_viridis_d(end = .8) +
+  theme_bw() 
+ggplot(rat_treatment_totals, aes(period, nind, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis_d(end = .8)
+
+
+
+
+ggplot(rat_plot_totals, aes(period, biomass, group = plot, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  scale_color_viridis_d(end = .8) +
+  theme_bw() 
+ggplot(rat_treatment_totals, aes(period, biomass, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis_d(end = .8)
+
+
+ggplot(rat_plot_totals, aes(period, energy, group = plot, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  scale_color_viridis_d(end = .8) +
+  theme_bw() 
+ggplot(rat_treatment_totals, aes(period, energy, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis_d(end = .8)
+```
+

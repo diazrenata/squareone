@@ -5,8 +5,8 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-rats <- read.csv(here::here("lore", "1981_waiting", "1981_data_complete.csv"), stringsAsFactors = F)
-rat_totals <- read.csv(here::here("lore", "1981_waiting", "1981_data_statevars.csv"), stringsAsFactors = F)
+rats <- read.csv(here::here("lore", "1981_competition", "1981_data_complete.csv"), stringsAsFactors = F)
+rat_totals <- read.csv(here::here("lore", "1981_competition", "1981_data_statevars.csv"), stringsAsFactors = F)
 library(dplyr)
 library(ggplot2)
 
