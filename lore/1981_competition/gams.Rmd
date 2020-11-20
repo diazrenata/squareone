@@ -9,7 +9,7 @@ rats <- read.csv(here::here("lore", "1981_competition", "1981_data_complete.csv"
 rat_totals <- read.csv(here::here("lore", "1981_competition", "1981_data_statevars.csv"), stringsAsFactors = F)
 library(dplyr)
 library(ggplot2)
-
+library(gratia)
 ```
 
 ```{r, echo = F}
@@ -25,41 +25,47 @@ ggplot(filter(rat_totals, type != "other"), aes(period, nind, color = brown_trtm
 
 ```
 ```{r}
-# Code based on https://github.com/emchristensen/PlotSwitch/blob/master/FinalAnalysis/rodent-GAM-analyses.R 
-library(dplyr)
-library(mgcv)
-library(ggplot2)
-library(cowplot)
+load_mgcv()
+df <- data_sim("eg4")
+m <- gam(y ~ fac + s(x2, by = fac) + s(x0), data = df, method = "REML")
+difference_smooths(m, smooth = "s(x2)")
 
-rat_plot_totals <- rats %>%
-  group_by(plot, period) %>%
-  mutate(nind = dplyr::n(),
-         biomass = sum(wgt, na.rm = T),
-         energy = sum(energy, na.rm = T)) %>%
-  select(-day, -stake, -species, -sex, -hfl, -wgt, -tag, -ltag, -granivore, -omnivore, -small_granivore, -small_omnivore, -dipo, -type) %>%
-  distinct()
+rat_totals <- rat_totals %>%
+  mutate(brown_trtmnt = as.factor(brown_trtmnt))
 
-rat_treatment_totals <- rats %>%
-  group_by(brown_trtmnt, period) %>%
-  summarize(nind = dplyr::n(),
-         biomass = sum(wgt, na.rm = T),
-         energy = sum(energy, na.rm = T))
+n_gam <- gam(nind ~  brown_trtmnt + s(period, by = brown_trtmnt), data = filter(rat_totals, type == "small_granivore"), method = "REML", family = "poisson")
 
-# create variables needed for GAM
-rat_plot_totals <- rat_plot_totals %>% 
-  ungroup() %>%
-  mutate(oTreatment = ordered(brown_trtmnt),
-                 oPlot      = ordered(plot),
-                 plot       = factor(plot))
+n_gam_fitted <- rat_totals %>%
+  filter(type == "small_granivore") %>%
+  add_fitted(model = n_gam, value = "fitted")
 
-# GAM model --- includes plot-specific smooths
-nind.gam <- gam(nind ~ oPlot + oTreatment + s(newmoonnumber, k = 20) +
-                  s(newmoonnumber, by = oTreatment, k = 15) +
-                  s(newmoonnumber, by = oPlot),
-                data = rat_plot_totals, method = 'REML', family = poisson, select = TRUE, control = gam.control(nthreads = 4))
+ggplot(n_gam_fitted, aes(period, nind, shape = brown_trtmnt)) +
+  geom_line() +
+  geom_line(aes(period, fitted), color = "blue") +
+  facet_wrap(vars(brown_trtmnt))
 
-# could try this with gratia
+n_gam_diff <- difference_smooths(n_gam, smooth = "s(period)", newdata = select(filter(rat_totals, type == "small_granivore"), period, brown_trtmnt))
 
-# just playing, not 100% sure where I'm aiming
+head(n_gam_diff)
+
+draw(n_gam)
+
+ggplot(n_gam_diff, aes(period, diff)) +
+  geom_line() +
+  geom_line(aes(period, lower)) +
+  geom_line(aes(period, upper)) +
+  theme_bw() +
+  geom_hline(yintercept = 0)
 
 ```
+
+I'm not sure what the difference is between, 
+
+
+`nind ~ brown_trtmnt + s(period, by = brown_trtmnt)`
+
+
+`nind ~ s(period, by = brown_trtmnt)`
+
+and even more complicated models, like including effects for plot or somehow fitting all 3 types (krats, small granivores, and omnivores) within the same model.
+
