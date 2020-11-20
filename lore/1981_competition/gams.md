@@ -11,18 +11,18 @@ difference_smooths(m, smooth = "s(x2)")
 ```
 
     ## # A tibble: 300 x 9
-    ##    smooth by    level_1 level_2  diff    se  lower upper      x2
-    ##    <chr>  <chr> <chr>   <chr>   <dbl> <dbl>  <dbl> <dbl>   <dbl>
-    ##  1 s(x2)  fac   1       2        1.74 0.839 0.0943  3.38 0.00109
-    ##  2 s(x2)  fac   1       2        1.75 0.788 0.202   3.29 0.0112 
-    ##  3 s(x2)  fac   1       2        1.75 0.740 0.304   3.20 0.0212 
-    ##  4 s(x2)  fac   1       2        1.76 0.694 0.401   3.12 0.0313 
-    ##  5 s(x2)  fac   1       2        1.77 0.652 0.492   3.05 0.0414 
-    ##  6 s(x2)  fac   1       2        1.78 0.613 0.575   2.98 0.0515 
-    ##  7 s(x2)  fac   1       2        1.78 0.579 0.650   2.92 0.0615 
-    ##  8 s(x2)  fac   1       2        1.79 0.548 0.717   2.87 0.0716 
-    ##  9 s(x2)  fac   1       2        1.80 0.522 0.776   2.82 0.0817 
-    ## 10 s(x2)  fac   1       2        1.80 0.498 0.827   2.78 0.0918 
+    ##    smooth by    level_1 level_2  diff    se   lower upper       x2
+    ##    <chr>  <chr> <chr>   <chr>   <dbl> <dbl>   <dbl> <dbl>    <dbl>
+    ##  1 s(x2)  fac   1       2       0.759 0.799 -0.808   2.33 0.000757
+    ##  2 s(x2)  fac   1       2       0.800 0.750 -0.669   2.27 0.0108  
+    ##  3 s(x2)  fac   1       2       0.840 0.702 -0.536   2.22 0.0209  
+    ##  4 s(x2)  fac   1       2       0.881 0.657 -0.407   2.17 0.0310  
+    ##  5 s(x2)  fac   1       2       0.921 0.615 -0.285   2.13 0.0411  
+    ##  6 s(x2)  fac   1       2       0.961 0.577 -0.169   2.09 0.0512  
+    ##  7 s(x2)  fac   1       2       1.00  0.542 -0.0621  2.06 0.0613  
+    ##  8 s(x2)  fac   1       2       1.04  0.511  0.0370  2.04 0.0714  
+    ##  9 s(x2)  fac   1       2       1.08  0.484  0.128   2.03 0.0815  
+    ## 10 s(x2)  fac   1       2       1.11  0.461  0.211   2.02 0.0916  
     ## # ... with 290 more rows
 
 ``` r
@@ -85,3 +85,108 @@ I’m not sure what the difference is between,
 and even more complicated models, like including effects for plot or
 somehow fitting all 3 types (krats, small granivores, and omnivores)
 within the same model.
+
+In this vein, I’m taking as my model Erica’s 2019 plot switch paper.
+Relevant scripts here:
+
+<https://github.com/emchristensen/PlotSwitch/blob/master/FinalAnalysis/rodent-GAM-analyses.R>
+
+and
+
+<https://github.com/emchristensen/PlotSwitch/blob/master/FinalAnalysis/analysis_functions.R>
+
+These *do not use gratia* but are working towards something similar to
+what I’m looking at:
+
+  - Comparing **no rodents –\> all rodents** and **no krats –\> all
+    rodents** plots. The “treatment effect” is the difference in the
+    smooths between the manipulated plots and the control plots. The
+    effect the paper is interested in is the difference in **that**
+    difference between the manipulation types.
+  - Looking at **abundance** responses for two groups, **kangaroo rats**
+    and **small granivores**.
+      - Kangaroo rats (DM, DO, DS) in order to capture how long it took
+        krats to colonize the newly available plots to match controls,
+        depending on whether other rodents were present or not.
+      - Small granivores “because we expected inferior competitors to be
+        displaced by the invasion of kangaroo rats”.
+          - Results are not shown in the main text but described.
+            “Before the switch, sg abundances were higher on krat
+            removals than on controls. After all plots were converted to
+            controls, sg abundances on both plot types quickly converged
+            to control levels within a few months. The rapid decline in
+            non krats is consistent with previous research showing that
+            krats are behaviorally dominant over other rodents. Because
+            differences in treatments in non krat species disappeared
+            quickly, seems unlikely that direct interference with non
+            krats explains the delay in recovery of krats on plots that
+            had rodents present.”
+          - The “small granivores” species list is longer than it was in
+            1981, I think because more species showed up as time went
+            on.
+
+Without, or rather **before** getting into the specific questions being
+asked/comparisons being made, the 2019 analysis illustrates that we can
+use GAMs and the difference in GAM smooths to
+
+  - compare two time series to find when they diverge/converge
+  - without making assumptions about the *form* of the timeseries
+  - and possibly make reference to a reference state.
+
+additionally,
+
+  - we can include effects for plot
+
+<!-- end list -->
+
+``` r
+dummy_totals <- rat_totals %>%
+  filter(type == "small_granivore", brown_trtmnt == "dipo_absent")
+
+dummy_totals <- dummy_totals %>%
+  bind_rows(mutate(dummy_totals, brown_trtmnt = "dipo_present")) %>%
+  mutate(nind = ifelse(brown_trtmnt == "dipo_absent", nind, nind + 10),
+         biomass =ifelse(brown_trtmnt == "dipo_absent", biomass, biomass + 30),
+         energy = ifelse(brown_trtmnt == "dipo_absent", energy, energy + 100)) %>%
+  mutate(brown_trtmnt = as.factor(brown_trtmnt))
+
+ggplot(dummy_totals, aes(period, nind, color = brown_trtmnt)) +
+  geom_line()
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+``` r
+dummy_gam_nofac <-gam(nind ~  s(period, by = brown_trtmnt), data = dummy_totals, method = "REML", family = "poisson")
+
+dummy_gam_fac <- gam(nind ~  brown_trtmnt + s(period, by = brown_trtmnt), data = dummy_totals, method = "REML", family = "poisson")
+
+nofac_pred <- add_fitted(dummy_totals, dummy_gam_nofac)
+ggplot(nofac_pred, aes(period, nind, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line(aes(period, .value, color = brown_trtmnt))
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->
+
+``` r
+fac_pred <- add_fitted(dummy_totals, dummy_gam_fac)
+ggplot(fac_pred, aes(period, nind, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line(aes(period, .value, color = brown_trtmnt))
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->
+
+``` r
+fac_pred_2 <- fac_pred %>%
+  select(-biomass, -energy) %>%
+  tidyr::pivot_wider(values_from = c(.value, nind), names_from = brown_trtmnt) %>%
+  mutate(value_diff = .value_dipo_present - .value_dipo_absent)
+  
+plot(dummy_gam_fac)
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->![](gams_files/figure-gfm/unnamed-chunk-3-5.png)<!-- -->
+
+I am not understanding this properly.
