@@ -26,48 +26,63 @@ ggplot(filter(rat_totals, type != "other"), aes(period, nind, color = brown_trtm
 ```
 ```{r}
 load_mgcv()
-df <- data_sim("eg4")
-m <- gam(y ~ fac + s(x2, by = fac) + s(x0), data = df, method = "REML")
-difference_smooths(m, smooth = "s(x2)")
 
 rat_totals <- rat_totals %>%
   mutate(brown_trtmnt = as.factor(brown_trtmnt))
 
-n_gam <- gam(nind ~  brown_trtmnt + s(period, by = brown_trtmnt), data = filter(rat_totals, type == "small_granivore"), method = "REML", family = "poisson")
+sg <- filter(rat_totals, type == "small_granivore")
 
-n_gam_fitted <- rat_totals %>%
-  filter(type == "small_granivore") %>%
-  add_fitted(model = n_gam, value = "fitted")
-
-ggplot(n_gam_fitted, aes(period, nind, shape = brown_trtmnt)) +
-  geom_line() +
-  geom_line(aes(period, fitted), color = "blue") +
-  facet_wrap(vars(brown_trtmnt))
-
-n_gam_diff <- difference_smooths(n_gam, smooth = "s(period)", newdata = select(filter(rat_totals, type == "small_granivore"), period, brown_trtmnt))
-
-head(n_gam_diff)
+n_gam <- gam(nind ~  brown_trtmnt + s(period, by = brown_trtmnt), data = sg, method = "REML", family = "poisson")
 
 draw(n_gam)
 
+n_gam_fitted <- add_fitted(sg, n_gam, value = "fitted")
+
+ggplot(n_gam_fitted, aes(period, nind, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  geom_line(aes(period, fitted, color = brown_trtmnt), size = 2) +
+  scale_color_viridis_d(end = .8)
+
+fitted_ci <- function(gam_obj, ndraws = 500, df, seed = 1977) {
+  
+  sampled_vals <- fitted_samples(gam_obj, n = ndraws, newdata = df, seed = seed)
+  
+  sampled_vals <- sampled_vals %>%
+    group_by(row) %>%
+    summarize(
+      meanfit = mean(fitted),
+      lowerfit = quantile(fitted, probs = .025),
+      upperfit= quantile(fitted, probs = .975)
+    ) %>%
+    ungroup()
+  
+  df <- df %>%
+    mutate(row = dplyr::row_number()) %>%
+    left_join(sampled_vals)
+  
+  df  
+}
+
+n_gam_ci_manual <- fitted_ci(n_gam, df= sg)
+
+
+ggplot(n_gam_ci_manual, aes(period, nind, color = brown_trtmnt)) +
+  geom_line() +
+  geom_line(aes(period, meanfit)) +
+  geom_ribbon(aes(period, ymin = lowerfit, ymax = upperfit, fill = brown_trtmnt), alpha = .5) +
+  theme_bw()
+
+
+n_gam_diff <- difference_smooths(n_gam, smooth = "s(period)")
+
 ggplot(n_gam_diff, aes(period, diff)) +
   geom_line() +
-  geom_line(aes(period, lower)) +
-  geom_line(aes(period, upper)) +
-  theme_bw() +
-  geom_hline(yintercept = 0)
+  geom_ribbon(aes(period, ymin = lower,ymax= upper), alpha = .5)
+
 
 ```
-
-I'm not sure what the difference is between, 
-
-
-`nind ~ brown_trtmnt + s(period, by = brown_trtmnt)`
-
-
-`nind ~ s(period, by = brown_trtmnt)`
-
-and even more complicated models, like including effects for plot or somehow fitting all 3 types (krats, small granivores, and omnivores) within the same model.
 
 In this vein, I'm taking as my model Erica's 2019 plot switch paper. Relevant scripts here:
 
@@ -81,10 +96,10 @@ These *do not use gratia* but are working towards something similar to what I'm 
 
 - Comparing **no rodents --> all rodents** and **no krats --> all rodents** plots. The "treatment effect" is the difference in the smooths between the manipulated plots and the control plots. The effect the paper is interested in is the difference in **that** difference between the manipulation types. 
 - Looking at **abundance** responses for two groups, **kangaroo rats** and **small granivores**. 
-    - Kangaroo rats (DM, DO, DS) in order to capture how long it took krats to colonize the newly available plots to match controls, depending on whether other rodents were present or not.
-    - Small granivores "because we expected inferior competitors to be displaced by the invasion of kangaroo rats". 
-        - Results are not shown in the main text but described. "Before the switch, sg abundances were higher on krat removals than on controls. After all plots were converted to controls, sg abundances on both plot types quickly converged to control levels within a few months. The rapid decline in non krats is consistent with previous research showing that krats are behaviorally dominant over other rodents. Because differences in treatments in non krat species disappeared quickly, seems unlikely that direct interference with non krats explains the delay in recovery of krats on plots that had rodents present."
-        - The "small granivores" species list is longer than it was in 1981, I think because more species showed up as time went on.
+- Kangaroo rats (DM, DO, DS) in order to capture how long it took krats to colonize the newly available plots to match controls, depending on whether other rodents were present or not.
+- Small granivores "because we expected inferior competitors to be displaced by the invasion of kangaroo rats". 
+- Results are not shown in the main text but described. "Before the switch, sg abundances were higher on krat removals than on controls. After all plots were converted to controls, sg abundances on both plot types quickly converged to control levels within a few months. The rapid decline in non krats is consistent with previous research showing that krats are behaviorally dominant over other rodents. Because differences in treatments in non krat species disappeared quickly, seems unlikely that direct interference with non krats explains the delay in recovery of krats on plots that had rodents present."
+- The "small granivores" species list is longer than it was in 1981, I think because more species showed up as time went on.
 
 
 Without, or rather **before** getting into the specific questions being asked/comparisons being made, the 2019 analysis illustrates that we can use GAMs and the difference in GAM smooths to
@@ -98,46 +113,3 @@ additionally,
 - we can include effects for plot
 
 
-
-
-```{r}
-
-dummy_totals <- rat_totals %>%
-  filter(type == "small_granivore", brown_trtmnt == "dipo_absent")
-
-dummy_totals <- dummy_totals %>%
-  bind_rows(mutate(dummy_totals, brown_trtmnt = "dipo_present")) %>%
-  mutate(nind = ifelse(brown_trtmnt == "dipo_absent", nind, nind + 10),
-         biomass =ifelse(brown_trtmnt == "dipo_absent", biomass, biomass + 30),
-         energy = ifelse(brown_trtmnt == "dipo_absent", energy, energy + 100)) %>%
-  mutate(brown_trtmnt = as.factor(brown_trtmnt))
-
-ggplot(dummy_totals, aes(period, nind, color = brown_trtmnt)) +
-  geom_line()
-
-dummy_gam_nofac <-gam(nind ~  s(period, by = brown_trtmnt), data = dummy_totals, method = "REML", family = "poisson")
-
-dummy_gam_fac <- gam(nind ~  brown_trtmnt + s(period, by = brown_trtmnt), data = dummy_totals, method = "REML", family = "poisson")
-
-nofac_pred <- add_fitted(dummy_totals, dummy_gam_nofac)
-ggplot(nofac_pred, aes(period, nind, color = brown_trtmnt)) +
-  geom_point() +
-  geom_line(aes(period, .value, color = brown_trtmnt))
-
-fac_pred <- add_fitted(dummy_totals, dummy_gam_fac)
-ggplot(fac_pred, aes(period, nind, color = brown_trtmnt)) +
-  geom_point() +
-  geom_line(aes(period, .value, color = brown_trtmnt))
-
-
-fac_pred_2 <- fac_pred %>%
-  select(-biomass, -energy) %>%
-  tidyr::pivot_wider(values_from = c(.value, nind), names_from = brown_trtmnt) %>%
-  mutate(value_diff = .value_dipo_present - .value_dipo_absent)
-  
-plot(dummy_gam_fac)
-```
-
-
-
-I am not understanding this properly.
