@@ -4,6 +4,8 @@ New plots with 81 data
 ![](gams_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
 
 ``` r
+rat_totals <- rat_totals 
+
 load_mgcv()
 
 rat_totals <- rat_totals %>%
@@ -64,7 +66,8 @@ ggplot(n_gam_ci_manual, aes(period, nind, color = brown_trtmnt)) +
   geom_line() +
   geom_line(aes(period, meanfit)) +
   geom_ribbon(aes(period, ymin = lowerfit, ymax = upperfit, fill = brown_trtmnt), alpha = .5) +
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "top")
 ```
 
 ![](gams_files/figure-gfm/unnamed-chunk-2-3.png)<!-- -->
@@ -74,66 +77,184 @@ n_gam_diff <- difference_smooths(n_gam, smooth = "s(period)")
 
 ggplot(n_gam_diff, aes(period, diff)) +
   geom_line() +
-  geom_ribbon(aes(period, ymin = lower,ymax= upper), alpha = .5)
+  geom_ribbon(aes(period, ymin = lower,ymax= upper), alpha = .5) +
+  geom_hline(yintercept = 0)
 ```
 
 ![](gams_files/figure-gfm/unnamed-chunk-2-4.png)<!-- -->
 
-I’m not sure what the difference is between,
+This is fitting a single GAM to the small granivores by treatment. There
+is no plot effect included - I haven’t checked to see if there are
+differences between plots. So this is rough.
 
-`nind ~ brown_trtmnt + s(period, by = brown_trtmnt)`
+The difference\_smooths plot kind of matches but doesn’t completely
+track with the estimates/fitted CI I generated via
+`gratia::fitted_samples`. The samples appear to overlap at the
+beginning, when the difference plot would have that the dipo\_present
+treatment is higher than the dipo\_absent treatment (although note that
+those first 3-5 periods are right as the treatments were being
+implemented). Then, around period 30, the samples appear divergent while
+the difference plot has the difference as much closer to 0 than it
+appears.
 
-`nind ~ s(period, by = brown_trtmnt)`
+``` r
+load_mgcv()
 
-and even more complicated models, like including effects for plot or
-somehow fitting all 3 types (krats, small granivores, and omnivores)
-within the same model.
+rat_totals <- rat_totals %>%
+  mutate(brown_trtmnt = as.factor(brown_trtmnt))
 
-In this vein, I’m taking as my model Erica’s 2019 plot switch paper.
-Relevant scripts here:
+so <- filter(rat_totals, type == "small_omnivore")
 
-<https://github.com/emchristensen/PlotSwitch/blob/master/FinalAnalysis/rodent-GAM-analyses.R>
+n_gam <- gam(nind ~  brown_trtmnt + s(period, by = brown_trtmnt), data = so, method = "REML", family = "poisson")
 
-and
+draw(n_gam)
+```
 
-<https://github.com/emchristensen/PlotSwitch/blob/master/FinalAnalysis/analysis_functions.R>
+![](gams_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-These *do not use gratia* but are working towards something similar to
-what I’m looking at:
+``` r
+n_gam_fitted <- add_fitted(so, n_gam, value = "fitted")
 
-  - Comparing **no rodents –\> all rodents** and **no krats –\> all
-    rodents** plots. The “treatment effect” is the difference in the
-    smooths between the manipulated plots and the control plots. The
-    effect the paper is interested in is the difference in **that**
-    difference between the manipulation types.
-  - Looking at **abundance** responses for two groups, **kangaroo rats**
-    and **small granivores**.
-  - Kangaroo rats (DM, DO, DS) in order to capture how long it took
-    krats to colonize the newly available plots to match controls,
-    depending on whether other rodents were present or not.
-  - Small granivores “because we expected inferior competitors to be
-    displaced by the invasion of kangaroo rats”.
-  - Results are not shown in the main text but described. “Before the
-    switch, sg abundances were higher on krat removals than on controls.
-    After all plots were converted to controls, sg abundances on both
-    plot types quickly converged to control levels within a few months.
-    The rapid decline in non krats is consistent with previous research
-    showing that krats are behaviorally dominant over other rodents.
-    Because differences in treatments in non krat species disappeared
-    quickly, seems unlikely that direct interference with non krats
-    explains the delay in recovery of krats on plots that had rodents
-    present.”
-  - The “small granivores” species list is longer than it was in 1981, I
-    think because more species showed up as time went on.
+ggplot(n_gam_fitted, aes(period, nind, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  geom_line(aes(period, fitted, color = brown_trtmnt), size = 2) +
+  scale_color_viridis_d(end = .8)
+```
 
-Without, or rather **before** getting into the specific questions being
-asked/comparisons being made, the 2019 analysis illustrates that we can
-use GAMs and the difference in GAM smooths to
+![](gams_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->
 
-  - compare two time series to find when they diverge/converge
-  - without making assumptions about the *form* of the timeseries
-  - and possibly make reference to a reference state.
+``` r
+fitted_ci <- function(gam_obj, ndraws = 500, df, seed = 1977) {
+  
+  sampled_vals <- fitted_samples(gam_obj, n = ndraws, newdata = df, seed = seed)
+  
+  sampled_vals <- sampled_vals %>%
+    group_by(row) %>%
+    summarize(
+      meanfit = mean(fitted),
+      lowerfit = quantile(fitted, probs = .025),
+      upperfit= quantile(fitted, probs = .975)
+    ) %>%
+    ungroup()
+  
+  df <- df %>%
+    mutate(row = dplyr::row_number()) %>%
+    left_join(sampled_vals)
+  
+  df  
+}
 
-additionally,
+n_gam_ci_manual <- fitted_ci(n_gam, df= so)
+```
 
-  - we can include effects for plot
+    ## `summarise()` ungrouping output (override with `.groups` argument)
+
+    ## Joining, by = "row"
+
+``` r
+ggplot(n_gam_ci_manual, aes(period, nind, color = brown_trtmnt)) +
+  geom_line() +
+  geom_line(aes(period, meanfit)) +
+  geom_ribbon(aes(period, ymin = lowerfit, ymax = upperfit, fill = brown_trtmnt), alpha = .5) +
+  theme_bw() +
+  theme(legend.position = "top")
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->
+
+``` r
+n_gam_diff <- difference_smooths(n_gam, smooth = "s(period)")
+
+ggplot(n_gam_diff, aes(period, diff)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = lower,ymax= upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->
+
+``` r
+load_mgcv()
+
+rat_totals <- rat_totals %>%
+  mutate(brown_trtmnt = as.factor(brown_trtmnt))
+
+dipo <- filter(rat_totals, type == "dipo")
+
+n_gam <- gam(nind ~  brown_trtmnt + s(period, by = brown_trtmnt), data = dipo, method = "REML", family = "poisson")
+
+draw(n_gam)
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+``` r
+n_gam_fitted <- add_fitted(dipo, n_gam, value = "fitted")
+
+ggplot(n_gam_fitted, aes(period, nind, color = brown_trtmnt)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  geom_line(aes(period, fitted, color = brown_trtmnt), size = 2) +
+  scale_color_viridis_d(end = .8)
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
+
+``` r
+fitted_ci <- function(gam_obj, ndraws = 500, df, seed = 1977) {
+  
+  sampled_vals <- fitted_samples(gam_obj, n = ndraws, newdata = df, seed = seed)
+  
+  sampled_vals <- sampled_vals %>%
+    group_by(row) %>%
+    summarize(
+      meanfit = mean(fitted),
+      lowerfit = quantile(fitted, probs = .025),
+      upperfit= quantile(fitted, probs = .975)
+    ) %>%
+    ungroup()
+  
+  df <- df %>%
+    mutate(row = dplyr::row_number()) %>%
+    left_join(sampled_vals)
+  
+  df  
+}
+
+n_gam_ci_manual <- fitted_ci(n_gam, df= dipo)
+```
+
+    ## `summarise()` ungrouping output (override with `.groups` argument)
+
+    ## Joining, by = "row"
+
+``` r
+ggplot(n_gam_ci_manual, aes(period, nind, color = brown_trtmnt)) +
+  geom_line() +
+  geom_line(aes(period, meanfit)) +
+  geom_ribbon(aes(period, ymin = lowerfit, ymax = upperfit, fill = brown_trtmnt), alpha = .5) +
+  theme_bw() +
+  theme(legend.position = "top")
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
+
+``` r
+n_gam_diff <- difference_smooths(n_gam, smooth = "s(period)")
+
+ggplot(n_gam_diff, aes(period, diff)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = lower,ymax= upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-4-4.png)<!-- -->
+
+I feel like there might be something I’m not grasping here around the
+parametric term? Shouldn’t the dipo\_absent **always** be lower than
+dipo\_present (for the krats on the krat removals)? Unless the
+difference smooths is showing the difference **without taking into
+account the *partial* effect of treatment**
