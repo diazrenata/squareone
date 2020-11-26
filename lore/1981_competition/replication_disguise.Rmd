@@ -1,0 +1,163 @@
+---
+title: "Replicating GAMS from 2019 paper"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Using the functions and scripts exactly as Erica wrote them, but swapping in the 1981 data and changing the treatments.
+
+The idea being, then to take it apart and see how it works. 
+
+```{r}
+library(dplyr)
+library(mgcv)
+library(ggplot2)
+library(cowplot)
+
+source(here::here("lore", "2020_switch", "FinalAnalysis", 'analysis_functions.R'))
+theme_set(theme_bw())
+#cbPalette <- c( "#e19c02","#999999", "#56B4E9", "#0072B2", "#D55E00", "#F0E442", "#009E73", "#CC79A7")
+cbbPalette <- c("#000000", "#009E73", "#e79f00", "#9ad0f3", "#0072B2", "#D55E00", 
+                "#CC79A7", "#F0E442")
+
+
+# ==========================================================================================
+# Number of small granivores
+rats <- read.csv(here::here("lore", "1981_competition", "1981_data_plot_totals.csv"), stringsAsFactors = F)
+sg <- filter(rats, type == "small_granivore") %>%
+  mutate(plot = factor(plot),
+         krat_treatment = factor(krat_treatment),
+         oplot = ordered(plot),
+         okrat_treatment = ordered(okrat_treatment),
+         censusdate = period)
+```
+
+
+```{r}
+
+ggplot(sg, aes(period, nind, group= oplot, color = oplot)) +
+  geom_line(size = 2, alpha = .3) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  facet_wrap(vars(okrat_treatment))
+
+
+ggplot(sg, aes(period, nind, group= oplot, color = okrat_treatment)) +
+  geom_line(size = 2, alpha = .3) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  facet_wrap(vars(oplot))
+```
+
+```{r}
+
+
+# GAM model --- includes plot-specific smooths
+sg.gam <- gam(nind ~ oplot + okrat_treatment + s(period, k = 20) +
+                s(period, by = okrat_treatment, k = 15) +
+                s(period, by = oplot),
+              data = sg, method = 'REML', family = poisson, select = TRUE, control = gam.control(nthreads = 4))
+
+summary(sg.gam)
+
+# 
+# sg.gam.noplot <- gam(nind ~ okrat_treatment + s(period, k = 20) + s(period, by = okrat_treatment, k = 15), data = sg, method = "REML", family = poisson, select = T, control= gam.control(nthreads = 4))
+# 
+# summary(sg.gam.noplot)
+
+
+# Look at the treatment effect smooths on count scale. 
+# terms to exclude; must be named exactly as printed in `summary(model)` output
+exVars.d <- c('oplot', paste0('s(period):oplot', c(15,19,21,8,11,12,14)), "oplot.L", "oplot.Q", "oplot.C", "oplot^4", "oplot^5", "oplot^6", "oplot^7")
+
+
+predict_treat_effect_disguised = function(dat, np, MODEL, exVars) {
+  # Data to predict at; note the dummy plot - need to provide all variables used to
+  # fit the model when predicting
+  treatEff <- with(dat,
+                   expand.grid(period = seq(min(censusdate), max(period), length = np),
+                               krat_treatment  = c('control', 'exclosure'),
+                               plot       = 3)) 
+  ## create derived variables from the data we want to predict at
+  treatEff <- transform(treatEff,
+                        oplot       = ordered(plot),
+                        okrat_treatment  = ordered(krat_treatment))
+  
+  # actually predict, on link scale so we can get proper CIs, exclude
+  treatPred <- as.data.frame(predict(MODEL, treatEff, type = 'link', se.fit = TRUE,
+                                     exclude = exVars))
+  
+  
+  # bind predictions to data we predicted at
+  treatPred <- cbind(treatEff, treatPred)
+  # extract inverse of link function from the model
+  ilink <- family(MODEL)$linkinv
+  # form 95% bayesian credible interval / frequentist across-function confidence interval
+  treatPred <- transform(treatPred, Fitted = ilink(fit),
+                         Upper = ilink(fit + (2 * se.fit)),
+                         Lower = ilink(fit - (2 * se.fit)))
+  return(treatPred)
+}
+
+
+treatPred.sg <- predict_treat_effect_disguised(sg, np = 500, MODEL=sg.gam, exVars.d)
+
+# plot GAM fit and data
+ggplot(treatPred.sg, aes(period, Fitted, color = okrat_treatment)) +
+  geom_line() +
+  theme_bw() +
+  geom_ribbon(aes(period, ymin = Lower, ymax = Upper, fill = okrat_treatment), alpha = .5) +
+  scale_fill_viridis_d(end = .8) +
+  scale_color_viridis_d(end = .8)
+
+
+osmooth_diff_disguised <- function(model, newdata, smooth_var, f1, f2, var, alpha = 0.05,
+                                   unconditional = FALSE, removePara = TRUE, keepVar = TRUE, ...) {
+  xp <- predict(model, newdata = newdata, type = 'lpmatrix',...)
+  # reference level
+  ref_level <- levels(newdata[[var]])[1L]
+  ref_smooth <- grepl(paste0("s\\(", smooth_var, "\\)\\.{1}[[:digit:]]+$"), colnames(xp))
+  not_smooth <- !grepl('^s\\(', colnames(xp))
+  c1 <- ref_smooth | grepl(f1, colnames(xp))
+  c2 <- ref_smooth | grepl(f2, colnames(xp))
+  r1 <- newdata[[var]] == f1
+  r2 <- newdata[[var]] == f2
+  # difference rows of xp for data from comparison
+  X <- xp[r1, ] - xp[r2, ]
+  # zero out cols of X related to splines for other levels
+  X[, !not_smooth][, ! (c1[!not_smooth] | c2[!not_smooth])] <- 0
+  if (isTRUE(removePara)) {
+    # zero out the parametric cols not associated with `var`,
+    # ignore (Intercept), as it is zero anyway
+    ind <- grepl('^s\\(', colnames(xp))
+    if (isTRUE(keepVar)) {
+      ind <- ind | grepl(paste0('^', var), colnames(xp))
+    }
+    X[, !ind] <- 0
+  }
+  dif <- X %*% coef(model)
+  se <- sqrt(rowSums((X %*% vcov(model, unconditional = unconditional)) * X))
+  crit <- qnorm(alpha/2, lower.tail = FALSE)
+  upr <- dif + (crit * se)
+  lwr <- dif - (crit * se)
+  data.frame(pair = paste(f1, f2, sep = '-'),
+             diff = dif,
+             se = se,
+             upper = upr,
+             lower = lwr,
+             period = newdata[r1,'period'])
+}
+
+# Compute pairwise treatment diffs if we leave *in* the parametric Treatment terms
+d1 <- osmooth_diff_disguised(sg.gam, treatPred.sg, "period", "control", "exclosure", var = "okrat_treatment", removePara = FALSE)
+
+ggplot(d1, aes(period, diff)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = lower, ymax = upper, alpha = .5)) +
+  geom_hline(yintercept = 0)
+
+# =========================================================================================
+```

@@ -65,3 +65,25 @@ rats_zeros <- left_join(rats_all_possible, select(rats_totals, period, year, mon
 
 write.csv(rats_zeros, here::here("lore", "1981_competition", "1981_data_statevars.csv"), row.names = F)
 
+
+rats <- read.csv(here::here("lore", "1981_competition", "1981_data_complete.csv"), stringsAsFactors = F) %>%
+  mutate(plot = ordered(plot))
+
+rat_plot_totals <- rats  %>%
+  group_by(type, brown_trtmnt, period, plot) %>%
+  summarize(nind = dplyr::n())
+
+
+rats_all_possible <- expand.grid(period = unique(rat_plot_totals$period), type = unique(rat_plot_totals$type), plot = unique(rat_plot_totals$plot)) %>%
+  ungroup() %>%
+  left_join(distinct(select(rats, plot, brown_trtmnt)))
+
+rats_plot_zeros <- rats_all_possible %>%
+  left_join(rat_plot_totals) %>%
+  mutate(nind = ifelse(is.na(nind), 0, nind)) %>%
+  mutate(krat_treatment = ifelse(brown_trtmnt == "dipo_present", "control", "exclosure")) %>%
+  mutate(okrat_treatment = ordered(krat_treatment))
+
+write.csv(rats_plot_zeros, here::here("lore", "1981_competition", "1981_data_plot_totals.csv"), row.names = F)
+
+
