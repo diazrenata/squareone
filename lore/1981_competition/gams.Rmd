@@ -172,10 +172,37 @@ ggplot(pdat.pred, aes(period, invlink_fit, color= okrat_treatment)) +
 ```
 
 
-THis gives me some disquiet so I'm gonna try it using Erica's data.
-
 This doesn't quite match what we would think from the `mgcv` plot, I think because the `mgcv` plot is showing the difference smooth without the intercept adjustment.
 
+I re-did this but swapped in Erica's data and you get the results that match the 2019 paper. So I think it is basically sound? 
+
+What gives me the creeps is that the overlapping-zero interval 1) differs from the mgcv plot and 2) doesn't match what you'd think if you just looked at the plots of the smooths themselves.
+
+However, 1) may be because the mgcv plot doesn't include the offset for different treatment means. You see this especially in Erica's data, where the mgcv plot for exclosure only briefly overlaps 0 - because of the huge offset, maybe? Anyway, this arithmetic for calculating the difference smooths, including the offset term, qualitatively matches the paper (even though there might be minor differences because the paper included a plot term and had different k's). It also matches in 2), in that the *smooths* appear to overlap at times when the *difference smooth* does not overlap 0 (e.g. the very end of the TS for the total exclosure v. control plots, the very last plot in gams_switchdata.Rmda).
+
+
+### Interpreting
+
+```{r}
+
+min(filter(pdat.pred, period > 4, !diff_overlaps_zero)$period)
+
+```
+
+So this analysis actually picks up a difference in small granivore abundance on krat exclosures vs. control plots as early as period 13-14, or about 10 months after the treatments were implemented. 
+
+
+The paper identifies the change as starting in July 1978, or "eight months".
+
+```{r}
+
+filter(rat_totals, period == 13) %>%
+  select(period, year, month)%>%
+  distinct()
+
+```
+
+OMG. O M G.
 
 <!-- ## removing intercept -->
 
