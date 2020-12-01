@@ -61,11 +61,7 @@ pdat.diff <- pdat %>%
 
 ggplot(pdat.diff, aes(period, fitted_dif)) +
   geom_line() +
-  geom_ribbon(aes(period, ymin = lower, ymax = upper), alpha  = .5)
+  geom_ribbon(aes(period, ymin = lower, ymax = upper), alpha  = .5) +
+  geom_hline(yintercept = 0)
 
-
-ggplot(pdat.pred, aes(period, link_fit, color= okrat_treatment)) +
-  geom_line() +
-  geom_ribbon(aes(period, ymin = link_lower, ymax =link_upper, fill = okrat_treatment), alpha = .5) +
-  theme_bw()
 

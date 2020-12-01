@@ -3,258 +3,271 @@ New plots with 81 data
 
 ![](gams_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
 
+## Analyzed using GAMs
+
+Following Christensen et al (2019), we can use the *difference in
+smooths* fitted using a GAM as a way to tell if and when two timeseries
+are diverging/converging.
+
+### Difference smooths walkthrough
+
+Here is a walkthrough (fairly detailed) of how we obtain the difference
+in smooths. This approach is modeled after the analysis in Christensen
+et al 2019 (code in Erica’s github and also copied to this repo in
+`lore/2019_switch`) and blog posts by Gavin Simpson. I have re-written
+the code mostly for my own understanding; bits of it probably echo Erica
+and Gavin closely.
+
+#### Fitting the GAM
+
+  - (For now at least) we’re working with count data, so the link is
+    Poisson. This means we get the differences in the difference smooth
+    on the log scale.
+  - I have fit using **treatment** but not **plot**. It may be best
+    practice to include terms for plot (see Christensen et al 2019) but
+    that would complicate the machinery for now.
+  - I am using the default `k = 10` for the number of basis functions.
+  - I am fitting using the formula `count ~ okrat_treatment + s(period)
+    + s(period, by okrat_treatment)`, where `okrat_treatment` is an
+    ordered factor with levels for control and krat exclosure. This
+    means:
+      - `okrat_treatment`: There is an intercept like term for the
+        *difference in means* between treatments. Because
+        `okrat_treatment` is an ordered factor, they aren’t really
+        intercepts, they’re weird exponential things.
+      - `s(period)`: This fits the smooth for the *reference level* of
+        `okrat_treatment`, in this case `control`.
+      - `s(period, by = okrat_treatment)`: This fits the smooth for the
+        *difference* between the remaining levels of `okrat_treatment`
+        and the reference level. In this case there is only one other
+        level.
+
+<!-- end list -->
+
 ``` r
-rat_totals <- rat_totals 
-
-load_mgcv()
-
 rat_totals <- rat_totals %>%
-  mutate(brown_trtmnt = as.factor(brown_trtmnt))
+  mutate(krat_treatment = ifelse(brown_trtmnt == "dipo_present", "control", "exclosure")) %>%
+  mutate(okrat_treatment = ordered(krat_treatment))
 
 sg <- filter(rat_totals, type == "small_granivore")
 
-n_gam <- gam(nind ~  brown_trtmnt + s(period, by = brown_trtmnt), data = sg, method = "REML", family = "poisson")
-
-draw(n_gam)
+ggplot(sg, aes(period, nind, color= okrat_treatment)) +
+  geom_line() +
+  geom_point() +
+  theme_bw() +
+  scale_color_viridis_d(end = .8)
 ```
 
 ![](gams_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
 ``` r
-n_gam_fitted <- add_fitted(sg, n_gam, value = "fitted")
+nind.gam <- gam(nind ~ okrat_treatment + s(period) + s(period, by = okrat_treatment), data = sg, family = poisson, method = "REML")
 
-ggplot(n_gam_fitted, aes(period, nind, color = brown_trtmnt)) +
-  geom_point() +
-  geom_line() +
-  theme_bw() +
-  geom_line(aes(period, fitted, color = brown_trtmnt), size = 2) +
-  scale_color_viridis_d(end = .8)
-```
-
-![](gams_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
-
-``` r
-fitted_ci <- function(gam_obj, ndraws = 500, df, seed = 1977) {
-  
-  sampled_vals <- fitted_samples(gam_obj, n = ndraws, newdata = df, seed = seed)
-  
-  sampled_vals <- sampled_vals %>%
-    group_by(row) %>%
-    summarize(
-      meanfit = mean(fitted),
-      lowerfit = quantile(fitted, probs = .025),
-      upperfit= quantile(fitted, probs = .975)
-    ) %>%
-    ungroup()
-  
-  df <- df %>%
-    mutate(row = dplyr::row_number()) %>%
-    left_join(sampled_vals)
-  
-  df  
-}
-
-n_gam_ci_manual <- fitted_ci(n_gam, df= sg)
-```
-
-    ## `summarise()` ungrouping output (override with `.groups` argument)
-
-    ## Joining, by = "row"
-
-``` r
-ggplot(n_gam_ci_manual, aes(period, nind, color = brown_trtmnt)) +
-  geom_line() +
-  geom_line(aes(period, meanfit)) +
-  geom_ribbon(aes(period, ymin = lowerfit, ymax = upperfit, fill = brown_trtmnt), alpha = .5) +
-  theme_bw() +
-  theme(legend.position = "top")
-```
-
-![](gams_files/figure-gfm/unnamed-chunk-2-3.png)<!-- -->
-
-``` r
-n_gam_diff <- difference_smooths(n_gam, smooth = "s(period)")
-
-ggplot(n_gam_diff, aes(period, diff)) +
-  geom_line() +
-  geom_ribbon(aes(period, ymin = lower,ymax= upper), alpha = .5) +
-  geom_hline(yintercept = 0)
-```
-
-![](gams_files/figure-gfm/unnamed-chunk-2-4.png)<!-- -->
-
-This is fitting a single GAM to the small granivores by treatment. There
-is no plot effect included - I haven’t checked to see if there are
-differences between plots. So this is rough.
-
-The difference\_smooths plot kind of matches but doesn’t completely
-track with the estimates/fitted CI I generated via
-`gratia::fitted_samples`. The samples appear to overlap at the
-beginning, when the difference plot would have that the dipo\_present
-treatment is higher than the dipo\_absent treatment (although note that
-those first 3-5 periods are right as the treatments were being
-implemented). Then, around period 30, the samples appear divergent while
-the difference plot has the difference as much closer to 0 than it
-appears.
-
-``` r
-load_mgcv()
-
-rat_totals <- rat_totals %>%
-  mutate(brown_trtmnt = as.factor(brown_trtmnt))
-
-so <- filter(rat_totals, type == "small_omnivore")
-
-n_gam <- gam(nind ~  brown_trtmnt + s(period, by = brown_trtmnt), data = so, method = "REML", family = "poisson")
-
-draw(n_gam)
+plot(nind.gam, pages= 1, scale = 0)
 ```
 
 ![](gams_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-``` r
-n_gam_fitted <- add_fitted(so, n_gam, value = "fitted")
+These are the default plots from `mgcv` for a GAM fit with an ordered
+factor. The plot on the left is the fit for the reference level of the
+factor, so control. The plot on the right is the adjustment between the
+reference level and the second level, exclosure.
 
-ggplot(n_gam_fitted, aes(period, nind, color = brown_trtmnt)) +
-  geom_point() +
+We can extract the predicted values and a SE envelope for these smooths.
+First on the link (log) scale, and then invlink-ed back to count values.
+
+The control smooth on the link scale matches the left-side plot from
+`mgcv`. The exclosure smooths should be (about) the control smooth plus
+the difference.
+
+``` r
+pdat <- as.data.frame(expand.grid(period = seq(min(sg$period), max(sg$period), length.out= 500), okrat_treatment = levels(sg$okrat_treatment)))
+
+nind.predicted <- predict(nind.gam, newdata = pdat, type = "lpmatrix")
+nind.link <- predict(nind.gam, newdata = pdat, type = "link", se.fit = T)
+
+nind.predicted.vals <- nind.gam$family$linkinv(nind.predicted %*% coefficients(nind.gam))
+
+pdat.pred <- pdat %>%
+  mutate(predicted = nind.predicted.vals,
+         link = nind.link$fit,
+         se_link = nind.link$se.fit) %>%
+  mutate(invlink_fit = nind.gam$family$linkinv(link),
+         invlink_upper = nind.gam$family$linkinv(link + (2 * se_link)),
+         invlink_lower = nind.gam$family$linkinv(link - (2 * se_link)),
+         link_upper = link + (2 * se_link),
+         link_lower = link - (2 * se_link))
+
+
+ggplot(pdat.pred, aes(period, link, color= okrat_treatment)) +
   geom_line() +
+  geom_ribbon(aes(period, ymin = link_lower, ymax = link_upper, fill = okrat_treatment), alpha = .5) +
   theme_bw() +
-  geom_line(aes(period, fitted, color = brown_trtmnt), size = 2) +
-  scale_color_viridis_d(end = .8)
-```
-
-![](gams_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->
-
-``` r
-fitted_ci <- function(gam_obj, ndraws = 500, df, seed = 1977) {
-  
-  sampled_vals <- fitted_samples(gam_obj, n = ndraws, newdata = df, seed = seed)
-  
-  sampled_vals <- sampled_vals %>%
-    group_by(row) %>%
-    summarize(
-      meanfit = mean(fitted),
-      lowerfit = quantile(fitted, probs = .025),
-      upperfit= quantile(fitted, probs = .975)
-    ) %>%
-    ungroup()
-  
-  df <- df %>%
-    mutate(row = dplyr::row_number()) %>%
-    left_join(sampled_vals)
-  
-  df  
-}
-
-n_gam_ci_manual <- fitted_ci(n_gam, df= so)
-```
-
-    ## `summarise()` ungrouping output (override with `.groups` argument)
-
-    ## Joining, by = "row"
-
-``` r
-ggplot(n_gam_ci_manual, aes(period, nind, color = brown_trtmnt)) +
-  geom_line() +
-  geom_line(aes(period, meanfit)) +
-  geom_ribbon(aes(period, ymin = lowerfit, ymax = upperfit, fill = brown_trtmnt), alpha = .5) +
-  theme_bw() +
-  theme(legend.position = "top")
-```
-
-![](gams_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->
-
-``` r
-n_gam_diff <- difference_smooths(n_gam, smooth = "s(period)")
-
-ggplot(n_gam_diff, aes(period, diff)) +
-  geom_line() +
-  geom_ribbon(aes(period, ymin = lower,ymax= upper), alpha = .5) +
-  geom_hline(yintercept = 0)
-```
-
-![](gams_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->
-
-``` r
-load_mgcv()
-
-rat_totals <- rat_totals %>%
-  mutate(brown_trtmnt = as.factor(brown_trtmnt))
-
-dipo <- filter(rat_totals, type == "dipo")
-
-n_gam <- gam(nind ~  brown_trtmnt + s(period, by = brown_trtmnt), data = dipo, method = "REML", family = "poisson")
-
-draw(n_gam)
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8)
 ```
 
 ![](gams_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 ``` r
-n_gam_fitted <- add_fitted(dipo, n_gam, value = "fitted")
-
-ggplot(n_gam_fitted, aes(period, nind, color = brown_trtmnt)) +
-  geom_point() +
+ggplot(pdat.pred, aes(period, invlink_fit, color= okrat_treatment)) +
   geom_line() +
+  geom_ribbon(aes(period, ymin = invlink_lower, ymax = invlink_upper, fill = okrat_treatment), alpha = .5) +
   theme_bw() +
-  geom_line(aes(period, fitted, color = brown_trtmnt), size = 2) +
-  scale_color_viridis_d(end = .8)
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8)
 ```
 
 ![](gams_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
 
-``` r
-fitted_ci <- function(gam_obj, ndraws = 500, df, seed = 1977) {
-  
-  sampled_vals <- fitted_samples(gam_obj, n = ndraws, newdata = df, seed = seed)
-  
-  sampled_vals <- sampled_vals %>%
-    group_by(row) %>%
-    summarize(
-      meanfit = mean(fitted),
-      lowerfit = quantile(fitted, probs = .025),
-      upperfit= quantile(fitted, probs = .975)
-    ) %>%
-    ungroup()
-  
-  df <- df %>%
-    mutate(row = dplyr::row_number()) %>%
-    left_join(sampled_vals)
-  
-  df  
-}
+We can then calculate the *difference* between these smooths, plus a
+credible interval. This then allows us to find when the difference is
+overlapping 0 (no treatment effect) and when it is not.
 
-n_gam_ci_manual <- fitted_ci(n_gam, df= dipo)
+We do this keeping **all** the terms. That is, including the
+quasi-intercept to account for the difference in means between
+treatments. Erica’s models included terms for plot, which she then
+excluded from calculating the differences. That’s not in play here
+(yet?).
+
+``` r
+nind.diff.keeppar <- nind.predicted[1:500, ] - nind.predicted[501:1000, ]
+
+nind.diff.vals <- nind.diff.keeppar %*% coef(nind.gam)
+
+
+nind.diff.se<- sqrt(rowSums((nind.diff.keeppar %*% vcov(nind.gam, unconditional = FALSE)) * nind.diff.keeppar))
+
+crit <- qnorm(.05/2, lower.tail = FALSE)
+upr <- nind.diff.vals + (crit * nind.diff.se)
+lwr <- nind.diff.vals - (crit * nind.diff.se)
+
+
+pdat.diff <- pdat %>%
+  select(period) %>%
+  distinct()%>%
+  mutate(fitted_dif = nind.diff.vals,
+         upper= upr,
+         lower = lwr) %>%
+  mutate(diff_overlaps_zero = (upper * lower) < 0
+  )
+
+ggplot(pdat.diff, aes(period, fitted_dif)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = lower, ymax = upper), alpha  = .5) +
+  geom_hline(yintercept = 0) +
+  geom_point(data = filter(pdat.diff, diff_overlaps_zero), aes(period, 1), color  = "red", size = 2) +
+  theme_bw()
 ```
 
-    ## `summarise()` ungrouping output (override with `.groups` argument)
+![](gams_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-    ## Joining, by = "row"
+The red line shows where the difference between the two smooths’ CI is
+overlapping 0; i.e., we aren’t really confident that the two smooths are
+different.
 
 ``` r
-ggplot(n_gam_ci_manual, aes(period, nind, color = brown_trtmnt)) +
+pdat.pred <- left_join(pdat.pred, select(pdat.diff, period, diff_overlaps_zero))
+```
+
+    ## Joining, by = "period"
+
+``` r
+ggplot(pdat.pred, aes(period, link, color= okrat_treatment)) +
   geom_line() +
-  geom_line(aes(period, meanfit)) +
-  geom_ribbon(aes(period, ymin = lowerfit, ymax = upperfit, fill = brown_trtmnt), alpha = .5) +
+  geom_ribbon(aes(period, ymin = link_lower, ymax = link_upper, fill = okrat_treatment), alpha = .5) +
   theme_bw() +
-  theme(legend.position = "top")
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8) +
+  geom_point(data = filter(pdat.pred, diff_overlaps_zero), aes(period, 0), color = "red")
 ```
 
-![](gams_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
+![](gams_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ``` r
-n_gam_diff <- difference_smooths(n_gam, smooth = "s(period)")
-
-ggplot(n_gam_diff, aes(period, diff)) +
+ggplot(pdat.pred, aes(period, invlink_fit, color= okrat_treatment)) +
   geom_line() +
-  geom_ribbon(aes(period, ymin = lower,ymax= upper), alpha = .5) +
-  geom_hline(yintercept = 0)
+  geom_ribbon(aes(period, ymin = invlink_lower, ymax = invlink_upper, fill = okrat_treatment), alpha = .5) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8) +
+  geom_point(data = filter(pdat.pred, diff_overlaps_zero), aes(period, 0), color = "red")
 ```
 
-![](gams_files/figure-gfm/unnamed-chunk-4-4.png)<!-- -->
+![](gams_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
 
-I feel like there might be something I’m not grasping here around the
-parametric term? Shouldn’t the dipo\_absent **always** be lower than
-dipo\_present (for the krats on the krat removals)? Unless the
-difference smooths is showing the difference **without taking into
-account the *partial* effect of treatment**
+THis gives me some disquiet so I’m gonna try it using Erica’s data.
+
+This doesn’t quite match what we would think from the `mgcv` plot, I
+think because the `mgcv` plot is showing the difference smooth without
+the intercept adjustment.
+
+<!-- ## removing intercept -->
+
+<!-- ```{r} -->
+
+<!-- nind.predicted[,2] <- 0 -->
+
+<!-- nind.diff.keeppar <- nind.predicted[1:500, ] - nind.predicted[501:1000, ] -->
+
+<!-- nind.diff.vals <- nind.diff.keeppar %*% coef(nind.gam) -->
+
+<!-- nind.diff.se<- sqrt(rowSums((nind.diff.keeppar %*% vcov(nind.gam, unconditional = FALSE)) * nind.diff.keeppar)) -->
+
+<!-- crit <- qnorm(.05/2, lower.tail = FALSE) -->
+
+<!-- upr <- nind.diff.vals + (crit * nind.diff.se) -->
+
+<!-- lwr <- nind.diff.vals - (crit * nind.diff.se) -->
+
+<!-- pdat.diff <- pdat %>% -->
+
+<!--   select(period) %>% -->
+
+<!--   distinct()%>% -->
+
+<!--   mutate(fitted_dif = nind.diff.vals, -->
+
+<!--          upper= upr, -->
+
+<!--          lower = lwr) %>% -->
+
+<!--   mutate(diff_overlaps_zero = (upper * lower) < 0 -->
+
+<!--   ) -->
+
+<!-- ggplot(pdat.diff, aes(period, fitted_dif)) + -->
+
+<!--   geom_line() + -->
+
+<!--   geom_ribbon(aes(period, ymin = lower, ymax = upper), alpha  = .5) + -->
+
+<!--   geom_hline(yintercept = 0) + -->
+
+<!--   geom_point(data = filter(pdat.diff, diff_overlaps_zero), aes(period, 1), color  = "red", size = 2) + -->
+
+<!--   theme_bw() -->
+
+<!-- ``` -->
+
+<!-- The red line shows where the difference between the two smooths' CI is overlapping 0; i.e., we aren't really confident that the two smooths are different. -->
+
+<!-- ```{r} -->
+
+<!-- pdat.pred <- left_join(select(pdat.pred, -diff_overlaps_zero), select(pdat.diff, period, diff_overlaps_zero)) -->
+
+<!-- ggplot(pdat.pred, aes(period, invlink_fit, color= okrat_treatment)) + -->
+
+<!--   geom_line() + -->
+
+<!--   geom_ribbon(aes(period, ymin = invlink_lower, ymax = invlink_upper, fill = okrat_treatment), alpha = .5) + -->
+
+<!--   theme_bw() + -->
+
+<!--   scale_color_viridis_d(end = .8) + -->
+
+<!--   scale_fill_viridis_d(end = .8) + -->
+
+<!--   geom_point(data = filter(pdat.pred, diff_overlaps_zero), aes(period, 0), color = "red") -->
+
+<!-- ``` -->
