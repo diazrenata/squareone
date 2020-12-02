@@ -245,72 +245,211 @@ filter(rat_totals, period == 13) %>%
 
 OMG. O M G.
 
-<!-- ## removing intercept -->
+## Plot
 
-<!-- ```{r} -->
+``` r
+plot_totals <- read.csv(here::here("lore", "1981_competition", "1981_data_plot_totals.csv"))
 
-<!-- nind.predicted[,2] <- 0 -->
+plot_totals <- plot_totals %>%
+  mutate(oplot = as.ordered(plot),
+         okrat_treatment = as.ordered(okrat_treatment))
 
-<!-- nind.diff.keeppar <- nind.predicted[1:500, ] - nind.predicted[501:1000, ] -->
+sg_plot <- filter(plot_totals, type == "small_granivore")
 
-<!-- nind.diff.vals <- nind.diff.keeppar %*% coef(nind.gam) -->
+ggplot(sg_plot, aes(period, nind, group = oplot)) +
+  geom_line() +
+  theme_bw() +
+  facet_wrap(vars(okrat_treatment))
+```
 
-<!-- nind.diff.se<- sqrt(rowSums((nind.diff.keeppar %*% vcov(nind.gam, unconditional = FALSE)) * nind.diff.keeppar)) -->
+![](gams_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
-<!-- crit <- qnorm(.05/2, lower.tail = FALSE) -->
+``` r
+plot.gam <- gam(nind ~ okrat_treatment + oplot + s(period) + s(period, by = okrat_treatment) + s(period, by = oplot), data = sg_plot, family = poisson, method = "REML")
 
-<!-- upr <- nind.diff.vals + (crit * nind.diff.se) -->
+plot(plot.gam, pages= 1, scale = 0)
+```
 
-<!-- lwr <- nind.diff.vals - (crit * nind.diff.se) -->
+![](gams_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
-<!-- pdat.diff <- pdat %>% -->
+``` r
+summary(plot.gam)
+```
 
-<!--   select(period) %>% -->
+    ## 
+    ## Family: poisson 
+    ## Link function: log 
+    ## 
+    ## Formula:
+    ## nind ~ okrat_treatment + oplot + s(period) + s(period, by = okrat_treatment) + 
+    ##     s(period, by = oplot)
+    ## 
+    ## Parametric coefficients:
+    ##                   Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept)        -1.4152     0.1694  -8.356  < 2e-16 ***
+    ## okrat_treatment.L   0.9085     0.3008   3.020  0.00252 ** 
+    ## oplot.L            -0.9704     0.4590  -2.114  0.03448 *  
+    ## oplot.Q             0.0000     0.0000      NA       NA    
+    ## oplot.C             1.0299     0.6360   1.619  0.10541    
+    ## oplot^4            -0.3449     0.3694  -0.934  0.35044    
+    ## oplot^5            -0.3856     0.4180  -0.922  0.35628    
+    ## oplot^6             0.5764     0.5574   1.034  0.30109    
+    ## oplot^7             0.0750     0.5320   0.141  0.88789    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Approximate significance of smooth terms:
+    ##                                          edf    Ref.df Chi.sq p-value    
+    ## s(period)                          7.858e+00 8.620e+00 56.272  <2e-16 ***
+    ## s(period):okrat_treatmentexclosure 1.000e+00 1.001e+00  3.664  0.0557 .  
+    ## s(period):oplot8                   1.458e-05 2.899e-05  0.000  0.5000    
+    ## s(period):oplot11                  1.000e+00 1.000e+00  0.364  0.5461    
+    ## s(period):oplot12                  1.469e+00 1.776e+00  0.933  0.4668    
+    ## s(period):oplot14                  1.000e+00 1.000e+00  0.133  0.7150    
+    ## s(period):oplot15                  4.111e+00 5.061e+00 13.015  0.0251 *  
+    ## s(period):oplot19                  1.000e+00 1.000e+00  0.003  0.9548    
+    ## s(period):oplot21                  2.325e+00 2.926e+00  4.556  0.1873    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Rank: 88/90
+    ## R-sq.(adj) =  0.576   Deviance explained = 54.9%
+    ## -REML = 214.82  Scale est. = 1         n = 280
 
-<!--   distinct()%>% -->
+The plot smooth is significant, esp for plot 15
 
-<!--   mutate(fitted_dif = nind.diff.vals, -->
+``` r
+plotvars <- c('oplot', paste0('s(period):oplot', c(8,11,12,14,15,19,21)))
 
-<!--          upper= upr, -->
+pdat.plot <- as.data.frame(expand.grid(period = seq(min(sg_plot$period), max(sg_plot$period), length.out= 500), okrat_treatment = levels(sg_plot$okrat_treatment), oplot = levels(sg_plot$oplot)[1]))
 
-<!--          lower = lwr) %>% -->
+nind.plot.predicted <- predict(plot.gam, newdata = pdat.plot, type = "lpmatrix", exclude =plotvars)
 
-<!--   mutate(diff_overlaps_zero = (upper * lower) < 0 -->
+nind.plot.link <- predict(plot.gam, newdata = pdat.plot, type = "link", se.fit = T, exclude = plotvars)
 
-<!--   ) -->
 
-<!-- ggplot(pdat.diff, aes(period, fitted_dif)) + -->
+nind.plot.predicted.vals <- plot.gam$family$linkinv(nind.plot.predicted %*% coefficients(plot.gam))
 
-<!--   geom_line() + -->
+pdat.plot.pred <- pdat.plot %>%
+  mutate(predicted = nind.plot.predicted.vals,
+         link = nind.plot.link$fit,
+         se_link = nind.plot.link$se.fit) %>%
+  mutate(invlink_fit = plot.gam$family$linkinv(link),
+         invlink_upper = plot.gam$family$linkinv(link + (2 * se_link)),
+         invlink_lower = plot.gam$family$linkinv(link - (2 * se_link)),
+         link_upper = link + (2 * se_link),
+         link_lower = link - (2 * se_link))
 
-<!--   geom_ribbon(aes(period, ymin = lower, ymax = upper), alpha  = .5) + -->
 
-<!--   geom_hline(yintercept = 0) + -->
+ggplot(pdat.plot.pred, aes(period, link, color= okrat_treatment)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = link_lower, ymax = link_upper, fill = okrat_treatment), alpha = .5) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8)
+```
 
-<!--   geom_point(data = filter(pdat.diff, diff_overlaps_zero), aes(period, 1), color  = "red", size = 2) + -->
+![](gams_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
-<!--   theme_bw() -->
+``` r
+ggplot(pdat.plot.pred, aes(period, invlink_fit, color= okrat_treatment)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = invlink_lower, ymax = invlink_upper, fill = okrat_treatment), alpha = .5) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8)
+```
 
-<!-- ``` -->
+![](gams_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
 
-<!-- The red line shows where the difference between the two smooths' CI is overlapping 0; i.e., we aren't really confident that the two smooths are different. -->
+``` r
+ggplot(pdat.plot.pred, aes(period, link)) +
+  geom_line() +
+ geom_line(data = pdat.pred, inherit.aes = T, color = "red") +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8) +
+  facet_wrap(vars(okrat_treatment))
+```
 
-<!-- ```{r} -->
+![](gams_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
-<!-- pdat.pred <- left_join(select(pdat.pred, -diff_overlaps_zero), select(pdat.diff, period, diff_overlaps_zero)) -->
+``` r
+ggplot(pdat.plot.pred, aes(period, invlink_fit)) +
+  geom_line() +
+ geom_line(data = pdat.pred, inherit.aes = T, color = "red") +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8) +
+  facet_wrap(vars(okrat_treatment))
+```
 
-<!-- ggplot(pdat.pred, aes(period, invlink_fit, color= okrat_treatment)) + -->
+![](gams_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
 
-<!--   geom_line() + -->
+``` r
+nind.plot.diff.keeppar <- nind.plot.predicted[1:500, ] - nind.plot.predicted[501:1000, ]
 
-<!--   geom_ribbon(aes(period, ymin = invlink_lower, ymax = invlink_upper, fill = okrat_treatment), alpha = .5) + -->
+nind.diff.plot.vals <- nind.plot.diff.keeppar %*% coef(plot.gam)
 
-<!--   theme_bw() + -->
 
-<!--   scale_color_viridis_d(end = .8) + -->
+nind.diff.plot.se<- sqrt(rowSums((nind.plot.diff.keeppar %*% vcov(plot.gam, unconditional = FALSE)) * nind.plot.diff.keeppar))
 
-<!--   scale_fill_viridis_d(end = .8) + -->
+crit <- qnorm(.05/2, lower.tail = FALSE)
+plot.upr <- nind.diff.plot.vals + (crit * nind.diff.plot.se)
+plot.lwr <- nind.diff.plot.vals - (crit * nind.diff.plot.se)
 
-<!--   geom_point(data = filter(pdat.pred, diff_overlaps_zero), aes(period, 0), color = "red") -->
 
-<!-- ``` -->
+pdat.plot.diff <- pdat.plot %>%
+  select(period) %>%
+  distinct()%>%
+  mutate(fitted_dif = nind.diff.plot.vals,
+         upper= plot.upr,
+         lower = plot.lwr) %>%
+  mutate(diff_overlaps_zero = (upper * lower) < 0
+  )
+
+ggplot(pdat.plot.diff, aes(period, fitted_dif)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = lower, ymax = upper), alpha  = .5) +
+  geom_hline(yintercept = 0) +
+  geom_point(data = filter(pdat.plot.diff, diff_overlaps_zero), aes(period, 1), color  = "red", size = 2) +
+  theme_bw()
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+``` r
+pdat.plot.pred <- left_join(pdat.plot.pred, select(pdat.plot.diff, period, diff_overlaps_zero))
+```
+
+    ## Joining, by = "period"
+
+``` r
+ggplot(pdat.plot.pred, aes(period, link, color= okrat_treatment)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = link_lower, ymax = link_upper, fill = okrat_treatment), alpha = .5) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8) +
+  geom_point(data = filter(pdat.plot.pred, diff_overlaps_zero), aes(period, 0), color = "red")
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-13-2.png)<!-- -->
+
+``` r
+ggplot(pdat.plot.pred, aes(period, invlink_fit, color= okrat_treatment)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = invlink_lower, ymax = invlink_upper, fill = okrat_treatment), alpha = .5) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8) +
+  geom_point(data = filter(pdat.plot.pred, diff_overlaps_zero), aes(period, 0), color = "red")
+```
+
+![](gams_files/figure-gfm/unnamed-chunk-13-3.png)<!-- -->
+
+``` r
+min(filter(pdat.plot.diff,  !diff_overlaps_zero)$period)
+```
+
+    ## [1] 12.92385

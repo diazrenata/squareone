@@ -204,58 +204,147 @@ filter(rat_totals, period == 13) %>%
 
 OMG. O M G.
 
-<!-- ## removing intercept -->
+
+## Plot
+
+```{r}
+plot_totals <- read.csv(here::here("lore", "1981_competition", "1981_data_plot_totals.csv"))
+
+plot_totals <- plot_totals %>%
+  mutate(oplot = as.ordered(plot),
+         okrat_treatment = as.ordered(okrat_treatment))
+
+sg_plot <- filter(plot_totals, type == "small_granivore")
+
+ggplot(sg_plot, aes(period, nind, group = oplot)) +
+  geom_line() +
+  theme_bw() +
+  facet_wrap(vars(okrat_treatment))
+```
+
+```{r}
+
+plot.gam <- gam(nind ~ okrat_treatment + oplot + s(period) + s(period, by = okrat_treatment) + s(period, by = oplot), data = sg_plot, family = poisson, method = "REML")
+
+plot(plot.gam, pages= 1, scale = 0)
+
+summary(plot.gam)
+
+```
+
+The plot smooth is significant, esp for plot 15
+
+```{r}
+plotvars <- c('oplot', paste0('s(period):oplot', c(8,11,12,14,15,19,21)))
+
+pdat.plot <- as.data.frame(expand.grid(period = seq(min(sg_plot$period), max(sg_plot$period), length.out= 500), okrat_treatment = levels(sg_plot$okrat_treatment), oplot = levels(sg_plot$oplot)[1]))
+
+nind.plot.predicted <- predict(plot.gam, newdata = pdat.plot, type = "lpmatrix", exclude =plotvars)
+
+nind.plot.link <- predict(plot.gam, newdata = pdat.plot, type = "link", se.fit = T, exclude = plotvars)
 
 
-<!-- ```{r} -->
+nind.plot.predicted.vals <- plot.gam$family$linkinv(nind.plot.predicted %*% coefficients(plot.gam))
 
-<!-- nind.predicted[,2] <- 0 -->
-
-<!-- nind.diff.keeppar <- nind.predicted[1:500, ] - nind.predicted[501:1000, ] -->
-
-<!-- nind.diff.vals <- nind.diff.keeppar %*% coef(nind.gam) -->
-
-
-<!-- nind.diff.se<- sqrt(rowSums((nind.diff.keeppar %*% vcov(nind.gam, unconditional = FALSE)) * nind.diff.keeppar)) -->
-
-<!-- crit <- qnorm(.05/2, lower.tail = FALSE) -->
-<!-- upr <- nind.diff.vals + (crit * nind.diff.se) -->
-<!-- lwr <- nind.diff.vals - (crit * nind.diff.se) -->
+pdat.plot.pred <- pdat.plot %>%
+  mutate(predicted = nind.plot.predicted.vals,
+         link = nind.plot.link$fit,
+         se_link = nind.plot.link$se.fit) %>%
+  mutate(invlink_fit = plot.gam$family$linkinv(link),
+         invlink_upper = plot.gam$family$linkinv(link + (2 * se_link)),
+         invlink_lower = plot.gam$family$linkinv(link - (2 * se_link)),
+         link_upper = link + (2 * se_link),
+         link_lower = link - (2 * se_link))
 
 
-<!-- pdat.diff <- pdat %>% -->
-<!--   select(period) %>% -->
-<!--   distinct()%>% -->
-<!--   mutate(fitted_dif = nind.diff.vals, -->
-<!--          upper= upr, -->
-<!--          lower = lwr) %>% -->
-<!--   mutate(diff_overlaps_zero = (upper * lower) < 0 -->
-<!--   ) -->
+ggplot(pdat.plot.pred, aes(period, link, color= okrat_treatment)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = link_lower, ymax = link_upper, fill = okrat_treatment), alpha = .5) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8)
 
-<!-- ggplot(pdat.diff, aes(period, fitted_dif)) + -->
-<!--   geom_line() + -->
-<!--   geom_ribbon(aes(period, ymin = lower, ymax = upper), alpha  = .5) + -->
-<!--   geom_hline(yintercept = 0) + -->
-<!--   geom_point(data = filter(pdat.diff, diff_overlaps_zero), aes(period, 1), color  = "red", size = 2) + -->
-<!--   theme_bw() -->
+ggplot(pdat.plot.pred, aes(period, invlink_fit, color= okrat_treatment)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = invlink_lower, ymax = invlink_upper, fill = okrat_treatment), alpha = .5) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8)
 
-<!-- ``` -->
+```
 
-<!-- The red line shows where the difference between the two smooths' CI is overlapping 0; i.e., we aren't really confident that the two smooths are different. -->
-
-<!-- ```{r} -->
-
-<!-- pdat.pred <- left_join(select(pdat.pred, -diff_overlaps_zero), select(pdat.diff, period, diff_overlaps_zero)) -->
+```{r}
+ggplot(pdat.plot.pred, aes(period, link)) +
+  geom_line() +
+ geom_line(data = pdat.pred, inherit.aes = T, color = "red") +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8) +
+  facet_wrap(vars(okrat_treatment))
 
 
 
-<!-- ggplot(pdat.pred, aes(period, invlink_fit, color= okrat_treatment)) + -->
-<!--   geom_line() + -->
-<!--   geom_ribbon(aes(period, ymin = invlink_lower, ymax = invlink_upper, fill = okrat_treatment), alpha = .5) + -->
-<!--   theme_bw() + -->
-<!--   scale_color_viridis_d(end = .8) + -->
-<!--   scale_fill_viridis_d(end = .8) + -->
-<!--   geom_point(data = filter(pdat.pred, diff_overlaps_zero), aes(period, 0), color = "red") -->
-<!-- ``` -->
+ggplot(pdat.plot.pred, aes(period, invlink_fit)) +
+  geom_line() +
+ geom_line(data = pdat.pred, inherit.aes = T, color = "red") +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8) +
+  facet_wrap(vars(okrat_treatment))
+
+```
+
+```{r}
+
+nind.plot.diff.keeppar <- nind.plot.predicted[1:500, ] - nind.plot.predicted[501:1000, ]
+
+nind.diff.plot.vals <- nind.plot.diff.keeppar %*% coef(plot.gam)
 
 
+nind.diff.plot.se<- sqrt(rowSums((nind.plot.diff.keeppar %*% vcov(plot.gam, unconditional = FALSE)) * nind.plot.diff.keeppar))
+
+crit <- qnorm(.05/2, lower.tail = FALSE)
+plot.upr <- nind.diff.plot.vals + (crit * nind.diff.plot.se)
+plot.lwr <- nind.diff.plot.vals - (crit * nind.diff.plot.se)
+
+
+pdat.plot.diff <- pdat.plot %>%
+  select(period) %>%
+  distinct()%>%
+  mutate(fitted_dif = nind.diff.plot.vals,
+         upper= plot.upr,
+         lower = plot.lwr) %>%
+  mutate(diff_overlaps_zero = (upper * lower) < 0
+  )
+
+ggplot(pdat.plot.diff, aes(period, fitted_dif)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = lower, ymax = upper), alpha  = .5) +
+  geom_hline(yintercept = 0) +
+  geom_point(data = filter(pdat.plot.diff, diff_overlaps_zero), aes(period, 1), color  = "red", size = 2) +
+  theme_bw()
+
+
+pdat.plot.pred <- left_join(pdat.plot.pred, select(pdat.plot.diff, period, diff_overlaps_zero))
+
+
+ggplot(pdat.plot.pred, aes(period, link, color= okrat_treatment)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = link_lower, ymax = link_upper, fill = okrat_treatment), alpha = .5) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8) +
+  geom_point(data = filter(pdat.plot.pred, diff_overlaps_zero), aes(period, 0), color = "red")
+
+
+ggplot(pdat.plot.pred, aes(period, invlink_fit, color= okrat_treatment)) +
+  geom_line() +
+  geom_ribbon(aes(period, ymin = invlink_lower, ymax = invlink_upper, fill = okrat_treatment), alpha = .5) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8) +
+  geom_point(data = filter(pdat.plot.pred, diff_overlaps_zero), aes(period, 0), color = "red")
+
+min(filter(pdat.plot.diff,  !diff_overlaps_zero)$period)
+
+```
