@@ -1,0 +1,39 @@
+---
+title: "Plots from Heske, Brown, and Mistry 1994"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rats <- read.csv(here::here("lore", "1994_longterm", "1994_data_complete.csv"), stringsAsFactors = F)
+rat_totals <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars.csv"), stringsAsFactors = F)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r, echo = F}
+rats_thrmo_avg <- rat_totals %>%
+  filter(period > 2) %>%
+  mutate(three_month_section = floor((period) / 3) + 1) %>%
+  group_by(three_month_section, type, heske_trtmnt) %>%
+  summarize(nind = mean(nind)) %>%
+  ungroup()
+
+ggplot(filter(rats_thrmo_avg, type != "other", heske_trtmnt != "exclosure_1988"), aes(three_month_section, nind, color = heske_trtmnt)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8)
+
+ggplot(filter(rat_totals, type != "other", heske_trtmnt != "exclosure_1988", period > 2), aes(period, nind, color = heske_trtmnt)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8)
+
+```
