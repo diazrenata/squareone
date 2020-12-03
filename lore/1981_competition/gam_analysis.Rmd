@@ -1,0 +1,125 @@
+---
+title: "1981 analysis with GAMs"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.width = 4, fig.height=3)
+rats <- read.csv(here::here("lore", "1981_competition", "1981_data_complete.csv"), stringsAsFactors = F)
+rat_totals <- read.csv(here::here("lore", "1981_competition", "1981_data_statevars.csv"), stringsAsFactors = F)
+rat_plot_totals <- read.csv(here::here("lore", "1981_competition", "1981_data_plot_totals.csv"), stringsAsFactors = F)
+library(dplyr)
+library(mgcv)
+library(ggplot2)
+source(here::here("lore", "1981_competition", "gams_fxns.R"))
+
+
+
+rat_totals <- rat_totals %>%
+  mutate(krat_treatment = ifelse(brown_trtmnt == "dipo_present", "control", "exclosure")) %>%
+  mutate(okrat_treatment = ordered(krat_treatment))
+
+```
+
+```{r, echo = F, fig.dim = c(6,5)}
+
+ggplot(filter(rat_totals, type != "other"), aes(period, nind, color = okrat_treatment)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_vline(xintercept = 3.5) +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8) +
+  theme(legend.position = "top")
+
+```
+
+```{r sg}
+sg <- filter(rat_totals, type == "small_granivore")
+
+print(plot_orig_data(sg))
+
+sg.gam <- gam(nind ~ okrat_treatment + s(period) + s(period, by = okrat_treatment), data = sg, family = poisson, method = "REML")
+
+summary(sg.gam)
+
+sg.pdat <- make_pdat(sg)
+sg.pred <- get_predicted_vals(sg.gam, sg.pdat)
+
+sg.diff <- get_exclosure_diff(sg.gam, sg.pdat)
+
+print(plot_exclosure_diff(sg.diff))
+
+sg.pred <- add_exclosure_diff(sg.pred, sg.diff)
+
+print(plot_link_pred(sg.pred))
+
+print(plot_fitted_pred(sg.pred))
+
+```
+
+The small granivore timeseries start out separate (before the treatments are even implemented). Later they diverge starting around period `r trunc(min(filter(sg.pred, !diff_overlaps_zero, period > 4)$period))` and do not come back together.
+
+```{r dipo}
+dipo <- filter(rat_totals, type == "dipo")
+
+print(plot_orig_data(dipo))
+
+dipo.gam <- gam(nind ~ okrat_treatment + s(period) + s(period, by = okrat_treatment), data = dipo, family = poisson, method = "REML")
+
+summary(dipo.gam)
+
+dipo.pdat <- make_pdat(dipo)
+dipo.pred <- get_predicted_vals(dipo.gam, dipo.pdat)
+
+dipo.diff <- get_exclosure_diff(dipo.gam, dipo.pdat)
+
+print(plot_exclosure_diff(dipo.diff))
+
+dipo.pred <- add_exclosure_diff(dipo.pred, dipo.diff)
+
+print(plot_link_pred(dipo.pred))
+
+print(plot_fitted_pred(dipo.pred))
+
+
+```
+
+The dipo timeseries diverge starting around period `r trunc(min(filter(dipo.pred, !diff_overlaps_zero)$period))` and do not come back together.
+
+
+
+```{r small_omniv}
+small_omniv <- filter(rat_totals, type == "small_omnivore")
+
+print(plot_orig_data(small_omniv))
+
+small_omniv.gam <- gam(nind ~ okrat_treatment + s(period) + s(period, by = okrat_treatment), data = small_omniv, family = poisson, method = "REML")
+
+summary(small_omniv.gam)
+
+small_omniv.pdat <- make_pdat(small_omniv)
+small_omniv.pred <- get_predicted_vals(small_omniv.gam, small_omniv.pdat)
+
+small_omniv.diff <- get_exclosure_diff(small_omniv.gam, small_omniv.pdat)
+
+print(plot_exclosure_diff(small_omniv.diff))
+
+small_omniv.pred <- add_exclosure_diff(small_omniv.pred, small_omniv.diff)
+
+print(plot_link_pred(small_omniv.pred))
+
+print(plot_fitted_pred(small_omniv.pred))
+
+
+```
+
+```{r, fig.dim = c(4, 8)}
+
+sg_res <- plot_fitted_pred(sg.pred)
+dipo_res <- plot_fitted_pred(dipo.pred)
+so_res <- plot_fitted_pred(small_omniv.pred)
+
+gridExtra::grid.arrange(grobs = list(sg_res, dipo_res, so_res), ncol = 1)
+```
