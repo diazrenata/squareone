@@ -166,3 +166,32 @@ constitent treatment effect in the distribution of cotton rats other
 than that explainable by their positive correlation with grass cover,
 indicating that the direct interactions between cotton and krats were
 minimal.”
+
+### GAM planning
+
+``` r
+ggplot(filter(rat_totals, type == "small_granivore"), aes(as.Date(censusdate), nind, color= trtmnt, linetype = time_period)) +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis_d(end = .8, direction = -1) +
+  theme(legend.position = "top")+
+  geom_vline(xintercept = as.Date("1988-01-01"))
+```
+
+![](thirteen_years_lags_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+There are two comparisons to get to the *questions* -
+
+  - New exclosures vs. new controls
+  - New exclosures vs. old exclosures
+
+& then others - that may be of groundwork?
+
+  - New exclosures pre-treatment vs all controls
+  - New controls vs old controls throughout
+
+One way to approach this might be to fit the GAM by timeperiod\_trmtnt
+(so 4 levels) and then extract the difference smooths pair-wise.
+However, this feels inelegant and possibly not valid. It might be more
+appropriate to do something like by(timeperiod) and by(treatment). But
+this needs more thought.

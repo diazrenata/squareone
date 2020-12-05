@@ -167,3 +167,28 @@ There's some commentary on this in the Heske discussion:
 "RM, the one of the five most typically associated with grasslands, was captured significantly more often on the original than on the new krat exclosures. This difference reflects an additional contribution of an indirect effect of the long-term changes in vegetation. The distribution of harvest mice at our site was therefore affected by krats through both direct and indirect pathways."
 
 They go on to look at cotton rats, which are not small but like grass. "Cotton rats are as large or larger than krats, folivorous and grassland specialists. Therefore we expect that they are not intimidated by Dipo, do not compete with them for food, and prefer grassy habitats. Captures of both cotton rats and RM are significantly // grass cover at the site, whereas other rodents are not." "As expected, cotton rats were more abundant on the original than on the new exclosures. There was no constitent treatment effect in the distribution of cotton rats other than that explainable by their positive correlation with grass cover, indicating that the direct interactions between cotton and krats were minimal."
+
+
+### GAM planning
+
+```{r}
+
+ggplot(filter(rat_totals, type == "small_granivore"), aes(as.Date(censusdate), nind, color= trtmnt, linetype = time_period)) +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis_d(end = .8, direction = -1) +
+  theme(legend.position = "top")+
+  geom_vline(xintercept = as.Date("1988-01-01"))
+```
+
+There are two comparisons to get to the *questions* -
+
+* New exclosures vs. new controls
+* New exclosures vs. old exclosures
+
+& then others - that may be of groundwork?
+
+* New exclosures pre-treatment vs all controls
+* New controls vs old controls throughout
+
+One way to approach this might be to fit the GAM by timeperiod_trmtnt (so 4 levels) and then extract the difference smooths pair-wise. However, this feels inelegant and possibly not valid. It might be more appropriate to do something like by(timeperiod) and by(treatment). But this needs more thought. 
