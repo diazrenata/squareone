@@ -132,3 +132,37 @@ ggplot(filter(rat_totals, type == "small_granivore", period > 100, period < 155)
 ```
 
 ![](thirteen_years_lags_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+These plots, to me, also aren’t strongly supportive of the notion that
+**grassiness** mediates an indirect effect of krats on small granivores.
+The grassy (1970s) plots don’t have more small granivores than the
+not-grassy plots once the krats are removed (1980s). If the grassiness
+were a habitat effect, the grassy plots should have higher abundances
+than the newly manipulated, but not yet grassy, plots.
+
+There’s some commentary on this in the Heske discussion:
+
+“Four out of five species of small granivores were not significantly
+more abundant on the original exclosures than on the new exclosures.
+These are *species typical of desert scrub, or, in the case of PM, not
+strongly associated with either scrub or grassland.* The effect of krats
+on these species appears to be primarily through direct competition….”
+
+“RM, the one of the five most typically associated with grasslands, was
+captured significantly more often on the original than on the new krat
+exclosures. This difference reflects an additional contribution of an
+indirect effect of the long-term changes in vegetation. The distribution
+of harvest mice at our site was therefore affected by krats through both
+direct and indirect pathways.”
+
+They go on to look at cotton rats, which are not small but like grass.
+“Cotton rats are as large or larger than krats, folivorous and
+grassland specialists. Therefore we expect that they are not intimidated
+by Dipo, do not compete with them for food, and prefer grassy habitats.
+Captures of both cotton rats and RM are significantly // grass cover at
+the site, whereas other rodents are not.” “As expected, cotton rats were
+more abundant on the original than on the new exclosures. There was no
+constitent treatment effect in the distribution of cotton rats other
+than that explainable by their positive correlation with grass cover,
+indicating that the direct interactions between cotton and krats were
+minimal.”
