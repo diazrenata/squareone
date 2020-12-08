@@ -30,13 +30,13 @@ get_predicted_vals <- function(mod, pdat) {
   return(pdat.pred)
 }
 
-get_exclosure_diff <- function(mod, pdat, comparison_variable = "treatment") {
+get_exclosure_diff <- function(mod, pdat, comparison_variable = "treatment", reference_level = 1, comparison_level = 2) {
   
   modlp <- predict(mod, newdata = pdat, type = "lpmatrix")
   
-  reference_rows <- which(pdat[,comparison_variable] == levels(pdat[,comparison_variable])[1])
+  reference_rows <- which(pdat[,comparison_variable] == levels(pdat[,comparison_variable])[reference_level])
   
- comparison_rows <- which(pdat[,comparison_variable] ==levels(pdat[,comparison_variable])[2])
+ comparison_rows <- which(pdat[,comparison_variable] ==levels(pdat[,comparison_variable])[comparison_level])
   
   moddiff <- modlp[reference_rows, ] - modlp[comparison_rows, ]
   

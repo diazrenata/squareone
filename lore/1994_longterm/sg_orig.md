@@ -101,7 +101,7 @@ gam.check(sg.gam)
     ## indicate that k is too low, especially if edf is close to k'.
     ## 
     ##                              k'   edf k-index p-value
-    ## s(period)                 24.00 18.42    1.01    0.61
+    ## s(period)                 24.00 18.42    1.01    0.66
     ## s(period):trtmntexclosure 24.00  7.14    1.01    0.60
 
 ``` r

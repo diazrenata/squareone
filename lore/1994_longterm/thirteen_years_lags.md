@@ -189,9 +189,3 @@ There are two comparisons to get to the *questions* -
 
   - New exclosures pre-treatment vs all controls
   - New controls vs old controls throughout
-
-One way to approach this might be to fit the GAM by timeperiod\_trmtnt
-(so 4 levels) and then extract the difference smooths pair-wise.
-However, this feels inelegant and possibly not valid. It might be more
-appropriate to do something like by(timeperiod) and by(treatment). But
-this needs more thought.

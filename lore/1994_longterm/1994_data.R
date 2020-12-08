@@ -5,7 +5,7 @@ rats <- portalr::summarise_individual_rodents(clean = T, type = "Rodents", lengt
 rats <- rats %>%
   filter(censusdate < "1991-02-01",
          censusdate > "1977-07-01") %>%
-  filter(plot %in% c(3, 8, 11, 12, 14, 15, 19, 21, 6, 13, 18, 20, 2, 22)) %>%
+  filter(plot %in% c(3, 8, 11, 12, 14, 15, 19, 21, 6, 13, 18, 20, 2, 4, 17, 22)) %>%
   mutate(trtmnt_1977 = ifelse(
     plot %in% c(8, 11, 12, 14),
     "control",
@@ -15,7 +15,7 @@ rats <- rats %>%
     trtmnt_1988 = ifelse(
       plot %in% c(6, 13, 18, 20),
       "exclosure",
-      ifelse(plot %in% c(2, 8, 12, 22),
+      ifelse(plot %in% c(2, 4, 17, 22),
              "control",
              NA)))
 
