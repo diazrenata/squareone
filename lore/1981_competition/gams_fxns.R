@@ -5,7 +5,7 @@ make_pdat <- function(orig_dat, np = 500, include_plot = F) {
   pdat$type <- orig_dat$type[1]
   
   if(include_plot) {
-    pdat$plot <- levels(orig_dat$plot)[1]
+    pdat$oplot <- levels(orig_dat$oplot)[1]
   }
   
   return(pdat)

@@ -86,22 +86,36 @@ repeat_rats_zeros <- left_join(repeat_rats_all_possible, select(repeat_rats_tota
 
 write.csv(repeat_rats_zeros, here::here("lore", "1994_longterm", "1994_data_statevars_1988.csv"), row.names = F)
 
-# rats <- read.csv(here::here("lore", "1994_longterm", "1994_data_complete.csv"), stringsAsFactors = F) %>%
-#   mutate(plot = ordered(plot))
-# 
-# rat_plot_totals <- rats  %>%
-#   group_by(type, heske_trtmnt, period, plot) %>%
-#   summarize(nind = dplyr::n())
-# 
-# 
-# rats_all_possible <- expand.grid(period = unique(rat_plot_totals$period), type = unique(rat_plot_totals$type), plot = unique(rat_plot_totals$plot)) %>%
-#   ungroup() %>%
-#   left_join(distinct(select(rats, plot, heske_trtmnt)))
-# 
-# rats_plot_zeros <- rats_all_possible %>%
-#   left_join(rat_plot_totals) %>%
-#   mutate(nind = ifelse(is.na(nind), 0, nind)) 
-# 
-# write.csv(rats_plot_zeros, here::here("lore", "1994_longterm", "1994_data_plot_totals.csv"), row.names = F)
+rats <- read.csv(here::here("lore", "1994_longterm", "1994_data_complete.csv"), stringsAsFactors = F) 
+
+rat_plot_totals <- rats  %>%
+  group_by(plot, period, type) %>%
+  summarize(nind = dplyr::n(),
+            biomass = sum(wgt, na.rm= T),
+            energy = sum(energy, na.rm = T)) %>%
+  ungroup()
+
+
+rats_all_possible <- expand.grid(period = unique(rat_plot_totals$period), type = unique(rat_plot_totals$type), plot = unique(rat_plot_totals$plot))
+
+rats_plot_zeros <- rats_all_possible %>%
+  left_join(rat_plot_totals) %>%
+  mutate(nind = ifelse(is.na(nind), 0, nind),
+         biomass = ifelse(is.na(biomass), 0, biomass),
+         energy = ifelse(is.na(energy), 0, energy))
+
+rats_plot_types <- rats %>%
+  select(plot, trtmnt_1977, trtmnt_1988) %>%
+  distinct() %>%
+  mutate(plot_type = ifelse(trtmnt_1977 == "exclosure", "orig_exclosure",
+    ifelse(trtmnt_1977 == "control", "orig_control", NA))) %>%
+  mutate(plot_type = ifelse(is.na(plot_type), ifelse(trtmnt_1988 == "exclosure", "second_exclosure",
+                                                     ifelse(trtmnt_1988 == "control", "second_control", NA)), plot_type)) %>%
+  select(plot, plot_type)
+
+
+rats_plot_zeros <- left_join(rats_plot_zeros, rats_plot_types)
+
+write.csv(rats_plot_zeros, here::here("lore", "1994_longterm", "1994_data_plot_totals.csv"), row.names = F)
 
 

@@ -1,0 +1,133 @@
+---
+title: "Small granivores originals"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rats <- read.csv(here::here("lore", "1994_longterm", "1994_data_complete.csv"), stringsAsFactors = F)
+rat_plot_totals <- read.csv(here::here("lore", "1994_longterm", "1994_data_plot_totals.csv"), stringsAsFactors = F)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r}
+
+rat_plot_totals <- rat_plot_totals %>%
+  mutate(plot_type = factor(plot_type),
+         plot = factor(plot)) %>%
+  mutate(oplot_type = ordered(plot_type),
+         oplot = ordered(plot))
+```
+
+
+```{r}
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+sg_all<- filter(rat_plot_totals, type == "small_granivore")
+
+ggplot(sg_all, aes(period, group = oplot,  nind, color = oplot_type)) +
+  geom_line(size = 2) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) + 
+  theme(legend.position = "top") + facet_wrap(vars(oplot_type))
+
+library(mgcv)
+
+sg.gam <- gam(nind ~ plot_type + s(period, k = 10) + s(period, by = oplot_type, k = 10) + plot + s(period, by = oplot, k = 10), family = "poisson", data = sg_all, method = "REML", control = gam.control(nthreads = 4))
+summary(sg.gam)
+
+gam.check(sg.gam)
+
+sg.pdat <- make_pdat(sg_all, comparison_variable = "oplot_type", include_plot = T) %>%
+  mutate(plot_type = levels(sg_all$plot_type)[1],
+         plot = levels(sg_all$plot)[1])
+sg.pred <- get_predicted_vals(sg.gam, sg.pdat)
+
+
+#sg.pred <- add_exclosure_diff(sg.pred, sg.diff)
+
+print(plot_link_pred(sg.pred, comparison_variable = "oplot_type"))
+
+print(plot_fitted_pred(sg.pred, comparison_variable = "oplot_type"))
+
+
+seventies_pred <- filter(sg.pred, grepl("orig", oplot_type))
+print(plot_fitted_pred(seventies_pred, comparison_variable = "oplot_type"))
+
+seventies_diff <- get_exclosure_diff(sg.gam, sg.pred, comparison_variable = "oplot_type", reference_level = 1, comparison_level = 2)
+
+print(plot_exclosure_diff(seventies_diff))
+
+print(plot_fitted_pred(add_exclosure_diff(seventies_pred, seventies_diff), comparison_variable = "oplot_type"))
+
+```
+
+
+Two things. One, this now gives v different results than we expected. Two, this model is definitely wrong or missing something somewhere, because the exclosures are definitely NOT BELOW the controls. See period 50-100 - the model fit has the exclosures 
+
+```{r}
+
+seventies_diff %>%
+  filter(diff_overlaps_zero) %>%
+  filter(period == max(period)) %>%
+  distinct()
+
+eighties_pred <- filter(sg.pred, grepl("second", oplot_type))
+
+print(plot_fitted_pred(eighties_pred, comparison_variable = "oplot_type"))
+
+eighties_diff <- get_exclosure_diff(sg.gam, sg.pred, comparison_variable = "oplot_type", reference_level = 3, comparison_level = 4)
+
+print(plot_exclosure_diff(eighties_diff))
+
+eighties_pred <- add_exclosure_diff(eighties_pred, eighties_diff)
+print(plot_fitted_pred(eighties_pred, comparison_variable = "oplot_type"))
+
+max(eighties_pred$period [ which(eighties_pred$diff_overlaps_zero)])
+
+# filter(rat_totals, period > 116, period < 122) %>%
+#   select(period, censusdate) %>%
+#   distinct()
+
+
+controls_pred <- filter(sg.pred, grepl("control", oplot_type))
+print(plot_fitted_pred(controls_pred, comparison_variable = "oplot_type"))
+
+controls_diff <- get_exclosure_diff(sg.gam, sg.pred, comparison_variable = "oplot_type", reference_level = 1, comparison_level = 3)
+print(plot_exclosure_diff(controls_diff))
+
+controls_pred <- add_exclosure_diff(controls_pred, controls_diff)
+
+print(plot_fitted_pred(controls_pred, comparison_variable = "oplot_type"))
+
+exclosures_pred <- filter(sg.pred, grepl("exclosure", oplot_type))
+print(plot_fitted_pred(exclosures_pred, comparison_variable = "oplot_type"))
+
+exclosures_diff <- get_exclosure_diff(sg.gam, sg.pred, comparison_variable = "oplot_type", reference_level = 2, comparison_level = 4)
+print(plot_exclosure_diff(exclosures_diff))
+
+exclosures_pred <- add_exclosure_diff(exclosures_pred, exclosures_diff)
+print(plot_fitted_pred(exclosures_pred, comparison_variable = "oplot_type"))
+
+exclosures_pred %>%
+  filter(period > 100) %>%
+  filter(diff_overlaps_zero) %>%
+  select(period) %>%
+  distinct() %>%
+  filter(period == min(period))
+
+
+# 
+# sg.diff <- get_exclosure_diff(sg.gam, sg.pdat,comparison_variable = "trtmnt")
+# 
+# print(plot_exclosure_diff(sg.diff) +
+#         geom_vline(xintercept = 35))
+# 
+# 
+# min(sg.diff$period[ which(!sg.diff$diff_overlaps_zero)])
+
+```
+
+ 

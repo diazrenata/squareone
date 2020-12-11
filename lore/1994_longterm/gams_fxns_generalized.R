@@ -8,7 +8,7 @@ make_pdat <- function(orig_dat, np = 500, include_plot = F, comparison_variable 
   colnames(pdat)[ which(colnames(pdat) == "compare_var")] <- comparison_variable
   
   if(include_plot) {
-    pdat$plot <- levels(orig_dat$plot)[1]
+    pdat$oplot <- levels(orig_dat$oplot)[1]
   }
   
   return(pdat)
