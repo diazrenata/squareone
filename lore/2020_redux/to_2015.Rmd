@@ -55,11 +55,15 @@ sg <- filter(rats_types_totals, type == "small_granivore") %>%
 library(mgcv)
 source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
 
-sg.mod <- gam(nind ~  treatment + s(period) + s(period, by = treatment) + oplot + s(period, by = oplot), family = "poisson", data  = sg)
+#sg.mod <- gam(nind ~  treatment + s(period, k = 70) + s(period, by = treatment, k = 70), family = "poisson", data  = sg)
 
-#gam.check(sg.mod)
+sg.mod <- gam(nind ~  treatment + s(period, k = 10) + s(period, by = treatment, k = 10), family = "poisson", data  = sg)
 
-sg.pdat <- make_pdat(sg, include_plot = T)
+summary(sg.mod)
+
+gam.check(sg.mod)
+
+sg.pdat <- make_pdat(sg, include_plot = F)
 
 sg.pred <- get_predicted_vals(sg.mod, sg.pdat)
 
@@ -98,96 +102,8 @@ plot_fitted_pred(filter(sg.origdiff, treatment != "new_exclosure"))
 So I'd caution against over-interpreting this, because there are issues with the GAM (gam.check suggests k is too low, but fitting higher k takes a long time and sometimes gets into weird spaces where the fitted values are not remotely realistic). However, it's suggestive that the difference in the **number of small granivores** on control v. exclosure plots has declined over time. 
 
 
-```{r}
-
-
-
-ggplot(filter(rats_types_totals, type == "small_granivore", type != "other", treatment != "new_exclosure"), aes(period, nind, group = plot, color = treatment)) +
-  geom_smooth(method = "gam", se = F, size = 2) +
-  theme_bw() +
-  scale_color_viridis_d(end = .8) 
-
-
-
-ggplot(filter(rats_types_totals, type == "small_granivore", type != "other", treatment != "new_exclosure"), aes(period, nind, group = plot, color = treatment)) +
-geom_line(size = 2, alpha = .5)+  theme_bw() +
-  scale_color_viridis_d(end = .8)
-
-ggplot(filter(rats_types_totals, type == "small_granivore", type != "other", treatment != "new_exclosure"), aes(period, nind, group = plot, color = treatment)) +
-geom_line(size = 2)+  theme_bw() +
-  scale_color_viridis_d(end = .8) +
-  xlim(200, 250) +
-  ylim(0,10)
-
-ggplot(filter(rats_types_totals, type == "small_granivore", type != "other", treatment != "new_exclosure"), aes(period, nind, group = plot, color = treatment)) +
-geom_line(size = 2)+  theme_bw() +
-  scale_color_viridis_d(end = .8) +
-  xlim(300, 450)
-
-
-```
-
-You can see this particularly in the 375-430 range, although note that even when the GAM thinks there is a difference (the 200s) you still get a little overlap.
-
 Assuming this result held - would there be uestions then, whether the strength of the competitive effect of dipo on small granivores has weakened? This is one way of measuring that effect, but I'm not sure. There's the finding (from Erica's paper) that the reintroduction of krats made the small granivores "flee" - although on digging, I don't (right away) find evidence of that? E's paper is about how the treatment plots compare to controls once they are switched back to controls. Ellen's paper is actually that PP increases its preference for CONTROLS over EXCLOSURES after PB shows up.
 
-```{r}
-
-pp <- filter(rats, species == "PP") %>%
-  select(period, plot, treatment) %>%
-  group_by(period, plot, treatment) %>%
-  summarize(nind = dplyr::n()) %>%
-  ungroup()
-
-
-ggplot(filter(pp, treatment != "new_exclosure"), aes(period, nind, color = treatment, group = plot)) +
-  geom_smooth(method = "gam", se = F, size = 2) +
-  theme_bw() +
-  scale_color_viridis_d(end = .8)
-
-```
-
-<!-- here I was trying to see if the contributions from dipo/balieys have shrunk over time.... -->
-
-<!-- ```{r} -->
-
-<!-- rats_layer_cake <- rats %>% -->
-<!--   mutate(layer_cake = ifelse(is.na(species), "other", ifelse(species == "PB", "baileys", ifelse(type == "small_granivore", "other_smgran", ifelse(type == "dipo", "dipo", "other")))))%>%  -->
-<!-- mutate(plot = factor(plot), -->
-<!--          treatment = factor(treatment)) %>% -->
-<!--   select(period, treatment, layer_cake, plot, energy) %>% -->
-<!--   group_by(period, treatment, plot, layer_cake) %>% -->
-<!--   summarize(nind = dplyr::n(), -->
-<!--             totale = sum(energy))  %>% -->
-<!--   ungroup() %>% -->
-<!--   group_by(period, treatment, plot)%>% -->
-<!--   mutate(total_nind = sum(nind), -->
-<!--          total_totale = sum(totale)) %>% -->
-<!--   ungroup() -->
-
-<!-- ggplot(rats_layer_cake, aes(period, total_nind, group = plot, color = treatment)) + -->
-<!--   geom_line(size = 2) + -->
-<!--   theme_bw()+ -->
-<!--   scale_color_viridis_d(end = .8)  -->
-
-
-
-<!-- ggplot(rats_layer_cake, aes(period, total_nind, group = plot, color = treatment)) + -->
-<!--   geom_line(size = 2) + -->
-<!--   theme_bw()+ -->
-<!--   scale_color_viridis_d(end = .8) + -->
-<!--   xlim(0, 50) -->
-
-
-
-<!-- ggplot(rats_layer_cake, aes(period, total_nind, group = plot, color = treatment)) + -->
-<!--   geom_line(size = 2) + -->
-<!--   theme_bw()+ -->
-<!--   scale_color_viridis_d(end = .8) + -->
-<!--   xlim(350, 400) -->
-<!-- ``` -->
-
-Lending to a mental model of, like a cake with frosting (instead of, IDK, a homogenous bowl of frosting?). Where the current situation on the controls is there's a sponge of small granivores + a layer of frosting of dipo. Removing the dipo doesn't really affect the underlying PP situation. As opposed to, if they were substitutable, you'd see the removal of dipo --> more smgran. But I'm not sure, I'm pretty tired and distracted.
 
 ```{r}
 
@@ -202,29 +118,10 @@ plot_fitted_pred(filter(sg.newdiff, treatment != "orig_exclosure"))
 ```
 
 
-
-# Overall nind
-
-
 ```{r}
 
-rats_overall_totals <- rats %>% 
-mutate(plot = factor(plot),
-         treatment = factor(treatment)) %>%
-  #mutate(plot = as.ordered(plot),
- #        treatment = as.ordered(treatment)) %>%
-  select(period, treatment, plot, energy) %>%
-  group_by(period, treatment, plot) %>%
-  summarize(nind = dplyr::n(),
-            totale = sum(energy))  %>%
-  ungroup()  %>%
-  mutate(oplot = ordered(plot, levels = c(4,2,3,8,11,14,15,17,18,21,22)),
-         treatment = as.ordered(treatment)) %>%
-  as.data.frame()
 
-ggplot(rats_overall_totals, aes(period, nind, group = plot, color = treatment)) +
-  geom_smooth(method = "gam", se = F, size = 2) +
-  theme_bw() +
-  scale_color_viridis_d(end = .8) 
+plot_fitted_pred(filter(sg.origdiff, treatment != "new_exclosure", period > 400))
+
 
 ```
