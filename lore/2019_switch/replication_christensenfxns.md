@@ -22,8 +22,6 @@ library(dplyr)
 library(mgcv)
 ```
 
-    ## Warning: package 'mgcv' was built under R version 4.0.3
-
     ## Loading required package: nlme
 
     ## 
@@ -38,12 +36,8 @@ library(mgcv)
 ``` r
 library(ggplot2)
 library(cowplot)
-```
 
-    ## Warning: package 'cowplot' was built under R version 4.0.3
-
-``` r
-source(here::here("lore", "2020_switch", "FinalAnalysis", 'analysis_functions.R'))
+source(here::here("lore", "2019_switch", "FinalAnalysis", 'analysis_functions.R'))
 theme_set(theme_bw())
 #cbPalette <- c( "#e19c02","#999999", "#56B4E9", "#0072B2", "#D55E00", "#F0E442", "#009E73", "#CC79A7")
 cbbPalette <- c("#000000", "#009E73", "#e79f00", "#9ad0f3", "#0072B2", "#D55E00", 
@@ -52,7 +46,7 @@ cbbPalette <- c("#000000", "#009E73", "#e79f00", "#9ad0f3", "#0072B2", "#D55E00"
 
 # ==========================================================================================
 # Number of dipodomys
-dipo <- read.csv(here::here("lore", "2020_switch", "Data", "Dipo_counts.csv"))
+dipo <- read.csv(here::here("lore", "2019_switch", "Data", "Dipo_counts.csv"))
 dipo$censusdate <-as.Date(dipo$censusdate)
 
 # create variables needed for GAM
@@ -110,7 +104,7 @@ dipo_plot
 # =========================================================================================
 # number of small granivores
 
-smgran <- read.csv(here::here("lore", "2020_switch", "Data", "SmallGranivores.csv"))
+smgran <- read.csv(here::here("lore", "2019_switch", "Data", "SmallGranivores.csv"))
 smgran$censusdate <- as.Date(smgran$censusdate)
 
 smgran <- mutate(smgran,
@@ -164,7 +158,7 @@ sg_plot
 
 # ========================================================================================
 # Total rodent energy
-energy <- read.csv(here::here("lore", "2020_switch", "Data", "TotalCommunityEnergy.csv"))
+energy <- read.csv(here::here("lore", "2019_switch", "Data", "TotalCommunityEnergy.csv"))
 energy$censusdate <- as.Date(energy$censusdate)
 
 energy <- mutate(energy,
