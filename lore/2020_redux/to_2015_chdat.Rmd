@@ -209,7 +209,7 @@ full_ts <- rats_totals %>%
   mutate(ratio = EC / CC) %>%
   mutate(rn = dplyr::row_number())
 
-ratio_gam <- gam(ratio ~ s(period, k = 100), data = full_ts, family = "Gamma", method = "REML")
+ratio_gam <- gam(ratio ~ s(period, k = 100), data = full_ts, method = "REML")
 
 
 ratio.sims <- simulate(ratio_gam, nsim = 500, newdata = select(full_ts, period)) %>%
@@ -234,8 +234,58 @@ geom_line(data = nd.wide, aes(period, ratio), color = "pink")
 ggplot(ratio.sims, aes(period, pred_mean)) +
   geom_line() +
   geom_ribbon(aes(ymin = pred_lower, ymax = pred_upper), alpha = .5) +
-  geom_line(data = nd.wide, aes(period, ratio), color = "pink") +
+  #geom_line(data = nd.wide, aes(period, ratio), color = "pink") +
   geom_vline(xintercept = c(118, 216, 356, 434))
+
+ratio_ci <- confint(ratio_gam, parm = "period", type = "simultaneous")
+
+ggplot(ratio_ci, aes(period, est)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5)
+# confint.gam does not work for gamma
+```
+
+
+```{r}
+
+full_ts_sneaky <- full_ts %>%
+  select(period, CC, EC)  %>%
+  mutate( EC = EC / CC) %>%
+  mutate(CC = CC/CC) %>%
+  tidyr::pivot_longer(-period, names_to = "treatment", values_to = "val") %>%
+  mutate(treatment = ordered(treatment))
+
+full_ts_r <- filter(full_ts_sneaky) %>%
+  mutate(
+         treatment = as.ordered(treatment),
+         type = "all") %>%
+  as.data.frame()
+
+
+library(mgcv)
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+r.mod <- gam(val ~  treatment + s(period, k = 20) + s(period, by = treatment, k = 20), family = "Gamma", data  = full_ts_r)
+
+summary(r.mod)
+
+gam.check(r.mod)
+
+r.pdat <- make_pdat(full_ts_r, include_plot = F)
+
+r.pred <- get_predicted_vals(r.mod, r.pdat)
+plot_fitted_pred(r.pred)
+
+
+cc_ec <- get_exclosure_diff(r.mod, r.pdat)
+
+plot_exclosure_diff(cc_ec)
+
+n.newdiff <- add_exclosure_diff(r.pred, cc_ec)
+
+plot_fitted_pred(filter(n.newdiff, treatment != "XC")) +
+  geom_vline(xintercept = c(118, 216, 381, 434)) +
+  geom_line(data = mutate(filter(full_ts_sneaky, treatment == "EC"), compare_var = "NA"), aes(period, val))
 
 ```
 
