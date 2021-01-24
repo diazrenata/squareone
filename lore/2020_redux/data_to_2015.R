@@ -46,7 +46,9 @@ rats <- rats %>%
       plot %in% c(5, 7, 24), "XC",
       ifelse(plot %in% c(11,14,17), "CC", NA)
     )
-  ))
+  )) %>%
+  mutate(species = as.character(species)) %>%
+  mutate(species = ifelse(species == "NA", "WR", species))
 
 species <-  portalr::load_rodent_data()$species_table
 
