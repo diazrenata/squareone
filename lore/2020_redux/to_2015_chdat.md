@@ -355,3 +355,60 @@ ggplot(alltime_wide, aes(period, EC / CC)) +
 ```
 
 ![](to_2015_chdat_files/figure-gfm/unnamed-chunk-9-4.png)<!-- -->
+
+``` r
+full_ts <- rats_totals %>%
+  group_by(period, treatment) %>%
+    summarize(totale = sum(totale, na.rm = T)) %>%
+  ungroup() %>%
+  tidyr::pivot_wider(id_cols = c(period), names_from = treatment, values_from = totale) %>%
+  mutate(ratio = EC / CC) %>%
+  mutate(rn = dplyr::row_number())
+```
+
+    ## `summarise()` regrouping output by 'period' (override with `.groups` argument)
+
+``` r
+ratio_gam <- gam(ratio ~ s(period, k = 100), data = full_ts, family = "Gamma", method = "REML")
+
+
+ratio.sims <- simulate(ratio_gam, nsim = 500, newdata = select(full_ts, period)) %>%
+  as.data.frame() %>%
+    mutate(rn = dplyr::row_number()) %>%
+  tidyr::pivot_longer(-rn, names_to = "sim", values_to = "pred") %>%
+  mutate(sim = as.integer(substr(sim, 2, nchar(sim)))) %>%
+  right_join(select(full_ts, period, rn)) %>%
+  group_by(period) %>%
+  summarize(pred_mean = mean(pred),
+            pred_lower = quantile(pred, probs = 0.025),
+            pred_upper = quantile(pred, probs = 0.975)) %>%
+  ungroup() 
+```
+
+    ## Joining, by = "rn"
+
+    ## `summarise()` ungrouping output (override with `.groups` argument)
+
+``` r
+pred_vals <- add_fitted(data = full_ts, model = ratio_gam)
+
+ggplot(pred_vals, aes(period, ratio)) +
+  geom_line() +
+  geom_line(aes(period, .value), color  = "blue") +
+geom_line(data = nd.wide, aes(period, ratio), color = "pink")
+```
+
+![](to_2015_chdat_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+ggplot(ratio.sims, aes(period, pred_mean)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = pred_lower, ymax = pred_upper), alpha = .5) +
+  geom_line(data = nd.wide, aes(period, ratio), color = "pink") +
+  geom_vline(xintercept = c(118, 216, 356, 434))
+```
+
+![](to_2015_chdat_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->
+
+you want the simultanoues interval which I don’t think this is; but;
+this is an option.
