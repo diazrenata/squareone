@@ -249,14 +249,14 @@ ratio_pred <- energy_ratio %>%
          invlinklower = 1/linklower,
          invlinkupper = 1/linkupper)
 
-ggplot(filter(ratio_pred, ref == "ECr"), aes(period, ratio, color = ref, fill = ref)) +
+ggplot(filter(ratio_pred), aes(period, ratio, color = ref, fill = ref)) +
   geom_line() + 
   geom_line(aes(period, invlinkfit)) +
   geom_ribbon(aes(ymin = invlinklower, ymax = invlinkupper), alpha = .5) +
   facet_wrap(vars(era), scales = "free_x", nrow = 1) + 
   theme_bw() +
-  scale_color_viridis_d(begin = .4, end = .4) +
-    scale_fill_viridis_d(begin = .4, end = .4) +
+  scale_color_viridis_d(begin = .4, end = .8) +
+    scale_fill_viridis_d(begin = .4, end = .8) +
   geom_hline(yintercept = 1, linetype = 3) +
   theme(legend.position = "top") +
   ylim(0, 2.5) 
@@ -271,6 +271,89 @@ ratio_pred %>%
   select(era, ref, invlinkfit, invlinklower, invlinkupper) %>%
   distinct() %>%
   filter(ref == "ECr")
+
+
+```
+
+### lme
+
+```{r}
+library(nlme)
+
+e_nlme <- lme(totale ~ era * treatment, random = ~ 1|plot, data = energy)
+
+anova(e_nlme)
+
+
+ac_lm <- lme(ratio ~  era * ref, random = ~1|ref,data =energy_ratio, correlation = corAR1( form = ~period))
+
+no_ac_lm <- lme(ratio ~ era * ref, random = ~1|ref, data =energy_ratio)
+
+
+tt = lsmeans(ac_lm, specs = ~ era | ref)
+dd = pairs((tt))
+ff = summary(dd)
+
+tt_no_ac = lsmeans(no_ac_lm, specs = ~ era | ref)
+dd_no_ac= pairs(tt_no_ac)
+
+ff
+
+ff_no_ac<- summary(dd_no_ac)
+
+ac_lm2 <- lme(ratio ~ era * ref, random = ~1|era/ref, data = energy_ratio, correlation = corAR1(form = ~period))
+
+tt2 <- lsmeans(ac_lm2, specs = ~ ref | era)
+dd2 <- pairs(tt2)
+ff2 <- summary(dd2)
+
+
+ac_ests <- predict(ac_lm)
+
+preds_lm <- energy_ratio %>%
+  mutate(pred = ac_ests)
+
+
+ggplot(filter(preds_lm), aes(period, ratio, color = ref, fill = ref)) +
+ geom_line() + 
+  geom_line(aes(period, pred), color = "black") +
+  facet_wrap(vars(era, ref), scales = "free_x", nrow = 2) + 
+  theme_bw() +
+  scale_color_viridis_d(begin = .4, end = .8) +
+    scale_fill_viridis_d(begin = .4, end = .8) +
+  geom_hline(yintercept = 1, linetype = 3) +
+  theme(legend.position = "top") +
+  ylim(0, 2.5)
+
+
+gls_e <- gls(ratio ~ ref * era, data = energy_ratio, correlation = corAR1(form = ~period | ref))
+
+
+tt2 <- lsmeans(gls_e, specs = ~ ref | era)
+dd2 <- pairs(tt2)
+ff2 <- summary(dd2)
+
+tt3 <- lsmeans(gls_e, specs = ~ era | ref)
+dd3 <- pairs(tt3)
+ff3 <- summary(dd3)
+
+
+ac_ests <- predict(gls_e)
+
+preds_lm <- energy_ratio %>%
+  mutate(pred = ac_ests)
+
+
+ggplot(filter(preds_lm), aes(period, ratio, color = ref, fill = ref)) +
+ geom_line() + 
+  geom_line(aes(period, pred)) +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) + 
+  theme_bw() +
+  scale_color_viridis_d(begin = .4, end = .8) +
+    scale_fill_viridis_d(begin = .4, end = .8) +
+  geom_hline(yintercept = 1, linetype = 3) +
+  theme(legend.position = "top") +
+  ylim(0, 2.5)
 
 
 ```
