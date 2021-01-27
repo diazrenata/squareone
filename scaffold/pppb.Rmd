@@ -37,12 +37,14 @@ rats_nplots <- rats %>%
   ungroup()
 
 rats_e_sp <- rats %>%
-  group_by(censusdate, period, treatment, species) %>%
+  filter(type == "small_granivore") %>%
+  mutate(sp_cat = ifelse(species %in% c("PP", "PB"), species, "OSG")) %>%
+  group_by(censusdate, period, treatment, sp_cat) %>%
   summarize(spe = sum(energy, na.rm = T)) %>%
   ungroup() 
 
 
-rats_all_e_sp <- expand.grid(period = unique(rats$period), species = c("PP", "PB"), treatment = unique(rats$treatment)) %>%
+rats_all_e_sp <- expand.grid(period = unique(rats$period), sp_cat = c("PP", "PB", "OSG"), treatment = unique(rats$treatment)) %>%
   left_join(distinct(select(rats, period, censusdate))) %>%
   left_join(rats_nplots)
 
@@ -61,9 +63,9 @@ rats_e_sp1 <- left_join(rats_all_e_sp, rats_e_sp) %>%
 
 ```{r}
 
-ggplot(rats_e_sp1, aes(period, prop_totale, color = species)) + 
+ggplot(rats_e_sp1, aes(period, prop_totale, color = sp_cat)) + 
   geom_line() +
-  facet_wrap(vars(treatment, species)) +
+  facet_wrap(vars(treatment, sp_cat)) +
   theme_bw()
 
 ```
@@ -84,7 +86,7 @@ treatment_ratios <- select(rats_e_sp1, period, treatment, censusdate, mean_total
   left_join(totale_ctrl) %>%
   mutate(eratio = mean_totale / ctrl_mean_e)
 
-species_ratios <- select(rats_e_sp1, period, treatment, species, mean_spe, mean_totale) %>%
+species_ratios <- select(rats_e_sp1, period, treatment, sp_cat, mean_spe, mean_totale) %>%
   distinct() %>%
   filter(treatment != "CC") %>%
   left_join(totale_ctrl) %>%
@@ -108,10 +110,10 @@ species_ratios <- select(rats_e_sp1, period, treatment, species, mean_spe, mean_
   mutate(era_mean_trt_to_ctrl = mean(trt_to_ctrl)) %>%
   ungroup()
 
-ggplot(filter(species_ratios, treatment == "EC"), aes(period, ctrl_ratio, color = species)) +
+ggplot(filter(species_ratios, treatment == "EC"), aes(period, ctrl_ratio, color = sp_cat)) +
   geom_line() +
   theme_bw() +
-  geom_line(aes(period, trt_to_ctrl, group =species), color = "black") +
+  geom_line(aes(period, trt_to_ctrl, group =sp_cat), color = "black") +
   facet_wrap(vars(era), nrow = 1, scales = "free_x")
 
 
