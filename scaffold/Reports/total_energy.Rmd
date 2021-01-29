@@ -14,7 +14,7 @@ source(here::here("scaffold", "R", "data.R"))
 
 ```{r}
 
-use_christensen_plots <- F
+use_christensen_plots <- T
 
 plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) 
 plot_annuals <- plot_totals %>%
