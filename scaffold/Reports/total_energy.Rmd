@@ -1,0 +1,208 @@
+---
+title: "Energy plots"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      fig.dim = c(7, 3))
+library(dplyr)
+library(ggplot2)
+theme_set(theme_bw())
+source(here::here("scaffold", "R", "data.R"))
+```
+
+```{r}
+
+use_christensen_plots <- F
+
+plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) 
+plot_annuals <- plot_totals %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(censusyear = as.integer(format.Date(censusdate, "%Y"))) %>%
+  group_by(censusyear, plot, plot_type, era) %>%
+  summarize(annual_total_e = mean(total_e),
+            nsamples = length(unique(period)),
+            nrows = dplyr::n()) %>%
+  ungroup()
+
+treatment_means <- get_rodent_data(use_christensen_plots, F, F) 
+
+treatment_ratios <- get_total_energy_ratios(treatment_means)
+
+treatment_ratio_means <- treatment_ratios %>%
+  mutate(not_pb_of_c = (smgran_e - pb_e) / total_e_c) %>%
+  group_by(era, plot_type) %>%
+  mutate(era_mean_ratio = mean(total_e_of_c),
+         era_mean_notpb_of_c_ratio = mean(not_pb_of_c)) %>%
+  ungroup()
+```
+
+
+```{r}
+ggplot(plot_annuals, aes(censusyear, annual_total_e, group = plot, color = plot_type)) +
+  geom_line() +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) +
+  ggtitle("Total energy use for each plot")
+```
+
+```{r}
+
+ggplot(treatment_ratio_means, aes(censusdate, total_e_of_c, color = plot_type)) +
+  geom_line(alpha = .7) +
+  geom_line(aes(censusdate, era_mean_ratio), alpha = 1) +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) +
+  ggtitle("Ratio of energy use on treatment to control plots")
+
+```
+
+
+```{r, fig.dim = c(9,9)}
+
+ggplot(treatment_ratio_means, aes(period, total_e_of_c, color = plot_type)) + geom_line() + facet_wrap(vars(plot_type, era), scales = "free_x", nrow = 3) +
+  geom_line(aes(period, not_pb_of_c), linetype = 3) +
+  geom_line(aes(period, era_mean_notpb_of_c_ratio))
+```
+
+```{r}
+
+
+library(mgcv)
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+tm <- treatment_ratio_means %>%
+  mutate(oplottype = ordered(plot_type)) %>%
+  mutate(type = "smgran") %>%
+  mutate(not_pb_of_c = not_pb_of_c + 0.0000000000001,
+         total_e_of_c = total_e_of_c + 0.000000000001,
+         pb_of_c = 0.000000000001 + (pb_e / total_e_c),
+         sg_of_c =0.000000000001 + smgran_e / total_e_c)
+
+sg.mod <- gam(formula = not_pb_of_c ~ oplottype + s(period, k = 20) + s(period, by = oplottype, k = 40), data  = tm, family = "Gamma")
+
+
+sg.pdat <- expand.grid(period = seq(min(tm$period), max(tm$period), length.out = 500),
+                      oplottype = levels(tm$oplottype))
+
+e.pred <- get_predicted_vals(sg.mod, sg.pdat)  %>%
+  mutate(era = NA) %>%
+  mutate(era = ifelse(period <= 216, "a_pre_ba",
+           ifelse(period <= 356, "b_pre_cpt",
+                  ifelse(period <= 434, "c_pre_switch", "d_post-switch")))) %>%
+  mutate(oera = as.ordered(era))
+
+
+```
+
+Here is the fitted values from that GAM:
+
+```{r}
+
+plot_fitted_pred(filter(e.pred), comparison_variable = "oplottype") + ylab("Energy use") +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) + ylim(0,1)
+
+ggplot(tm, aes(period, not_pb_of_c, color = oplottype)) +
+  geom_line() +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) +
+  scale_color_viridis_d(end  =.8)
+```
+
+
+```{r}
+
+ 
+all.mod <- gam(formula = total_e_of_c ~ oplottype + s(period, k = 20) + s(period, by = oplottype, k = 40), data  = tm, family = "Gamma")
+
+
+all.pdat <- expand.grid(period = seq(min(tm$period), max(tm$period), length.out = 500),
+                      oplottype = levels(tm$oplottype))
+
+e.pred <- get_predicted_vals(all.mod, all.pdat)   %>%
+  mutate(era = NA) %>%
+  mutate(era = ifelse(period <= 216, "a_pre_ba",
+           ifelse(period <= 356, "b_pre_cpt",
+                  ifelse(period <= 434, "c_pre_switch", "d_post-switch")))) %>%
+  mutate(oera = as.ordered(era))
+
+
+```
+
+Here is the fitted values from that GAM:
+
+```{r}
+
+plot_fitted_pred(filter(e.pred), comparison_variable = "oplottype") + ylab("Energy use") +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1)
+
+```
+
+```{r}
+
+ggplot(filter(tm, era != "a_pre_ba"), aes(period, pb_e/total_e_c, color = oplottype)) +
+  geom_line() +
+  facet_wrap(vars(era), scales = "free_x", nrow =1) +
+  scale_color_viridis_d(end = .8)
+
+
+
+pb_of_e_mod <- gam(pb_of_c ~ oplottype + s(period, k = 20) + s(period, by = oplottype, k = 40), family = "Gamma", data = filter(tm, era != "a_pre_ba"))
+
+pb_pdat <- expand.grid(period = seq(min(tm$period), max(tm$period), length.out = 500),
+                      oplottype = levels(tm$oplottype)) %>%
+  mutate(era = NA) %>%
+  mutate(era = ifelse(period <= 216, "a_pre_ba",
+           ifelse(period <= 356, "b_pre_cpt",
+                  ifelse(period <= 434, "c_pre_switch", "d_post-switch")))) %>%
+  mutate(oera = as.ordered(era)) %>%
+  filter(era != "a_pre_ba")
+
+e.pred <- get_predicted_vals(pb_of_e_mod, pb_pdat)   %>% mutate(cv = "pb")
+
+plot_fitted_pred(filter(e.pred), comparison_variable = "oplottype") + ylab("Energy use") +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1)
+
+
+```
+
+#not dipdo
+
+```{r}
+
+ggplot(filter(tm), aes(period, sg_of_c, color = oplottype)) +
+  geom_line() +
+  facet_wrap(vars(era), scales = "free_x", nrow =1) +
+  scale_color_viridis_d(end = .8)
+
+
+ggplot(filter(tm, era == "a_pre_ba"), aes(period, sg_of_c, color = oplottype)) +
+  geom_line() +
+  facet_wrap(vars(era), scales = "free_x", nrow =1) +
+  scale_color_viridis_d(end = .8)
+
+
+
+sg_of_e_mod <- gam(sg_of_c ~ oplottype + s(period, k = 20) + s(period, by = oplottype, k = 40), family = "Gamma",data = tm)
+
+sg_pdat <- expand.grid(period = seq(min(tm$period), max(tm$period), length.out = 500),
+                      oplottype = levels(tm$oplottype)) %>%
+  mutate(era = NA) %>%
+  mutate(era = ifelse(period <= 216, "a_pre_ba",
+           ifelse(period <= 356, "b_pre_cpt",
+                  ifelse(period <= 434, "c_pre_switch", "d_post-switch")))) %>%
+  mutate(oera = as.ordered(era))
+
+e.pred <- get_predicted_vals(sg_of_e_mod, sg_pdat)  
+
+plot_fitted_pred(filter(e.pred), comparison_variable = "oplottype") + ylab("Energy use") +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1)
+
+```
+
+```{r}
+
+ggplot(tm, aes(period, pb_e, color = oplottype)) +
+  geom_line() +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1)+
+  scale_color_viridis_d(end = .8)
+
+```

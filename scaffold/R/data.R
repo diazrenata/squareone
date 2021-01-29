@@ -1,4 +1,4 @@
-get_rodent_data <- function(use_christensen_plots = F, return_plot = F) {
+get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv = F) {
   
   plot_level <- portalr::energy(clean = T,
                                 level = "Plot",
@@ -63,8 +63,6 @@ get_rodent_data <- function(use_christensen_plots = F, return_plot = F) {
     dplyr::mutate(censusdate = as.Date(censusdate),
     )
   
-  write.csv(plot_level_totals, row.names = F, here::here("scaffold", "Data", which_dir,  "plot_total_e.csv"))
-  
   
   treatment_means <- plot_level_totals %>%
     dplyr::group_by(period, censusdate, era, plot_type) %>%
@@ -76,9 +74,11 @@ get_rodent_data <- function(use_christensen_plots = F, return_plot = F) {
                      nplots = dplyr::n()) %>%
     dplyr::ungroup() 
   
-  
-  write.csv(treatment_means, row.names = F, here::here("scaffold", "Data", which_dir, "treatment_mean_e.csv"))
-  
+  if(save_csv) {
+    write.csv(plot_level_totals, row.names = F, here::here("scaffold", "Data", which_dir,  "plot_total_e.csv"))
+    
+    write.csv(treatment_means, row.names = F, here::here("scaffold", "Data", which_dir, "treatment_mean_e.csv"))
+  }
   if(return_plot) {
     return(plot_level_totals) 
   }
@@ -90,12 +90,9 @@ get_total_energy_ratios <- function(treatment_data) {
   control_values <- dplyr::filter(treatment_data, plot_type == "CC") %>%
     select(period, total_e) %>%
     rename(total_e_c = total_e)
-    
-  treatment_data <- left_join(treatment_data, control_values)
   
   treatment_of_control <- treatment_data %>% 
     left_join(control_values) %>%
-    mutate(total_e_of_c = total_e / total_e_c) %>%
-    select(period, censusdate, era, plot_type, total_e_of_c)
-
-  }
+    mutate(total_e_of_c = total_e / total_e_c) 
+  
+}
