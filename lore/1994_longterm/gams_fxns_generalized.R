@@ -38,6 +38,14 @@ get_exclosure_diff <- function(mod, pdat, comparison_variable = "treatment", ref
   
  comparison_rows <- which(pdat[,comparison_variable] ==levels(pdat[,comparison_variable])[comparison_level])
   
+ if(length(reference_rows) == 0) {
+   
+   
+   reference_rows <- which(pdat[,comparison_variable] == levels(pdat[,comparison_variable][[1]])[reference_level])
+   
+   comparison_rows <- which(pdat[,comparison_variable] ==levels(pdat[,comparison_variable][[1]])[comparison_level])
+ }
+ 
   moddiff <- modlp[reference_rows, ] - modlp[comparison_rows, ]
   
   diffvals <- moddiff %*% coef(mod)
@@ -96,8 +104,10 @@ plot_fitted_pred <- function(pdat.pred, comparison_variable = "treatment") {
   
   
   if("diff_overlaps_zero" %in% colnames(pdat.pred)) {
+    if(any(pdat.pred$diff_overlaps_zero)) {
     fitplot <- fitplot +
       geom_point(data = filter(pdat.pred, diff_overlaps_zero), aes(period, 0), color  = "red", size = 2) 
+    }
   }
   
   return(fitplot)
