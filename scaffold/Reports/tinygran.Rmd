@@ -168,50 +168,88 @@ treatment_ratios <- get_total_energy_ratios(treatment_means) %>%
          tg_of_c = 0.0000000001 + tg_of_c) %>%
   mutate(fplottype = factor(plot_type))
 
+treatment_ratios_annual <- treatment_ratios %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(censusyear = as.integer(format.Date(censusdate, "%Y"))) %>%
+  group_by(censusyear, era, fplottype) %>%
+  summarize(mean_total_ratio = mean(total_e_of_c),
+         mean_sg_ratio = mean(sg_of_c),
+         mean_tg_ratio = mean(tg_of_c),
+         nperiods = length(unique(period)),
+         nsamples = dplyr::n()) %>%
+  ungroup()
+
 ```
 
 
 ```{r}
 
-sg_ratio_gam <- gam(sg_of_c ~ fplottype + s(period, k = 40) + s(period, by = fplottype, k = 40), family = "Gamma", data = treatment_ratios)
+sg_ratio_gam <- gam(sg_of_c ~ fplottype + s(period, k = 100) + s(period, by = fplottype, k = 100), family = "Gamma", data = treatment_ratios)
 
 sg_ratio_pdat <- select(treatment_ratios, fplottype, period) %>%
   mutate(type = "sgmran")
 
 sg_ratio_pred <- get_predicted_vals(sg_ratio_gam, sg_ratio_pdat)
 
+sg_ratio_diff <- get_exclosure_diff(sg_ratio_gam, sg_ratio_pred, comparison_variable = "fplottype", comparison_level = 3)
+
+sg_ratio_pred <- add_exclosure_diff(sg_ratio_pred, sg_ratio_diff)
+
 plot_fitted_pred(filter(sg_ratio_pred, fplottype != "CE"), comparison_variable = "fplottype") +
   geom_hline(yintercept = 1) 
+
 # +
 #   scale_color_viridis_d(begin = .8, end = .8) +
 #   scale_fill_viridis_d(begin = .8, end = .8)
 
+ggplot(filter(treatment_ratios_annual, fplottype != "CE"), aes(censusyear, mean_sg_ratio, color = fplottype)) +
+  geom_line() +
+  scale_color_viridis_d(end = .8)
 
 ```
 
 
 ```{r}
 
-tg_ratio_gam <- gam(tg_of_c ~ fplottype + s(period, k = 40) + s(period, by = fplottype, k = 40), family = "Gamma", data = treatment_ratios)
+tg_ratio_gam <- gam(tg_of_c ~ fplottype + s(period, k = 100) + s(period, by = fplottype, k =100), family = "Gamma", data = treatment_ratios)
 
 tg_ratio_pdat <- select(treatment_ratios, fplottype, period) %>%
   mutate(type = "tinygran")
 
 tg_ratio_pred <- get_predicted_vals(tg_ratio_gam, tg_ratio_pdat)
 
+tg_ratio_diff <- get_exclosure_diff(tg_ratio_gam, tg_ratio_pred, comparison_variable = "fplottype", comparison_level = 3)
+
+tg_ratio_pred <- add_exclosure_diff(tg_ratio_pred, tg_ratio_diff)
+
 plot_fitted_pred(filter(tg_ratio_pred, fplottype != "CE"), comparison_variable = "fplottype") +
-  geom_hline(yintercept = 1) 
+  geom_hline(yintercept = 1)
 # +
 #   scale_color_viridis_d(begin = .8, end = .8) +
 #   scale_fill_viridis_d(begin = .8, end = .8)
 
+tg_ratio_pred_annual <- tg_ratio_pred %>%
+  left_join(distinct(select(treatment_ratios, period, censusdate))) %>% 
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(censusyear = as.integer(format.Date(censusdate, "%Y"))) %>%
+  group_by(censusyear, fplottype) %>%
+  summarize(mean_fit = mean(invlink_fit),
+         nperiods = length(unique(period)),
+         nsamples = dplyr::n()) %>%
+  ungroup()
 
+  
+
+ggplot(filter(treatment_ratios_annual, fplottype != "CE"), aes(censusyear, mean_tg_ratio, color = fplottype)) +
+  geom_line() +
+  scale_color_viridis_d(end = .8) +
+  geom_line(data = filter(tg_ratio_pred_annual, fplottype != "CE"), aes(censusyear, mean_fit))
 
 ```
 
 ```{r}
 
-total_ratio_gam <- gam(total_e_of_c ~ fplottype + s(period, k = 40) + s(period, by = fplottype, k = 40), family = "Gamma", data = filter(treatment_ratios, fplottype != "CC"))
+total_ratio_gam <- gam(total_e_of_c ~ fplottype + s(period, k = 100) + s(period, by = fplottype, k = 100), family = "Gamma", data = filter(treatment_ratios, fplottype != "CC"))
 
 total_ratio_pdat <- select(treatment_ratios, fplottype, period) %>%
   mutate(type = "all_energy") %>%
@@ -320,5 +358,23 @@ summary(pairs(lsmeans(sgr_gls, specs = ~fplottype | era)))
 
 tgr_gls <- gls(tg_of_c ~ era * fplottype, data = treatment_ratios, correlation = corAR1(form = ~period|fplottype))
 summary(pairs(lsmeans(tgr_gls, specs = ~fplottype | era)))
+
+```
+
+
+
+### glm on ratios
+
+```{r}
+
+ter_glm <- gam(total_e_of_c ~ era * fplottype, data = treatment_ratios_no_c, family = "Gamma")
+#summary(pairs(lsmeans(ter_glm, specs = ~fplottype | era)))
+
+sgr_glm <- gam(sg_of_c ~ era * fplottype, data = treatment_ratios, family = "Gamma")
+#summary(pairs(lsmeans(sgr_glm, specs = ~fplottype | era)))
+summary(pairs(regrid(lsmeans(sgr_glm, specs = ~fplottype | era))))
+
+tgr_glm <- gam(tg_of_c ~ era * fplottype, data = treatment_ratios, family = "Gamma")
+summary(pairs(regrid(lsmeans(tgr_glm, specs = ~fplottype | era))))
 
 ```
