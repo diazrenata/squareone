@@ -329,6 +329,9 @@ era_ratios <- treatment_ratios %>%
   ungroup()
 
 
+select(era_ratios, era, oplottype, te_mean, sg_mean, tg_mean) %>%
+  distinct()
+
 ggplot(era_ratios, aes(period, te_mean, color = oplottype)) +
   geom_line(size = 2) +
   geom_line(aes(period, total_e_of_c), alpha = .3) +

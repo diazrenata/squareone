@@ -108,9 +108,21 @@ Energy plots
 
     ## Joining, by = "period"
 
-![](tinygran_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+    ## `summarise()` regrouping output by 'censusyear', 'era' (override with `.groups` argument)
+
+    ## Joining, by = "period"
+
+![](tinygran_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->![](tinygran_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
+
+    ## Joining, by = "period"
 
 ![](tinygran_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+    ## Joining, by = "period"
+
+    ## `summarise()` regrouping output by 'censusyear' (override with `.groups` argument)
+
+![](tinygran_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->
 
     ## Scale for 'colour' is already present. Adding another scale for 'colour',
     ## which will replace the existing scale.
@@ -259,4 +271,58 @@ Energy plots
     ##  CE - EE   0.03087 0.0666 454  0.463  0.8885 
     ## 
     ## Degrees-of-freedom method: satterthwaite 
+    ## P value adjustment: tukey method for comparing a family of 3 estimates
+
+### glm on ratios
+
+    ## era = a_pre_ba:
+    ##  contrast estimate      SE   df t.ratio p.value
+    ##  CC - CE  -0.00697 0.00499 1260  -1.396 0.3430 
+    ##  CC - EE  -0.15414 0.01260 1260 -12.236 <.0001 
+    ##  CE - EE  -0.14717 0.01271 1260 -11.580 <.0001 
+    ## 
+    ## era = b_pre_cpt:
+    ##  contrast estimate      SE   df t.ratio p.value
+    ##  CC - CE  -0.23703 0.04362 1260  -5.435 <.0001 
+    ##  CC - EE  -0.39298 0.05369 1260  -7.319 <.0001 
+    ##  CE - EE  -0.15595 0.06239 1260  -2.500 0.0336 
+    ## 
+    ## era = c_pre_switch:
+    ##  contrast estimate      SE   df t.ratio p.value
+    ##  CC - CE  -0.11191 0.04183 1260  -2.675 0.0207 
+    ##  CC - EE  -0.15439 0.04507 1260  -3.426 0.0018 
+    ##  CE - EE  -0.04248 0.05126 1260  -0.829 0.6853 
+    ## 
+    ## era = d_post-switch:
+    ##  contrast estimate      SE   df t.ratio p.value
+    ##  CC - CE  -0.17822 0.06270 1260  -2.843 0.0126 
+    ##  CC - EE  -0.10247 0.05490 1260  -1.867 0.1489 
+    ##  CE - EE   0.07575 0.06997 1260   1.083 0.5251 
+    ## 
+    ## P value adjustment: tukey method for comparing a family of 3 estimates
+
+    ## era = a_pre_ba:
+    ##  contrast estimate      SE   df t.ratio p.value
+    ##  CC - CE  -0.00671 0.00553 1260  -1.213 0.4455 
+    ##  CC - EE  -0.15414 0.01398 1260 -11.024 <.0001 
+    ##  CE - EE  -0.14743 0.01410 1260 -10.456 <.0001 
+    ## 
+    ## era = b_pre_cpt:
+    ##  contrast estimate      SE   df t.ratio p.value
+    ##  CC - CE  -0.00340 0.01987 1260  -0.171 0.9840 
+    ##  CC - EE  -0.04063 0.02209 1260  -1.839 0.1573 
+    ##  CE - EE  -0.03723 0.02226 1260  -1.672 0.2163 
+    ## 
+    ## era = c_pre_switch:
+    ##  contrast estimate      SE   df t.ratio p.value
+    ##  CC - CE   0.03640 0.03333 1260   1.092 0.5190 
+    ##  CC - EE  -0.00998 0.03656 1260  -0.273 0.9598 
+    ##  CE - EE  -0.04638 0.03410 1260  -1.360 0.3623 
+    ## 
+    ## era = d_post-switch:
+    ##  contrast estimate      SE   df t.ratio p.value
+    ##  CC - CE  -0.12507 0.06346 1260  -1.971 0.1199 
+    ##  CC - EE  -0.09678 0.06030 1260  -1.605 0.2439 
+    ##  CE - EE   0.02829 0.07169 1260   0.395 0.9178 
+    ## 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
