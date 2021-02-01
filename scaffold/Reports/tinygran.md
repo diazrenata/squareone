@@ -112,7 +112,27 @@ Energy plots
 
     ## Joining, by = "period"
 
-![](tinygran_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->![](tinygran_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
+![](tinygran_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+    ## Joining, by = "period"
+
+    ## Scale for 'fill' is already present. Adding another scale for 'fill', which
+    ## will replace the existing scale.
+
+    ## Scale for 'colour' is already present. Adding another scale for 'colour',
+    ## which will replace the existing scale.
+
+![](tinygran_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
+
+    ## Joining, by = "period"
+
+    ## Scale for 'fill' is already present. Adding another scale for 'fill', which
+    ## will replace the existing scale.
+
+    ## Scale for 'colour' is already present. Adding another scale for 'colour',
+    ## which will replace the existing scale.
+
+![](tinygran_files/figure-gfm/unnamed-chunk-8-3.png)<!-- -->
 
     ## Joining, by = "period"
 
@@ -120,9 +140,25 @@ Energy plots
 
     ## Joining, by = "period"
 
-    ## `summarise()` regrouping output by 'censusyear' (override with `.groups` argument)
+    ## Scale for 'fill' is already present. Adding another scale for 'fill', which
+    ## will replace the existing scale.
+
+    ## Scale for 'colour' is already present. Adding another scale for 'colour',
+    ## which will replace the existing scale.
 
 ![](tinygran_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->
+
+    ## Joining, by = "period"
+
+    ## Scale for 'fill' is already present. Adding another scale for 'fill', which
+    ## will replace the existing scale.
+
+    ## Scale for 'colour' is already present. Adding another scale for 'colour',
+    ## which will replace the existing scale.
+
+![](tinygran_files/figure-gfm/unnamed-chunk-9-3.png)<!-- -->
+
+    ## Joining, by = "period"
 
     ## Scale for 'colour' is already present. Adding another scale for 'colour',
     ## which will replace the existing scale.
@@ -134,11 +170,11 @@ Energy plots
 
 ## By era
 
-![](tinygran_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->![](tinygran_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->![](tinygran_files/figure-gfm/unnamed-chunk-11-3.png)<!-- -->
+##### Era means:
 
     ## # A tibble: 12 x 5
     ##    era           oplottype total_e_mean smgran_e_mean tinygran_e_mean
-    ##    <chr>         <ord>            <dbl>         <dbl>           <dbl>
+    ##    <chr>         <fct>            <dbl>         <dbl>           <dbl>
     ##  1 a_pre_ba      CC                484.          28.4            28.4
     ##  2 a_pre_ba      CE                455.          32.5            32.3
     ##  3 a_pre_ba      EE                110.          98.8            98.8
@@ -154,6 +190,8 @@ Energy plots
 
 ### gls on actual vals
 
+##### Total energy raw GLS
+
     ## Loading required package: emmeans
 
     ## The 'lsmeans' package is now basically a front end for 'emmeans'.
@@ -163,9 +201,38 @@ Energy plots
 
     ## era = a_pre_ba:
     ##  contrast estimate    SE  df t.ratio p.value
-    ##  CC - CE     -19.8  65.0 151 -0.304  0.9503 
-    ##  CC - EE     -87.5  65.0 151 -1.347  0.3718 
-    ##  CE - EE     -67.7  65.0 151 -1.042  0.5514 
+    ##  CC - CE      37.2  79.0 189 0.471   0.8851 
+    ##  CC - EE     372.0  79.0 189 4.710   <.0001 
+    ##  CE - EE     334.8  79.0 189 4.239   0.0001 
+    ## 
+    ## era = b_pre_cpt:
+    ##  contrast estimate    SE  df t.ratio p.value
+    ##  CC - CE      40.7  85.8 191 0.475   0.8832 
+    ##  CC - EE     195.3  85.8 191 2.278   0.0614 
+    ##  CE - EE     154.6  85.8 191 1.803   0.1714 
+    ## 
+    ## era = c_pre_switch:
+    ##  contrast estimate    SE  df t.ratio p.value
+    ##  CC - CE     146.8 106.5 192 1.378   0.3545 
+    ##  CC - EE     331.4 106.5 192 3.110   0.0061 
+    ##  CE - EE     184.6 106.5 192 1.732   0.1958 
+    ## 
+    ## era = d_post-switch:
+    ##  contrast estimate    SE  df t.ratio p.value
+    ##  CC - CE     254.4 132.9 193 1.915   0.1372 
+    ##  CC - EE     414.2 132.9 193 3.117   0.0059 
+    ##  CE - EE     159.7 132.9 193 1.202   0.4534 
+    ## 
+    ## Degrees-of-freedom method: satterthwaite 
+    ## P value adjustment: tukey method for comparing a family of 3 estimates
+
+##### Small gran raw GLS
+
+    ## era = a_pre_ba:
+    ##  contrast estimate    SE  df t.ratio p.value
+    ##  CC - CE     -19.8  65.0 152 -0.304  0.9503 
+    ##  CC - EE     -87.5  65.0 152 -1.347  0.3718 
+    ##  CE - EE     -67.7  65.0 152 -1.042  0.5514 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate    SE  df t.ratio p.value
@@ -188,10 +255,12 @@ Energy plots
     ## Degrees-of-freedom method: satterthwaite 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
 
+##### Tiny gran raw GLS
+
     ## era = a_pre_ba:
     ##  contrast estimate   SE  df t.ratio p.value
-    ##  CC - CE      1.06 35.9 285  0.030  0.9995 
-    ##  CC - EE    -63.08 35.9 285 -1.756  0.1866 
+    ##  CC - CE      1.06 35.9 284  0.030  0.9995 
+    ##  CC - EE    -63.08 35.9 284 -1.756  0.1866 
     ##  CE - EE    -64.14 35.9 284 -1.785  0.1764 
     ## 
     ## era = b_pre_cpt:
@@ -203,13 +272,13 @@ Energy plots
     ## era = c_pre_switch:
     ##  contrast estimate   SE  df t.ratio p.value
     ##  CC - CE     21.88 50.2 288  0.436  0.9005 
-    ##  CC - EE     -6.57 50.2 289 -0.131  0.9906 
+    ##  CC - EE     -6.57 50.2 288 -0.131  0.9906 
     ##  CE - EE    -28.44 50.2 288 -0.567  0.8377 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate   SE  df t.ratio p.value
     ##  CC - CE    -43.37 62.5 291 -0.694  0.7671 
-    ##  CC - EE    -51.57 62.5 292 -0.825  0.6875 
+    ##  CC - EE    -51.57 62.5 291 -0.825  0.6875 
     ##  CE - EE     -8.20 62.5 291 -0.131  0.9905 
     ## 
     ## Degrees-of-freedom method: satterthwaite 
@@ -217,7 +286,78 @@ Energy plots
 
 ### gls on ratios
 
-![](tinygran_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->![](tinygran_files/figure-gfm/unnamed-chunk-13-2.png)<!-- -->![](tinygran_files/figure-gfm/unnamed-chunk-13-3.png)<!-- -->
+##### Era ratios:
+
+    ## # A tibble: 12 x 5
+    ##    era           oplottype te_mean sg_mean tg_mean
+    ##    <chr>         <fct>       <dbl>   <dbl>   <dbl>
+    ##  1 a_pre_ba      CC          1.     0.0581  0.0581
+    ##  2 a_pre_ba      CE          0.974  0.0651  0.0648
+    ##  3 a_pre_ba      EE          0.238  0.212   0.212 
+    ##  4 b_pre_cpt     CC          1.     0.294   0.174 
+    ##  5 b_pre_cpt     CE          0.972  0.531   0.178 
+    ##  6 b_pre_cpt     EE          0.753  0.687   0.215 
+    ##  7 c_pre_switch  CC          1.     0.262   0.250 
+    ##  8 c_pre_switch  CE          0.871  0.374   0.213 
+    ##  9 c_pre_switch  EE          0.482  0.417   0.260 
+    ## 10 d_post-switch CC          1.     0.260   0.260 
+    ## 11 d_post-switch CE          0.489  0.439   0.385 
+    ## 12 d_post-switch EE          0.393  0.363   0.357
+
+![](tinygran_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+##### Total energy ratios GLS
+
+This fit includes CC plots, for which ratio always = 1.
+
+    ## era = a_pre_ba:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CC - CE    0.0271 0.0433 820  0.626  0.8061 
+    ##  CC - EE    0.7604 0.0433 820 17.546  <.0001 
+    ##  CE - EE    0.7333 0.0433 818 16.921  <.0001 
+    ## 
+    ## era = b_pre_cpt:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CC - CE    0.0314 0.0508 843  0.618  0.8102 
+    ##  CC - EE    0.2660 0.0508 841  5.237  <.0001 
+    ##  CE - EE    0.2346 0.0508 844  4.619  <.0001 
+    ## 
+    ## era = c_pre_switch:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CC - CE    0.1467 0.0664 832  2.208  0.0704 
+    ##  CC - EE    0.5166 0.0664 834  7.776  <.0001 
+    ##  CE - EE    0.3699 0.0664 834  5.569  <.0001 
+    ## 
+    ## era = d_post-switch:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CC - CE    0.5129 0.0836 855  6.132  <.0001 
+    ##  CC - EE    0.6261 0.0836 861  7.485  <.0001 
+    ##  CE - EE    0.1132 0.0836 858  1.353  0.3663 
+    ## 
+    ## Degrees-of-freedom method: satterthwaite 
+    ## P value adjustment: tukey method for comparing a family of 3 estimates
+
+This fit has CC plots removed.
+
+    ## era = a_pre_ba:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CE - EE     0.733 0.0531 529 13.816  <.0001 
+    ## 
+    ## era = b_pre_cpt:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CE - EE     0.235 0.0622 540  3.771  0.0002 
+    ## 
+    ## era = c_pre_switch:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CE - EE     0.370 0.0814 538  4.547  <.0001 
+    ## 
+    ## era = d_post-switch:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CE - EE     0.113 0.1024 552  1.105  0.2697 
+    ## 
+    ## Degrees-of-freedom method: satterthwaite
+
+##### Smgran ratio GLS
 
     ## era = a_pre_ba:
     ##  contrast estimate     SE  df t.ratio p.value
@@ -245,6 +385,8 @@ Energy plots
     ## 
     ## Degrees-of-freedom method: satterthwaite 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
+
+##### Tiny gran ratio GLS
 
     ## era = a_pre_ba:
     ##  contrast estimate     SE  df t.ratio p.value
@@ -275,6 +417,56 @@ Energy plots
 
 ### glm on ratios
 
+##### Total energy GLM
+
+With controls:
+
+    ## era = a_pre_ba:
+    ##  contrast estimate     SE   df t.ratio p.value
+    ##  CC - CE    0.0265 0.0394 1260  0.672  0.7797 
+    ##  CC - EE    0.7622 0.0290 1260 26.290  <.0001 
+    ##  CE - EE    0.7358 0.0283 1260 26.028  <.0001 
+    ## 
+    ## era = b_pre_cpt:
+    ##  contrast estimate     SE   df t.ratio p.value
+    ##  CC - CE    0.0277 0.0494 1260  0.562  0.8403 
+    ##  CC - EE    0.2465 0.0443 1260  5.562  <.0001 
+    ##  CE - EE    0.2188 0.0435 1260  5.024  <.0001 
+    ## 
+    ## era = c_pre_switch:
+    ##  contrast estimate     SE   df t.ratio p.value
+    ##  CC - CE    0.1291 0.0598 1260  2.160  0.0786 
+    ##  CC - EE    0.5181 0.0500 1260 10.353  <.0001 
+    ##  CE - EE    0.3890 0.0449 1260  8.669  <.0001 
+    ## 
+    ## era = d_post-switch:
+    ##  contrast estimate     SE   df t.ratio p.value
+    ##  CC - CE    0.5113 0.0674 1260  7.585  <.0001 
+    ##  CC - EE    0.6069 0.0651 1260  9.327  <.0001 
+    ##  CE - EE    0.0956 0.0380 1260  2.517  0.0320 
+    ## 
+    ## P value adjustment: tukey method for comparing a family of 3 estimates
+
+Without controls:
+
+    ## era = a_pre_ba:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CE - EE    0.7358 0.0346 840 21.252  <.0001 
+    ## 
+    ## era = b_pre_cpt:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CE - EE    0.2188 0.0533 840  4.102  <.0001 
+    ## 
+    ## era = c_pre_switch:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CE - EE    0.3890 0.0550 840  7.078  <.0001 
+    ## 
+    ## era = d_post-switch:
+    ##  contrast estimate     SE  df t.ratio p.value
+    ##  CE - EE    0.0956 0.0465 840  2.055  0.0402
+
+##### Small granivore ratio GLM
+
     ## era = a_pre_ba:
     ##  contrast estimate      SE   df t.ratio p.value
     ##  CC - CE  -0.00697 0.00499 1260  -1.396 0.3430 
@@ -300,6 +492,8 @@ Energy plots
     ##  CE - EE   0.07575 0.06997 1260   1.083 0.5251 
     ## 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
+
+##### Tiny granivore ratio GLM
 
     ## era = a_pre_ba:
     ##  contrast estimate      SE   df t.ratio p.value

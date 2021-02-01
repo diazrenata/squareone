@@ -36,7 +36,7 @@ plot_annuals <- plot_totals %>%
 
 treatment_means <- get_rodent_data(use_christensen_plots, F, F) %>%
   mutate(tinygran_e = smgran_e - pb_e) %>%
-  mutate(oplottype = ordered(plot_type))
+  mutate(oplottype = as.factor(plot_type))
 
 # treatment_ratios <- get_total_energy_ratios(treatment_means)
 
@@ -65,17 +65,20 @@ treatment_annuals <- treatment_means %>%
 
 ggplot(treatment_annuals, aes(censusyear, total_e, color = plot_type)) +
   geom_line() +
-  scale_color_viridis_d(end = .8)
+  scale_color_viridis_d(end = .8) +
+  ggtitle("Total E annual means by treatment")
 
 
 ggplot(treatment_annuals, aes(censusyear, smgran_e, color = plot_type)) +
   geom_line() +
-  scale_color_viridis_d(end = .8)
+  scale_color_viridis_d(end = .8) +
+  ggtitle("Small granivore E annual means by treatment")
 
 
 ggplot(treatment_annuals, aes(censusyear, tinygran_e, color = plot_type)) +
   geom_line() +
-  scale_color_viridis_d(end = .8)
+  scale_color_viridis_d(end = .8) +
+  ggtitle("Tiny gran E annual means by treatment")
 
 ```
 
@@ -88,20 +91,25 @@ sg_e_pdat <- treatment_means %>%
 
 sg_e_pred <- get_predicted_vals(sg_e_mod, sg_e_pdat)
 
-plot_fitted_pred(sg_e_pred, comparison_variable = "oplottype")
+plot_fitted_pred(sg_e_pred, comparison_variable = "oplottype") +
+  ggtitle("GAM fit smgran raw energy by plot type")
 
-ee_cc_diff <- get_exclosure_diff(sg_e_mod, sg_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 3)
-ee_cc_pred <- add_exclosure_diff(sg_e_pred, ee_cc_diff)
-plot_fitted_pred(filter(ee_cc_pred, oplottype != "CE"), comparison_variable = "oplottype")
+sg_rawe_ee_cc_diff <- get_exclosure_diff(sg_e_mod, sg_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 3)
+
+sg_rawe_ee_cc_pred <- add_exclosure_diff(sg_e_pred, sg_rawe_ee_cc_diff)
+plot_fitted_pred(filter(sg_rawe_ee_cc_pred, oplottype != "CE"), comparison_variable = "oplottype") +
+  ggtitle("GAM diff smgran raw energy CC v EE")
 
 
-ce_cc_diff <- get_exclosure_diff(sg_e_mod, sg_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 2)
-ce_cc_pred <- add_exclosure_diff(sg_e_pred, ce_cc_diff)
-plot_fitted_pred(filter(ce_cc_pred, oplottype != "EE"), comparison_variable = "oplottype") + scale_color_viridis_d(end = .4) + scale_fill_viridis_d(end = .4)
+sg_rawe_ce_cc_diff <- get_exclosure_diff(sg_e_mod, sg_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 2)
+sg_rawe_ce_cc_pred <- add_exclosure_diff(sg_e_pred, sg_rawe_ce_cc_diff)
+plot_fitted_pred(filter(sg_rawe_ce_cc_pred, oplottype != "EE"), comparison_variable = "oplottype") + scale_color_viridis_d(end = .4) + scale_fill_viridis_d(end = .4) +
+  ggtitle("GAM diff smgran raw energy CC v CE")
 
-ee_ce_diff <- get_exclosure_diff(sg_e_mod, sg_e_pdat,comparison_variable = "oplottype", reference_level = 2, comparison_level = 3)
-ee_ce_pred <- add_exclosure_diff(sg_e_pred, ee_ce_diff)
-plot_fitted_pred(filter(ee_ce_pred, oplottype != "CC"), comparison_variable = "oplottype")+ scale_color_viridis_d(begin = .4, end = .8) + scale_fill_viridis_d(begin = .4, end = .8)
+sg_rawe_ee_ce_diff <- get_exclosure_diff(sg_e_mod, sg_e_pdat,comparison_variable = "oplottype", reference_level = 2, comparison_level = 3)
+sg_rawe_ee_ce_pred <- add_exclosure_diff(sg_e_pred, sg_rawe_ee_ce_diff)
+plot_fitted_pred(filter(sg_rawe_ee_ce_pred, oplottype != "CC"), comparison_variable = "oplottype")+ scale_color_viridis_d(begin = .4, end = .8) + scale_fill_viridis_d(begin = .4, end = .8) +
+  ggtitle("GAM diff sg raw energy CE v EE")
 ```
 
 
@@ -114,20 +122,24 @@ tg_e_pdat <- treatment_means %>%
 
 tg_e_pred <- get_predicted_vals(tg_e_mod, tg_e_pdat)
 
-plot_fitted_pred(tg_e_pred, comparison_variable = "oplottype")
+plot_fitted_pred(tg_e_pred, comparison_variable = "oplottype") +
+  ggtitle("GAM fit tinygran raw e by treatment")
 
-ee_cc_diff <- get_exclosure_diff(tg_e_mod, tg_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 3)
-ee_cc_pred <- add_exclosure_diff(tg_e_pred, ee_cc_diff)
-plot_fitted_pred(filter(ee_cc_pred, oplottype != "CE"), comparison_variable = "oplottype")
+tg_rawe_ee_cc_diff <- get_exclosure_diff(tg_e_mod, tg_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 3)
+tg_rawe_ee_cc_pred <- add_exclosure_diff(tg_e_pred, tg_rawe_ee_cc_diff)
+plot_fitted_pred(filter(tg_rawe_ee_cc_pred, oplottype != "CE"), comparison_variable = "oplottype") +
+  ggtitle("GAM diff tgran raw e CC v EEß")
 
 
-ce_cc_diff <- get_exclosure_diff(tg_e_mod, tg_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 2)
-ce_cc_pred <- add_exclosure_diff(tg_e_pred, ce_cc_diff)
-plot_fitted_pred(filter(ce_cc_pred, oplottype != "EE"), comparison_variable = "oplottype") + scale_color_viridis_d(end = .4) + scale_fill_viridis_d(end = .4)
+tg_rawe_ce_cc_diff <- get_exclosure_diff(tg_e_mod, tg_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 2)
+tg_rawe_ce_cc_pred <- add_exclosure_diff(tg_e_pred, tg_rawe_ce_cc_diff)
+plot_fitted_pred(filter(tg_rawe_ce_cc_pred, oplottype != "EE"), comparison_variable = "oplottype") + scale_color_viridis_d(end = .4) + scale_fill_viridis_d(end = .4) +
+  ggtitle("GAM diff tgran raw e CE v CC")
 
-ee_ce_diff <- get_exclosure_diff(tg_e_mod, tg_e_pdat,comparison_variable = "oplottype", reference_level = 2, comparison_level = 3)
-ee_ce_pred <- add_exclosure_diff(tg_e_pred, ee_ce_diff)
-plot_fitted_pred(filter(ee_ce_pred, oplottype != "CC"), comparison_variable = "oplottype")+ scale_color_viridis_d(begin = .4, end = .8) + scale_fill_viridis_d(begin = .4, end = .8)
+tg_rawe_ee_ce_diff <- get_exclosure_diff(tg_e_mod, tg_e_pdat,comparison_variable = "oplottype", reference_level = 2, comparison_level = 3)
+tg_rawe_ee_ce_pred <- add_exclosure_diff(tg_e_pred, tg_rawe_ee_ce_diff)
+plot_fitted_pred(filter(tg_rawe_ee_ce_pred, oplottype != "CC"), comparison_variable = "oplottype")+ scale_color_viridis_d(begin = .4, end = .8) + scale_fill_viridis_d(begin = .4, end = .8) +
+  ggtitle("GAM diff tgran raw e CE v EE")
 ```
 
 
@@ -140,20 +152,24 @@ total_e_pdat <- treatment_means %>%
 
 total_e_pred <- get_predicted_vals(total_e_mod, total_e_pdat)
 
-plot_fitted_pred(total_e_pred, comparison_variable = "oplottype")
+plot_fitted_pred(total_e_pred, comparison_variable = "oplottype") +
+  ggtitle("GAM fit total raw e by treatment")
 
-ee_cc_diff <- get_exclosure_diff(total_e_mod, total_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 3)
-ee_cc_pred <- add_exclosure_diff(total_e_pred, ee_cc_diff)
-plot_fitted_pred(filter(ee_cc_pred, oplottype != "CE"), comparison_variable = "oplottype")
+total_rawe_ee_cc_diff <- get_exclosure_diff(total_e_mod, total_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 3)
+total_rawe_ee_cc_pred <- add_exclosure_diff(total_e_pred, total_rawe_ee_cc_diff)
+plot_fitted_pred(filter(total_rawe_ee_cc_pred, oplottype != "CE"), comparison_variable = "oplottype") +
+  ggtitle("GAM diff total raw e CC v EE")
 
 
-ce_cc_diff <- get_exclosure_diff(total_e_mod, total_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 2)
-ce_cc_pred <- add_exclosure_diff(total_e_pred, ce_cc_diff)
-plot_fitted_pred(filter(ce_cc_pred, oplottype != "EE"), comparison_variable = "oplottype") + scale_color_viridis_d(end = .4) + scale_fill_viridis_d(end = .4)
+total_rawe_ce_cc_diff <- get_exclosure_diff(total_e_mod, total_e_pdat,comparison_variable = "oplottype", reference_level = 1, comparison_level = 2)
+total_rawe_ce_cc_pred <- add_exclosure_diff(total_e_pred, total_rawe_ce_cc_diff)
+plot_fitted_pred(filter(total_rawe_ce_cc_pred, oplottype != "EE"), comparison_variable = "oplottype") + scale_color_viridis_d(end = .4) + scale_fill_viridis_d(end = .4) +
+  ggtitle("GAM diff total raw e CC v CE")
 
-ee_ce_diff <- get_exclosure_diff(total_e_mod, total_e_pdat,comparison_variable = "oplottype", reference_level = 2, comparison_level = 3)
-ee_ce_pred <- add_exclosure_diff(total_e_pred, ee_ce_diff)
-plot_fitted_pred(filter(ee_ce_pred, oplottype != "CC"), comparison_variable = "oplottype")+ scale_color_viridis_d(begin = .4, end = .8) + scale_fill_viridis_d(begin = .4, end = .8)
+total_rawe_ee_ce_diff <- get_exclosure_diff(total_e_mod, total_e_pdat,comparison_variable = "oplottype", reference_level = 2, comparison_level = 3)
+total_rawe_ee_ce_pred <- add_exclosure_diff(total_e_pred, total_rawe_ee_ce_diff)
+plot_fitted_pred(filter(total_rawe_ee_ce_pred, oplottype != "CC"), comparison_variable = "oplottype")+ scale_color_viridis_d(begin = .4, end = .8) + scale_fill_viridis_d(begin = .4, end = .8) +
+  ggtitle("GAM diff total raw e CE v EE")
 ```
 
 ## Ratios
@@ -191,20 +207,38 @@ sg_ratio_pdat <- select(treatment_ratios, fplottype, period) %>%
 
 sg_ratio_pred <- get_predicted_vals(sg_ratio_gam, sg_ratio_pdat)
 
-sg_ratio_diff <- get_exclosure_diff(sg_ratio_gam, sg_ratio_pred, comparison_variable = "fplottype", comparison_level = 3)
+sg_ratio_ee_cc_diff <- get_exclosure_diff(sg_ratio_gam, sg_ratio_pred, comparison_variable = "fplottype", comparison_level = 3)
 
-sg_ratio_pred <- add_exclosure_diff(sg_ratio_pred, sg_ratio_diff)
+sg_ratio_ee_cc_pred <- add_exclosure_diff(sg_ratio_pred, sg_ratio_ee_cc_diff)
 
-plot_fitted_pred(filter(sg_ratio_pred, fplottype != "CE"), comparison_variable = "fplottype") +
-  geom_hline(yintercept = 1) 
+plot_fitted_pred(filter(sg_ratio_ee_cc_pred, fplottype != "CE"), comparison_variable = "fplottype") +
+  geom_hline(yintercept = 1) +
+  ggtitle("GAM diff smgran ratio EE v CC")
 
-# +
-#   scale_color_viridis_d(begin = .8, end = .8) +
-#   scale_fill_viridis_d(begin = .8, end = .8)
+sg_ratio_ce_cc_diff <- get_exclosure_diff(sg_ratio_gam, sg_ratio_pred, comparison_variable = "fplottype", comparison_level = 2)
 
-ggplot(filter(treatment_ratios_annual, fplottype != "CE"), aes(censusyear, mean_sg_ratio, color = fplottype)) +
-  geom_line() +
-  scale_color_viridis_d(end = .8)
+sg_ratio_ce_cc_pred <- add_exclosure_diff(sg_ratio_pred, sg_ratio_ce_cc_diff)
+
+plot_fitted_pred(filter(sg_ratio_ce_cc_pred, fplottype != "EE"), comparison_variable = "fplottype") +
+  geom_hline(yintercept = 1)  +
+  scale_fill_viridis_d(end = .4) +
+  scale_color_viridis_d(end = .4) +
+  ggtitle("GAM diff smgran ratio CE v CC")
+
+sg_ratio_ce_ee_diff <- get_exclosure_diff(sg_ratio_gam, sg_ratio_pred, comparison_variable = "fplottype", comparison_level = 3, reference_level = 2)
+
+sg_ratio_ce_ee_pred <- add_exclosure_diff(sg_ratio_pred, sg_ratio_ce_ee_diff)
+
+plot_fitted_pred(filter(sg_ratio_ce_ee_pred, fplottype != "CC"), comparison_variable = "fplottype") +
+  geom_hline(yintercept = 1) +
+  scale_fill_viridis_d(begin = .4, end = .8) +
+  scale_color_viridis_d(begin = .4, end = .8) +
+  ggtitle("GAM diff smgran ratio CE v EE")
+
+# 
+# ggplot(filter(treatment_ratios_annual, fplottype != "CE"), aes(censusyear, mean_sg_ratio, color = fplottype)) +
+#   geom_line() +
+#   scale_color_viridis_d(end = .8)
 
 ```
 
@@ -218,32 +252,52 @@ tg_ratio_pdat <- select(treatment_ratios, fplottype, period) %>%
 
 tg_ratio_pred <- get_predicted_vals(tg_ratio_gam, tg_ratio_pdat)
 
-tg_ratio_diff <- get_exclosure_diff(tg_ratio_gam, tg_ratio_pred, comparison_variable = "fplottype", comparison_level = 3)
+tg_ratio_ee_cc_diff <- get_exclosure_diff(tg_ratio_gam, tg_ratio_pred, comparison_variable = "fplottype", comparison_level = 3)
 
-tg_ratio_pred <- add_exclosure_diff(tg_ratio_pred, tg_ratio_diff)
+tg_ratio_ee_cc_pred <- add_exclosure_diff(tg_ratio_pred, tg_ratio_ee_cc_diff)
 
-plot_fitted_pred(filter(tg_ratio_pred, fplottype != "CE"), comparison_variable = "fplottype") +
-  geom_hline(yintercept = 1)
-# +
-#   scale_color_viridis_d(begin = .8, end = .8) +
-#   scale_fill_viridis_d(begin = .8, end = .8)
+plot_fitted_pred(filter(tg_ratio_ee_cc_pred, fplottype != "CE"), comparison_variable = "fplottype") +
+  geom_hline(yintercept = 1) +
+  ggtitle("GAM diff tgran ratio EE v CC")
 
-tg_ratio_pred_annual <- tg_ratio_pred %>%
-  left_join(distinct(select(treatment_ratios, period, censusdate))) %>% 
-  mutate(censusdate = as.Date(censusdate)) %>%
-  mutate(censusyear = as.integer(format.Date(censusdate, "%Y"))) %>%
-  group_by(censusyear, fplottype) %>%
-  summarize(mean_fit = mean(invlink_fit),
-         nperiods = length(unique(period)),
-         nsamples = dplyr::n()) %>%
-  ungroup()
+tg_ratio_ce_cc_diff <- get_exclosure_diff(tg_ratio_gam, tg_ratio_pred, comparison_variable = "fplottype", comparison_level = 2)
 
-  
+tg_ratio_ce_cc_pred <- add_exclosure_diff(tg_ratio_pred, tg_ratio_ce_cc_diff)
 
-ggplot(filter(treatment_ratios_annual, fplottype != "CE"), aes(censusyear, mean_tg_ratio, color = fplottype)) +
-  geom_line() +
-  scale_color_viridis_d(end = .8) +
-  geom_line(data = filter(tg_ratio_pred_annual, fplottype != "CE"), aes(censusyear, mean_fit))
+plot_fitted_pred(filter(tg_ratio_ce_cc_pred, fplottype != "EE"), comparison_variable = "fplottype") +
+  geom_hline(yintercept = 1)  +
+  scale_fill_viridis_d(end = .4) +
+  scale_color_viridis_d(end = .4) +
+  ggtitle("GAM diff tgran ratio CE v CC")
+
+tg_ratio_ce_ee_diff <- get_exclosure_diff(tg_ratio_gam, tg_ratio_pred, comparison_variable = "fplottype", comparison_level = 3, reference_level = 2)
+
+tg_ratio_ce_ee_pred <- add_exclosure_diff(tg_ratio_pred, tg_ratio_ce_ee_diff)
+
+plot_fitted_pred(filter(tg_ratio_ce_ee_pred, fplottype != "CC"), comparison_variable = "fplottype") +
+  geom_hline(yintercept = 1) +
+  scale_fill_viridis_d(begin = .4, end = .8) +
+  scale_color_viridis_d(begin = .4, end = .8) +
+  ggtitle("GAM diff tgran ratio CE v EE")
+
+
+# 
+# tg_ratio_pred_annual <- tg_ratio_pred %>%
+#   left_join(distinct(select(treatment_ratios, period, censusdate))) %>% 
+#   mutate(censusdate = as.Date(censusdate)) %>%
+#   mutate(censusyear = as.integer(format.Date(censusdate, "%Y"))) %>%
+#   group_by(censusyear, fplottype) %>%
+#   summarize(mean_fit = mean(invlink_fit),
+#          nperiods = length(unique(period)),
+#          nsamples = dplyr::n()) %>%
+#   ungroup()
+# 
+#   
+# 
+# ggplot(filter(treatment_ratios_annual, fplottype != "CE"), aes(censusyear, mean_tg_ratio, color = fplottype)) +
+#   geom_line() +
+#   scale_color_viridis_d(end = .8) +
+#   geom_line(data = filter(tg_ratio_pred_annual, fplottype != "CE"), aes(censusyear, mean_fit))
 
 ```
 
@@ -255,16 +309,22 @@ total_ratio_pdat <- select(treatment_ratios, fplottype, period) %>%
   mutate(type = "all_energy") %>%
   filter(fplottype != "CC")
 
-total_e_pred <- get_predicted_vals(total_ratio_gam, total_ratio_pdat)
+total_e_ratio_pred <- get_predicted_vals(total_ratio_gam, total_ratio_pdat)
 
-plot_fitted_pred(filter(total_e_pred, fplottype != "CE"), comparison_variable = "fplottype") +
+total_e_ratio_diff <- get_exclosure_diff(total_ratio_gam, total_ratio_pdat, comparison_variable = "fplottype", comparison_level = 3, reference_level = 2)
+total_e_ratio_pred <- add_exclosure_diff(total_e_ratio_pred, total_e_ratio_diff)
+
+plot_fitted_pred(filter(total_e_ratio_pred), comparison_variable = "fplottype") +
   geom_hline(yintercept = 1)  +
-  scale_color_viridis_d(begin = .8, end = .8) +
-  scale_fill_viridis_d(begin = .8, end = .8)
+  scale_color_viridis_d(begin = .4, end = .8) +
+  scale_fill_viridis_d(begin = .4, end = .8) +
+  ggtitle("Total energy ratio fits + diff, CE v EE")
 
 ```
 
 ## By era
+
+##### Era means:
 
 ```{r}
 
@@ -274,31 +334,35 @@ era_means <- treatment_means %>%
          smgran_e_mean = mean(smgran_e),
          tinygran_e_mean = mean(tinygran_e)) %>%
   ungroup()
-
-ggplot(era_means, aes(period, total_e_mean, color = oplottype)) +
-  geom_line(size = 2) +
-  geom_line(aes(period, total_e), alpha = .3) +
-  scale_color_viridis_d(end = .8)
-
-
-ggplot(era_means, aes(period, smgran_e_mean, color = oplottype)) +
-  geom_line(size = 2) +
-  geom_line(aes(period, smgran_e), alpha = .3) +
-  scale_color_viridis_d(end = .8)
-
-
-
-ggplot(era_means, aes(period, tinygran_e_mean, color = oplottype)) +
-  geom_line(size = 2) +
-  geom_line(aes(period, tinygran_e), alpha = .3) +
-  scale_color_viridis_d(end = .8)
+# 
+# ggplot(era_means, aes(period, total_e_mean, color = oplottype)) +
+#   geom_line(size = 2) +
+#   geom_line(aes(period, total_e), alpha = .3) +
+#   scale_color_viridis_d(end = .8)
+# 
+# 
+# ggplot(era_means, aes(period, smgran_e_mean, color = oplottype)) +
+#   geom_line(size = 2) +
+#   geom_line(aes(period, smgran_e), alpha = .3) +
+#   scale_color_viridis_d(end = .8)
+# 
+# 
+# 
+# ggplot(era_means, aes(period, tinygran_e_mean, color = oplottype)) +
+#   geom_line(size = 2) +
+#   geom_line(aes(period, tinygran_e), alpha = .3) +
+#   scale_color_viridis_d(end = .8)
 
 select(era_means, era, oplottype, total_e_mean, smgran_e_mean, tinygran_e_mean) %>%
   distinct()
 
+
+
 ```
 
 ### gls on actual vals
+
+##### Total energy raw GLS
 
 ```{r}
 
@@ -306,10 +370,19 @@ library(nlme)
 library(lsmeans)
 
 te_gls <- gls(total_e ~ era * oplottype, data = treatment_means, correlation = corAR1(form = ~period|oplottype))
-#summary(pairs(lsmeans(te_gls, specs = ~oplottype | era)))
+summary(pairs(lsmeans(te_gls, specs = ~oplottype | era)))
+```
 
+##### Small gran raw GLS
+
+```{r}
 sg_gls <- gls(smgran_e ~ era * oplottype, data = treatment_means, correlation = corAR1(form = ~period|oplottype))
 summary(pairs(lsmeans(sg_gls, specs = ~oplottype | era)))
+```
+
+##### Tiny gran raw GLS
+
+```{r}
 
 tg_gls <- gls(tinygran_e ~ era * oplottype, data = treatment_means, correlation = corAR1(form = ~period|oplottype))
 summary(pairs(lsmeans(tg_gls, specs = ~oplottype | era)))
@@ -318,6 +391,8 @@ summary(pairs(lsmeans(tg_gls, specs = ~oplottype | era)))
 ```
 
 ### gls on ratios
+
+##### Era ratios:
 
 ```{r}
 
@@ -338,27 +413,52 @@ ggplot(era_ratios, aes(period, te_mean, color = oplottype)) +
   scale_color_viridis_d(end = .8)
 
 
-ggplot(era_ratios, aes(period, sg_mean, color = oplottype)) +
-  geom_line(size = 2) +
-  geom_line(aes(period, sg_of_c), alpha = .3) +
-  scale_color_viridis_d(end = .8)
+# ggplot(era_ratios, aes(period, sg_mean, color = oplottype)) +
+#   geom_line(size = 2) +
+#   geom_line(aes(period, sg_of_c), alpha = .3) +
+#   scale_color_viridis_d(end = .8)
+# 
+# 
+# 
+# ggplot(era_ratios, aes(period, tg_mean, color = oplottype)) +
+#   geom_line(size = 2) +
+#   geom_line(aes(period, tg_of_c), alpha = .3) +
+#   scale_color_viridis_d(end = .8)
+# 
 
+treatment_ratios_no_c <- filter(treatment_ratios, fplottype != "CC") %>%
+  mutate(fplottype = as.factor(plot_type))
+```
 
+##### Total energy ratios GLS
 
-ggplot(era_ratios, aes(period, tg_mean, color = oplottype)) +
-  geom_line(size = 2) +
-  geom_line(aes(period, tg_of_c), alpha = .3) +
-  scale_color_viridis_d(end = .8)
+This fit includes CC plots, for which ratio always = 1. 
 
+```{r}
+ter_gls <- gls(total_e_of_c ~ era * fplottype, data = treatment_ratios, correlation = corAR1(form = ~period|fplottype))
+summary(pairs(lsmeans(ter_gls, specs = ~fplottype | era)))
 
-treatment_ratios_no_c <- filter(treatment_ratios, fplottype != "CC")
+```
 
+This fit has CC plots removed.
+
+```{r}
 ter_gls <- gls(total_e_of_c ~ era * fplottype, data = treatment_ratios_no_c, correlation = corAR1(form = ~period|fplottype))
-#summary(pairs(lsmeans(ter_gls, specs = ~fplottype | era)))
+summary(pairs(lsmeans(ter_gls, specs = ~fplottype | era)))
 
+```
+
+##### Smgran ratio GLS
+
+```{r}
 sgr_gls <- gls(sg_of_c ~ era * fplottype, data = treatment_ratios, correlation = corAR1(form = ~period|fplottype))
 summary(pairs(lsmeans(sgr_gls, specs = ~fplottype | era)))
 
+```
+
+##### Tiny gran ratio GLS
+
+```{r}
 tgr_gls <- gls(tg_of_c ~ era * fplottype, data = treatment_ratios, correlation = corAR1(form = ~period|fplottype))
 summary(pairs(lsmeans(tgr_gls, specs = ~fplottype | era)))
 
@@ -368,15 +468,38 @@ summary(pairs(lsmeans(tgr_gls, specs = ~fplottype | era)))
 
 ### glm on ratios
 
+##### Total energy GLM
+
+With  controls:
+
+```{r}
+
+ter_glm <- gam(total_e_of_c ~ era * fplottype, data = treatment_ratios, family = "Gamma")
+summary(pairs(regrid(lsmeans(ter_glm, specs = ~fplottype | era))))
+```
+
+Without controls:
+
 ```{r}
 
 ter_glm <- gam(total_e_of_c ~ era * fplottype, data = treatment_ratios_no_c, family = "Gamma")
-#summary(pairs(lsmeans(ter_glm, specs = ~fplottype | era)))
+summary(pairs(regrid(lsmeans(ter_glm, specs = ~fplottype | era))))
 
+
+```
+
+##### Small granivore ratio GLM
+
+```{r}
 sgr_glm <- gam(sg_of_c ~ era * fplottype, data = treatment_ratios, family = "Gamma")
 #summary(pairs(lsmeans(sgr_glm, specs = ~fplottype | era)))
 summary(pairs(regrid(lsmeans(sgr_glm, specs = ~fplottype | era))))
+```
 
+
+##### Tiny granivore ratio GLM
+
+```{r}
 tgr_glm <- gam(tg_of_c ~ era * fplottype, data = treatment_ratios, family = "Gamma")
 summary(pairs(regrid(lsmeans(tgr_glm, specs = ~fplottype | era))))
 
