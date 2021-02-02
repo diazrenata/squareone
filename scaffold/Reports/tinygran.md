@@ -168,6 +168,13 @@ Energy plots
 
 ![](tinygran_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
+    ## Scale for 'colour' is already present. Adding another scale for 'colour',
+    ## which will replace the existing scale.
+    ## Scale for 'fill' is already present. Adding another scale for 'fill', which
+    ## will replace the existing scale.
+
+![](tinygran_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->
+
 ## By era
 
 ##### Era means:
@@ -178,12 +185,12 @@ Energy plots
     ##  1 a_pre_ba      CC                484.          28.4            28.4
     ##  2 a_pre_ba      CE                455.          32.5            32.3
     ##  3 a_pre_ba      EE                110.          98.8            98.8
-    ##  4 b_pre_cpt     CC                717.         234.            133. 
-    ##  5 b_pre_cpt     CE                673.         379.            127. 
-    ##  6 b_pre_cpt     EE                532.         485.            152. 
-    ##  7 c_pre_switch  CC                687.         205.            194. 
-    ##  8 c_pre_switch  CE                603.         275.            167. 
-    ##  9 c_pre_switch  EE                341.         308.            200. 
+    ##  4 b_pre_cpt     CC                718.         216.            128. 
+    ##  5 b_pre_cpt     CE                672.         368.            120. 
+    ##  6 b_pre_cpt     EE                511.         465.            139. 
+    ##  7 c_pre_switch  CC                670.         243.            240. 
+    ##  8 c_pre_switch  CE                573.         256.            206. 
+    ##  9 c_pre_switch  EE                310.         281.            260. 
     ## 10 d_post-switch CC                718.         207.            207. 
     ## 11 d_post-switch CE                360.         311.            273. 
     ## 12 d_post-switch EE                308.         281.            275.
@@ -201,27 +208,27 @@ Energy plots
 
     ## era = a_pre_ba:
     ##  contrast estimate    SE  df t.ratio p.value
-    ##  CC - CE      37.2  79.0 189 0.471   0.8851 
-    ##  CC - EE     372.0  79.0 189 4.710   <.0001 
-    ##  CE - EE     334.8  79.0 189 4.239   0.0001 
+    ##  CC - CE      39.3  77.7 203 0.505   0.8690 
+    ##  CC - EE     375.0  77.7 203 4.825   <.0001 
+    ##  CE - EE     335.8  77.7 203 4.320   0.0001 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate    SE  df t.ratio p.value
-    ##  CC - CE      40.7  85.8 191 0.475   0.8832 
-    ##  CC - EE     195.3  85.8 191 2.278   0.0614 
-    ##  CE - EE     154.6  85.8 191 1.803   0.1714 
+    ##  CC - CE      60.2  79.9 205 0.754   0.7317 
+    ##  CC - EE     220.6  79.9 205 2.762   0.0172 
+    ##  CE - EE     160.4  79.9 205 2.008   0.1128 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate    SE  df t.ratio p.value
-    ##  CC - CE     146.8 106.5 192 1.378   0.3545 
-    ##  CC - EE     331.4 106.5 192 3.110   0.0061 
-    ##  CE - EE     184.6 106.5 192 1.732   0.1958 
+    ##  CC - CE     130.7 117.5 208 1.112   0.5080 
+    ##  CC - EE     311.4 117.5 208 2.650   0.0235 
+    ##  CE - EE     180.8 117.5 208 1.538   0.2754 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate    SE  df t.ratio p.value
-    ##  CC - CE     254.4 132.9 193 1.915   0.1372 
-    ##  CC - EE     414.2 132.9 193 3.117   0.0059 
-    ##  CE - EE     159.7 132.9 193 1.202   0.4534 
+    ##  CC - CE     251.4 132.4 207 1.899   0.1414 
+    ##  CC - EE     407.6 132.4 207 3.080   0.0066 
+    ##  CE - EE     156.2 132.4 207 1.180   0.4662 
     ## 
     ## Degrees-of-freedom method: satterthwaite 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
@@ -230,27 +237,27 @@ Energy plots
 
     ## era = a_pre_ba:
     ##  contrast estimate    SE  df t.ratio p.value
-    ##  CC - CE     -19.8  65.0 152 -0.304  0.9503 
-    ##  CC - EE     -87.5  65.0 152 -1.347  0.3718 
-    ##  CE - EE     -67.7  65.0 152 -1.042  0.5514 
+    ##  CC - CE     -20.4  64.3 158 -0.317  0.9462 
+    ##  CC - EE     -87.5  64.3 158 -1.360  0.3642 
+    ##  CE - EE     -67.1  64.3 158 -1.044  0.5504 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate    SE  df t.ratio p.value
-    ##  CC - CE    -116.9  68.8 153 -1.699  0.2088 
-    ##  CC - EE    -199.6  68.8 153 -2.900  0.0119 
-    ##  CE - EE     -82.6  68.8 153 -1.201  0.4547 
+    ##  CC - CE    -121.7  65.0 159 -1.873  0.1498 
+    ##  CC - EE    -201.2  65.0 159 -3.097  0.0065 
+    ##  CE - EE     -79.5  65.0 159 -1.223  0.4411 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate    SE  df t.ratio p.value
-    ##  CC - CE     -69.8  84.3 153 -0.829  0.6858 
-    ##  CC - EE     -95.4  84.3 153 -1.132  0.4960 
-    ##  CE - EE     -25.5  84.3 153 -0.303  0.9506 
+    ##  CC - CE     -43.9  91.9 161 -0.478  0.8818 
+    ##  CC - EE     -60.4  91.9 161 -0.657  0.7887 
+    ##  CE - EE     -16.4  91.9 161 -0.179  0.9825 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate    SE  df t.ratio p.value
-    ##  CC - CE    -112.6 105.1 154 -1.071  0.5337 
-    ##  CC - EE    -102.1 105.1 154 -0.971  0.5963 
-    ##  CE - EE      10.5 105.1 154  0.100  0.9945 
+    ##  CC - CE    -101.4 105.7 160 -0.960  0.6033 
+    ##  CC - EE     -86.8 105.7 161 -0.821  0.6905 
+    ##  CE - EE      14.7 105.7 160  0.139  0.9894 
     ## 
     ## Degrees-of-freedom method: satterthwaite 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
@@ -259,27 +266,27 @@ Energy plots
 
     ## era = a_pre_ba:
     ##  contrast estimate   SE  df t.ratio p.value
-    ##  CC - CE      1.06 35.9 284  0.030  0.9995 
-    ##  CC - EE    -63.08 35.9 284 -1.756  0.1866 
-    ##  CE - EE    -64.14 35.9 284 -1.785  0.1764 
+    ##  CC - CE      1.12 34.5 292  0.033  0.9994 
+    ##  CC - EE    -63.00 34.5 292 -1.828  0.1623 
+    ##  CE - EE    -64.13 34.5 291 -1.860  0.1522 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate   SE  df t.ratio p.value
-    ##  CC - CE     -4.17 39.8 288 -0.105  0.9940 
-    ##  CC - EE    -24.31 39.8 288 -0.611  0.8145 
-    ##  CE - EE    -20.14 39.8 288 -0.506  0.8686 
+    ##  CC - CE      2.25 36.0 294  0.062  0.9979 
+    ##  CC - EE    -15.97 36.0 294 -0.444  0.8971 
+    ##  CE - EE    -18.21 36.0 294 -0.506  0.8683 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate   SE  df t.ratio p.value
-    ##  CC - CE     21.88 50.2 288  0.436  0.9005 
-    ##  CC - EE     -6.57 50.2 288 -0.131  0.9906 
-    ##  CE - EE    -28.44 50.2 288 -0.567  0.8377 
+    ##  CC - CE     16.88 55.1 298  0.306  0.9497 
+    ##  CC - EE    -20.72 55.1 299 -0.376  0.9251 
+    ##  CE - EE    -37.60 55.1 299 -0.682  0.7742 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate   SE  df t.ratio p.value
-    ##  CC - CE    -43.37 62.5 291 -0.694  0.7671 
-    ##  CC - EE    -51.57 62.5 291 -0.825  0.6875 
-    ##  CE - EE     -8.20 62.5 291 -0.131  0.9905 
+    ##  CC - CE    -46.12 60.7 298 -0.760  0.7279 
+    ##  CC - EE    -55.46 60.7 299 -0.914  0.6320 
+    ##  CE - EE     -9.34 60.7 299 -0.154  0.9870 
     ## 
     ## Degrees-of-freedom method: satterthwaite 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
@@ -294,12 +301,12 @@ Energy plots
     ##  1 a_pre_ba      CC          1.     0.0581  0.0581
     ##  2 a_pre_ba      CE          0.974  0.0651  0.0648
     ##  3 a_pre_ba      EE          0.238  0.212   0.212 
-    ##  4 b_pre_cpt     CC          1.     0.294   0.174 
-    ##  5 b_pre_cpt     CE          0.972  0.531   0.178 
-    ##  6 b_pre_cpt     EE          0.753  0.687   0.215 
-    ##  7 c_pre_switch  CC          1.     0.262   0.250 
-    ##  8 c_pre_switch  CE          0.871  0.374   0.213 
-    ##  9 c_pre_switch  EE          0.482  0.417   0.260 
+    ##  4 b_pre_cpt     CC          1.     0.269   0.164 
+    ##  5 b_pre_cpt     CE          0.962  0.512   0.165 
+    ##  6 b_pre_cpt     EE          0.726  0.658   0.194 
+    ##  7 c_pre_switch  CC          1.     0.319   0.315 
+    ##  8 c_pre_switch  CE          0.853  0.354   0.267 
+    ##  9 c_pre_switch  EE          0.432  0.370   0.342 
     ## 10 d_post-switch CC          1.     0.260   0.260 
     ## 11 d_post-switch CE          0.489  0.439   0.385 
     ## 12 d_post-switch EE          0.393  0.363   0.357
@@ -312,27 +319,27 @@ This fit includes CC plots, for which ratio always = 1.
 
     ## era = a_pre_ba:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE    0.0271 0.0433 820  0.626  0.8061 
-    ##  CC - EE    0.7604 0.0433 820 17.546  <.0001 
-    ##  CE - EE    0.7333 0.0433 818 16.921  <.0001 
+    ##  CC - CE    0.0274 0.0434 819  0.630  0.8039 
+    ##  CC - EE    0.7606 0.0434 819 17.507  <.0001 
+    ##  CE - EE    0.7333 0.0434 817 16.877  <.0001 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE    0.0314 0.0508 843  0.618  0.8102 
-    ##  CC - EE    0.2660 0.0508 841  5.237  <.0001 
-    ##  CE - EE    0.2346 0.0508 844  4.619  <.0001 
+    ##  CC - CE    0.0482 0.0471 837  1.024  0.5622 
+    ##  CC - EE    0.2852 0.0471 835  6.060  <.0001 
+    ##  CE - EE    0.2370 0.0471 838  5.036  <.0001 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE    0.1467 0.0664 832  2.208  0.0704 
-    ##  CC - EE    0.5166 0.0664 834  7.776  <.0001 
-    ##  CE - EE    0.3699 0.0664 834  5.569  <.0001 
+    ##  CC - CE    0.1475 0.0791 840  1.865  0.1495 
+    ##  CC - EE    0.5685 0.0791 843  7.188  <.0001 
+    ##  CE - EE    0.4209 0.0791 842  5.323  <.0001 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE    0.5129 0.0836 855  6.132  <.0001 
-    ##  CC - EE    0.6261 0.0836 861  7.485  <.0001 
-    ##  CE - EE    0.1132 0.0836 858  1.353  0.3663 
+    ##  CC - CE    0.5129 0.0839 853  6.115  <.0001 
+    ##  CC - EE    0.6287 0.0839 859  7.497  <.0001 
+    ##  CE - EE    0.1159 0.0839 856  1.381  0.3511 
     ## 
     ## Degrees-of-freedom method: satterthwaite 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
@@ -341,47 +348,68 @@ This fit has CC plots removed.
 
     ## era = a_pre_ba:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CE - EE     0.733 0.0531 529 13.816  <.0001 
+    ##  CE - EE     0.733 0.0532 528 13.780  <.0001 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CE - EE     0.235 0.0622 540  3.771  0.0002 
+    ##  CE - EE     0.237 0.0576 538  4.112  <.0001 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CE - EE     0.370 0.0814 538  4.547  <.0001 
+    ##  CE - EE     0.421 0.0969 542  4.346  <.0001 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CE - EE     0.113 0.1024 552  1.105  0.2697 
+    ##  CE - EE     0.116 0.1027 551  1.128  0.2598 
     ## 
     ## Degrees-of-freedom method: satterthwaite
+
+    ## fplottype = CE:
+    ##  contrast                       estimate     SE  df t.ratio p.value
+    ##  a_pre_ba - b_pre_cpt             0.0208 0.0551 222  0.378  0.9815 
+    ##  a_pre_ba - c_pre_switch          0.1202 0.0781 236  1.538  0.4165 
+    ##  a_pre_ba - (d_post-switch)       0.4855 0.0818 228  5.935  <.0001 
+    ##  b_pre_cpt - c_pre_switch         0.0993 0.0788 237  1.261  0.5885 
+    ##  b_pre_cpt - (d_post-switch)      0.4647 0.0832 226  5.582  <.0001 
+    ##  c_pre_switch - (d_post-switch)   0.3653 0.0974 241  3.750  0.0013 
+    ## 
+    ## fplottype = EE:
+    ##  contrast                       estimate     SE  df t.ratio p.value
+    ##  a_pre_ba - b_pre_cpt            -0.4754 0.0551 223 -8.633  <.0001 
+    ##  a_pre_ba - c_pre_switch         -0.1922 0.0781 236 -2.460  0.0691 
+    ##  a_pre_ba - (d_post-switch)      -0.1319 0.0818 227 -1.613  0.3735 
+    ##  b_pre_cpt - c_pre_switch         0.2832 0.0788 237  3.596  0.0022 
+    ##  b_pre_cpt - (d_post-switch)      0.3435 0.0832 225  4.126  0.0003 
+    ##  c_pre_switch - (d_post-switch)   0.0603 0.0974 240  0.618  0.9261 
+    ## 
+    ## Degrees-of-freedom method: satterthwaite 
+    ## P value adjustment: tukey method for comparing a family of 4 estimates
 
 ##### Smgran ratio GLS
 
     ## era = a_pre_ba:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE   -0.0131 0.0433 510 -0.301  0.9512 
-    ##  CC - EE   -0.1577 0.0433 509 -3.639  0.0009 
-    ##  CE - EE   -0.1447 0.0433 509 -3.337  0.0026 
+    ##  CC - CE  -0.01337 0.0439 502 -0.305  0.9501 
+    ##  CC - EE  -0.15802 0.0439 501 -3.603  0.0010 
+    ##  CE - EE  -0.14466 0.0439 501 -3.298  0.0030 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE   -0.2309 0.0498 520 -4.636  <.0001 
-    ##  CC - EE   -0.3672 0.0498 519 -7.372  <.0001 
-    ##  CE - EE   -0.1363 0.0498 521 -2.736  0.0176 
+    ##  CC - CE  -0.23441 0.0468 509 -5.010  <.0001 
+    ##  CC - EE  -0.37163 0.0468 509 -7.942  <.0001 
+    ##  CE - EE  -0.13723 0.0468 510 -2.933  0.0098 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE   -0.1098 0.0645 517 -1.702  0.2053 
-    ##  CC - EE   -0.1522 0.0645 518 -2.359  0.0489 
-    ##  CE - EE   -0.0424 0.0645 518 -0.657  0.7886 
+    ##  CC - CE  -0.05064 0.0761 515 -0.665  0.7839 
+    ##  CC - EE  -0.05198 0.0761 516 -0.683  0.7737 
+    ##  CE - EE  -0.00134 0.0761 516 -0.018  0.9998 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE   -0.1747 0.0804 527 -2.173  0.0768 
-    ##  CC - EE   -0.0979 0.0804 530 -1.217  0.4436 
-    ##  CE - EE    0.0769 0.0804 529  0.956  0.6050 
+    ##  CC - CE  -0.16803 0.0814 518 -2.065  0.0982 
+    ##  CC - EE  -0.08678 0.0814 521 -1.067  0.5353 
+    ##  CE - EE   0.08125 0.0814 520  0.999  0.5780 
     ## 
     ## Degrees-of-freedom method: satterthwaite 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
@@ -390,27 +418,27 @@ This fit has CC plots removed.
 
     ## era = a_pre_ba:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE  -0.00326 0.0365 440 -0.090  0.9956 
-    ##  CC - EE  -0.14568 0.0365 440 -3.995  0.0002 
-    ##  CE - EE  -0.14242 0.0365 439 -3.906  0.0003 
+    ##  CC - CE  -0.00367 0.0340 477 -0.108  0.9936 
+    ##  CC - EE  -0.14637 0.0340 477 -4.307  0.0001 
+    ##  CE - EE  -0.14270 0.0340 477 -4.200  0.0001 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE  -0.00873 0.0416 448 -0.210  0.9760 
-    ##  CC - EE  -0.04459 0.0416 447 -1.073  0.5316 
-    ##  CE - EE  -0.03586 0.0416 448 -0.863  0.6642 
+    ##  CC - CE  -0.00416 0.0362 484 -0.115  0.9927 
+    ##  CC - EE  -0.03211 0.0362 484 -0.887  0.6486 
+    ##  CE - EE  -0.02795 0.0362 485 -0.772  0.7202 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE   0.02861 0.0535 446  0.534  0.8544 
-    ##  CC - EE  -0.01731 0.0535 447 -0.323  0.9440 
-    ##  CE - EE  -0.04593 0.0535 447 -0.858  0.6672 
+    ##  CC - CE   0.03573 0.0587 490  0.609  0.8153 
+    ##  CC - EE  -0.03706 0.0587 491 -0.632  0.8028 
+    ##  CE - EE  -0.07279 0.0587 491 -1.241  0.4298 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CC - CE  -0.10264 0.0666 453 -1.540  0.2731 
-    ##  CC - EE  -0.07177 0.0666 456 -1.077  0.5288 
-    ##  CE - EE   0.03087 0.0666 454  0.463  0.8885 
+    ##  CC - CE  -0.10469 0.0628 493 -1.667  0.2189 
+    ##  CC - EE  -0.07613 0.0628 496 -1.213  0.4463 
+    ##  CE - EE   0.02856 0.0628 494  0.455  0.8923 
     ## 
     ## Degrees-of-freedom method: satterthwaite 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
@@ -423,27 +451,27 @@ With controls:
 
     ## era = a_pre_ba:
     ##  contrast estimate     SE   df t.ratio p.value
-    ##  CC - CE    0.0265 0.0394 1260  0.672  0.7797 
-    ##  CC - EE    0.7622 0.0290 1260 26.290  <.0001 
-    ##  CE - EE    0.7358 0.0283 1260 26.028  <.0001 
+    ##  CC - CE    0.0265 0.0396 1260  0.668  0.7822 
+    ##  CC - EE    0.7622 0.0292 1260 26.123  <.0001 
+    ##  CE - EE    0.7358 0.0284 1260 25.863  <.0001 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate     SE   df t.ratio p.value
-    ##  CC - CE    0.0277 0.0494 1260  0.562  0.8403 
-    ##  CC - EE    0.2465 0.0443 1260  5.562  <.0001 
-    ##  CE - EE    0.2188 0.0435 1260  5.024  <.0001 
+    ##  CC - CE    0.0384 0.0451 1260  0.851  0.6712 
+    ##  CC - EE    0.2744 0.0402 1260  6.829  <.0001 
+    ##  CE - EE    0.2360 0.0392 1260  6.024  <.0001 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate     SE   df t.ratio p.value
-    ##  CC - CE    0.1291 0.0598 1260  2.160  0.0786 
-    ##  CC - EE    0.5181 0.0500 1260 10.353  <.0001 
-    ##  CE - EE    0.3890 0.0449 1260  8.669  <.0001 
+    ##  CC - CE    0.1471 0.0725 1260  2.027  0.1061 
+    ##  CC - EE    0.5682 0.0601 1260  9.451  <.0001 
+    ##  CE - EE    0.4211 0.0528 1260  7.981  <.0001 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate     SE   df t.ratio p.value
-    ##  CC - CE    0.5113 0.0674 1260  7.585  <.0001 
-    ##  CC - EE    0.6069 0.0651 1260  9.327  <.0001 
-    ##  CE - EE    0.0956 0.0380 1260  2.517  0.0320 
+    ##  CC - CE    0.5113 0.0678 1260  7.537  <.0001 
+    ##  CC - EE    0.6069 0.0655 1260  9.267  <.0001 
+    ##  CE - EE    0.0956 0.0382 1260  2.501  0.0334 
     ## 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
 
@@ -451,45 +479,45 @@ Without controls:
 
     ## era = a_pre_ba:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CE - EE    0.7358 0.0346 840 21.252  <.0001 
+    ##  CE - EE    0.7358 0.0348 840 21.117  <.0001 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CE - EE    0.2188 0.0533 840  4.102  <.0001 
+    ##  CE - EE    0.2360 0.0480 840  4.918  <.0001 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CE - EE    0.3890 0.0550 840  7.078  <.0001 
+    ##  CE - EE    0.4211 0.0646 840  6.516  <.0001 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate     SE  df t.ratio p.value
-    ##  CE - EE    0.0956 0.0465 840  2.055  0.0402
+    ##  CE - EE    0.0956 0.0468 840  2.042  0.0414
 
 ##### Small granivore ratio GLM
 
     ## era = a_pre_ba:
     ##  contrast estimate      SE   df t.ratio p.value
-    ##  CC - CE  -0.00697 0.00499 1260  -1.396 0.3430 
-    ##  CC - EE  -0.15414 0.01260 1260 -12.236 <.0001 
-    ##  CE - EE  -0.14717 0.01271 1260 -11.580 <.0001 
+    ##  CC - CE  -0.00697 0.00501 1260  -1.392 0.3454 
+    ##  CC - EE  -0.15414 0.01264 1260 -12.196 <.0001 
+    ##  CE - EE  -0.14717 0.01275 1260 -11.543 <.0001 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate      SE   df t.ratio p.value
-    ##  CC - CE  -0.23703 0.04362 1260  -5.435 <.0001 
-    ##  CC - EE  -0.39298 0.05369 1260  -7.319 <.0001 
-    ##  CE - EE  -0.15595 0.06239 1260  -2.500 0.0336 
+    ##  CC - CE  -0.24302 0.03806 1260  -6.385 <.0001 
+    ##  CC - EE  -0.38926 0.04679 1260  -8.318 <.0001 
+    ##  CE - EE  -0.14623 0.05488 1260  -2.665 0.0213 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate      SE   df t.ratio p.value
-    ##  CC - CE  -0.11191 0.04183 1260  -2.675 0.0207 
-    ##  CC - EE  -0.15439 0.04507 1260  -3.426 0.0018 
-    ##  CE - EE  -0.04248 0.05126 1260  -0.829 0.6853 
+    ##  CC - CE  -0.03459 0.05324 1260  -0.650 0.7926 
+    ##  CC - EE  -0.05060 0.05458 1260  -0.927 0.6233 
+    ##  CE - EE  -0.01601 0.05718 1260  -0.280 0.9577 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate      SE   df t.ratio p.value
-    ##  CC - CE  -0.17822 0.06270 1260  -2.843 0.0126 
-    ##  CC - EE  -0.10247 0.05490 1260  -1.867 0.1489 
-    ##  CE - EE   0.07575 0.06997 1260   1.083 0.5251 
+    ##  CC - CE  -0.17822 0.06290 1260  -2.833 0.0130 
+    ##  CC - EE  -0.10247 0.05508 1260  -1.861 0.1507 
+    ##  CE - EE   0.07575 0.07020 1260   1.079 0.5273 
     ## 
     ## P value adjustment: tukey method for comparing a family of 3 estimates
 
@@ -497,26 +525,26 @@ Without controls:
 
     ## era = a_pre_ba:
     ##  contrast estimate      SE   df t.ratio p.value
-    ##  CC - CE  -0.00671 0.00553 1260  -1.213 0.4455 
-    ##  CC - EE  -0.15414 0.01398 1260 -11.024 <.0001 
-    ##  CE - EE  -0.14743 0.01410 1260 -10.456 <.0001 
+    ##  CC - CE  -0.00671 0.00546 1260  -1.228 0.4366 
+    ##  CC - EE  -0.15414 0.01381 1260 -11.162 <.0001 
+    ##  CE - EE  -0.14743 0.01393 1260 -10.586 <.0001 
     ## 
     ## era = b_pre_cpt:
     ##  contrast estimate      SE   df t.ratio p.value
-    ##  CC - CE  -0.00340 0.01987 1260  -0.171 0.9840 
-    ##  CC - EE  -0.04063 0.02209 1260  -1.839 0.1573 
-    ##  CE - EE  -0.03723 0.02226 1260  -1.672 0.2163 
+    ##  CC - CE  -0.00074 0.01676 1260  -0.044 0.9989 
+    ##  CC - EE  -0.02937 0.01827 1260  -1.607 0.2429 
+    ##  CE - EE  -0.02863 0.01831 1260  -1.564 0.2618 
     ## 
     ## era = c_pre_switch:
     ##  contrast estimate      SE   df t.ratio p.value
-    ##  CC - CE   0.03640 0.03333 1260   1.092 0.5190 
-    ##  CC - EE  -0.00998 0.03656 1260  -0.273 0.9598 
-    ##  CE - EE  -0.04638 0.03410 1260  -1.360 0.3623 
+    ##  CC - CE   0.04785 0.05033 1260   0.951 0.6082 
+    ##  CC - EE  -0.02769 0.05672 1260  -0.488 0.8770 
+    ##  CE - EE  -0.07553 0.05295 1260  -1.427 0.3275 
     ## 
     ## era = d_post-switch:
     ##  contrast estimate      SE   df t.ratio p.value
-    ##  CC - CE  -0.12507 0.06346 1260  -1.971 0.1199 
-    ##  CC - EE  -0.09678 0.06030 1260  -1.605 0.2439 
-    ##  CE - EE   0.02829 0.07169 1260   0.395 0.9178 
+    ##  CC - CE  -0.12507 0.06268 1260  -1.995 0.1137 
+    ##  CC - EE  -0.09678 0.05956 1260  -1.625 0.2354 
+    ##  CE - EE   0.02829 0.07081 1260   0.399 0.9158 
     ## 
     ## P value adjustment: tukey method for comparing a family of 3 estimates

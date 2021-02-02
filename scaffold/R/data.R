@@ -1,4 +1,4 @@
-get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv = F) {
+get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv = F, use_pre_switch = F) {
   
   plot_level <- portalr::energy(clean = T,
                                 level = "Plot",
@@ -16,36 +16,49 @@ get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv
     
     dplyr::mutate(era = NA) %>%
     dplyr::mutate(era = ifelse(period <= 216, "a_pre_ba",
-                               ifelse(period <= 356, "b_pre_cpt",
+                               ifelse(period <= 380, "b_pre_cpt",
                                       ifelse(period <= 434, "c_pre_switch", "d_post-switch")))) 
   
   
-  
-  if(use_christensen_plots) {
-    which_plots <-  c(5,6,7,11,13,14,17,18,24)
-    which_dir <- "Ch2019"
+  if(use_pre_switch) {
+    which_plots <- c(6,11,13,14,17,18, 2,3,4,8,15,19,22)
+    which_dir <- "PreSwitch"
   } else {
-    which_plots <- c(2,3,4,8,11,14,15,17,19,22)
-    which_dir <- "Diaz"
+    if(use_christensen_plots) {
+      which_plots <-  c(5,6,7,11,13,14,17,18,24)
+      which_dir <- "Ch2019"
+    } else {
+      which_plots <- c(2,3,4,8,11,14,15,17,19,22)
+      which_dir <- "Diaz"
+    }
   }
   
-  
-  
-  if(use_christensen_plots) {
+  if(use_pre_switch) {
+    
     plot_level <- plot_level %>%
       dplyr::filter(plot %in% which_plots,
-                    period > 118) %>%
-      dplyr::mutate(plot_type =
-                      ifelse(plot %in% c(5, 7, 24), "XC", # removal -> control
-                             ifelse(plot %in% c(6, 13, 18), "EC", # exclosure -> control
-                                    ifelse(plot %in% c(11, 14, 17), "CC", NA)))) # control 
-  } else {
-    plot_level <- plot_level %>%
-      dplyr::filter(plot %in% which_plots) %>%
+                    period > 118,
+                    period < 434) %>%
       dplyr::mutate(plot_type = 
-                      ifelse(plot %in% c(2, 8, 22), "CE", # control -> exclosure
-                             ifelse(plot %in% c(3, 15, 19, 21), "EE", # exclosure
-                                    ifelse(plot %in% c(4, 11, 14, 17), "CC", NA))))  # control
+                      ifelse(plot %in% c(3, 6, 13, 15, 18, 19, 21), "E", "C"))
+    
+  } else {
+    if(use_christensen_plots) {
+      plot_level <- plot_level %>%
+        dplyr::filter(plot %in% which_plots,
+                      period > 118) %>%
+        dplyr::mutate(plot_type =
+                        ifelse(plot %in% c(5, 7, 24), "XC", # removal -> control
+                               ifelse(plot %in% c(6, 13, 18), "EC", # exclosure -> control
+                                      ifelse(plot %in% c(11, 14, 17), "CC", NA)))) # control 
+    } else {
+      plot_level <- plot_level %>%
+        dplyr::filter(plot %in% which_plots) %>%
+        dplyr::mutate(plot_type = 
+                        ifelse(plot %in% c(2, 8, 22), "CE", # control -> exclosure
+                               ifelse(plot %in% c(3, 15, 19, 21), "EE", # exclosure
+                                      ifelse(plot %in% c(4, 11, 14, 17), "CC", NA))))  # control
+    }
   }
   
   
@@ -87,6 +100,10 @@ get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv
 
 get_total_energy_ratios <- function(treatment_data) {
   
+  if(!("CC" %in% unique(treatment_data$plot_type))) {
+    treatment_data$plot_type[ which(treatment_data$plot_type == "C")] <- "CC"
+  }
+  
   control_values <- dplyr::filter(treatment_data, plot_type == "CC") %>%
     select(period, total_e) %>%
     rename(total_e_c = total_e)
@@ -98,7 +115,7 @@ get_total_energy_ratios <- function(treatment_data) {
 }
 
 get_unique_inds <- function(use_christensen_plots = F, return_plot = F, save_csv = F){
-
+  
   inds <- portalr::summarise_individual_rodents(clean = T,
                                                 type = "Granivores",
                                                 length = "all",
@@ -125,14 +142,14 @@ get_unique_inds <- function(use_christensen_plots = F, return_plot = F, save_csv
     mutate(ntags = length(unique(tag))) %>%
     ungroup() %>%
     filter(wateryear != 2012) # see github, 2012 has a period when non-krats are not being tagged
-
+  
   plot_energy <- inds_unique %>%
     mutate(energy = 5.69 * (mean_wgt ^ .75)) %>%
     mutate(tag_total_energy = ifelse(is.na(tag), max_nas * energy, energy)) %>%
     group_by(treatment, plot, species, wateryear) %>%
     summarize(energy = sum(tag_total_energy)) %>%
     ungroup() 
- 
+  
   all_plots_all_years <- expand.grid(plot = c(1:24), wateryear = unique(inds$wateryear)) %>%
     filter(wateryear != 2012) %>%
     left_join(distinct(select(plot_energy, plot, wateryear, treatment)))
