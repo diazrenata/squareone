@@ -16,7 +16,19 @@ make_pdat <- function(orig_dat, np = 500, include_plot = F, comparison_variable 
 
 get_predicted_vals <- function(mod, pdat) {
 
-  linkpred <- predict(mod, newdata = pdat, type = "link", se.fit = T)
+  if("plot" %in% colnames(mod$model)) {
+    
+    plotnames <- unique(mod$model$plot)
+    
+    smoothnames <- c(paste0("s(period):plot", plotnames),
+                     "s(plot)")
+    
+    
+    linkpred <- predict(mod, newdata = pdat, type = "link", se.fit = T, exclude = smoothnames, newdata.guaranteed = T)
+  } else {
+    
+    linkpred <- predict(mod, newdata = pdat, type = "link", se.fit = T)
+  }
   
   pdat.pred <- pdat %>%
     mutate(link = linkpred$fit,
@@ -32,8 +44,18 @@ get_predicted_vals <- function(mod, pdat) {
 
 get_exclosure_diff <- function(mod, pdat, comparison_variable = "treatment", reference_level = 1, comparison_level = 2) {
   
-  modlp <- predict(mod, newdata = pdat, type = "lpmatrix")
+  if("plot" %in% colnames(mod$model)) {
   
+  plotnames <- unique(mod$model$plot)
+  
+  smoothnames <- c(paste0("s(period):plot", plotnames),
+                   "s(plot)")
+  
+  modlp <- predict(mod, newdata = pdat, type = "lpmatrix", exclude = smoothnames, newdata.guaranteed = T)
+  } else {
+    modlp <- predict(mod, newdata = pdat, type = "lpmatrix")
+  }
+
   reference_rows <- which(pdat[,comparison_variable] == levels(pdat[,comparison_variable])[reference_level])
   
  comparison_rows <- which(pdat[,comparison_variable] ==levels(pdat[,comparison_variable])[comparison_level])
