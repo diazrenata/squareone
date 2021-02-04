@@ -1,0 +1,61 @@
+---
+title: "Linear models"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      fig.dim = c(7, 3))
+library(dplyr)
+library(ggplot2)
+library(nlme)
+library(lsmeans)
+theme_set(theme_bw())
+source(here::here("scaffold", "R", "data.R"))
+```
+
+```{r}
+
+use_christensen_plots <- F
+
+plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) %>%
+   mutate(tinygran_e = smgran_e - pb_e) %>%
+  mutate(treatment = ordered(plot_type),
+         plot = ordered(plot)) %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(numericdate = as.numeric(censusdate) / 1000)
+
+```
+
+Generalized least squares and linear mixed models, with and without autocorrelation.
+
+# Small granivores
+
+```{r}
+
+#sge_lme <- lme(smgran_e ~ treatment * era, random = ~1|plot, data = plot_totals, correlation = corCAR1())
+
+sge_lme_no_ac <- lme(smgran_e ~ treatment * era, random = ~1|plot, data = plot_totals)
+
+#sge_gls <- gls(smgran_e ~ treatment * era, correlation = corCAR1(), data = plot_totals)
+
+sge_gls_noac <- gls(smgran_e ~ treatment * era, data = plot_totals)
+
+sge_lme_timeac <- lme(smgran_e ~ treatment * era, random = ~1|plot, data = plot_totals, correlation = corCAR1(form = ~ numericdate | plot))
+
+sge_gls_timeac <- gls(smgran_e ~ treatment * era, correlation = corCAR1(form = ~ numericdate | plot), data = plot_totals)
+
+
+#AIC(sge_lme) # random plot effect and corAR1()
+AIC(sge_lme_no_ac) # random plot effect
+#AIC(sge_gls) # no plot effect and corAR1()
+AIC(sge_gls_noac) # no plot effect
+AIC(sge_lme_timeac) # random plot effect and corAR1(period)
+AIC(sge_gls_timeac) # no plot effect and cor(AR1(period))
+
+
+summary(pairs(lsmeans(sge_lme_timeac, specs = ~treatment | era)))
+
+summary(pairs(lsmeans(sge_gls_timeac, specs = ~treatment | era)))
+
+```
