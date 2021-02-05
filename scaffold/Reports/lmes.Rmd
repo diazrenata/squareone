@@ -4,7 +4,7 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,
+knitr::opts_chunk$set(echo = T,
                       fig.dim = c(7, 3))
 library(dplyr)
 library(ggplot2)
@@ -14,48 +14,193 @@ theme_set(theme_bw())
 source(here::here("scaffold", "R", "data.R"))
 ```
 
+<!-- ```{r} -->
+
+<!-- use_christensen_plots <- F -->
+
+<!-- plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) %>% -->
+<!--    mutate(tinygran_e = smgran_e - pb_e) %>% -->
+<!--   mutate(treatment = ordered(plot_type), -->
+<!--          plot = ordered(plot)) %>% -->
+<!--   mutate(censusdate = as.Date(censusdate)) %>% -->
+<!--   mutate(numericdate = as.numeric(censusdate) / 1000) -->
+
+<!-- ``` -->
+
+<!-- Generalized least squares and linear mixed models, with and without autocorrelation. -->
+
+<!-- # Total energy -->
+
+<!-- ```{r} -->
+
+<!-- #te_lme <- lme(smgran_e ~ treatment * era, random = ~1|plot, data = plot_totals, correlation = corCAR1()) -->
+
+<!-- te_lme_no_ac <- lme(total_e ~ treatment * era, random = ~1|plot, data = plot_totals) -->
+
+<!-- #te_gls <- gls(total_e ~ treatment * era, correlation = corCAR1(), data = plot_totals) -->
+
+<!-- te_gls_noac <- gls(total_e ~ treatment * era, data = plot_totals) -->
+
+<!-- te_lme_timeac <- lme(total_e ~ treatment * era, random = ~1|plot, data = plot_totals, correlation = corCAR1(form = ~ numericdate | plot)) -->
+
+<!-- te_gls_timeac <- gls(total_e ~ treatment * era, correlation = corCAR1(form = ~ numericdate | plot), data = plot_totals) -->
+
+
+<!-- #AIC(te_lme) # random plot effect and corAR1() -->
+<!-- AIC(te_lme_no_ac) # random plot effect -->
+<!-- #AIC(te_gls) # no plot effect and corAR1() -->
+<!-- AIC(te_gls_noac) # no plot effect -->
+<!-- AIC(te_lme_timeac) # random plot effect and corAR1(period) -->
+<!-- AIC(te_gls_timeac) # no plot effect and cor(AR1(period)) -->
+
+
+<!-- summary(pairs(lsmeans(te_lme_timeac, specs = ~treatment | era))) -->
+
+<!-- #summary(pairs(lsmeans(te_gls_timeac, specs = ~treatment | era))) -->
+
+<!-- ``` -->
+
+<!-- # Small granivores -->
+
+<!-- ```{r} -->
+
+<!-- #sge_lme <- lme(smgran_e ~ treatment * era, random = ~1|plot, data = plot_totals, correlation = corCAR1()) -->
+
+<!-- sge_lme_no_ac <- lme(smgran_e ~ treatment * era, random = ~1|plot, data = plot_totals) -->
+
+<!-- #sge_gls <- gls(smgran_e ~ treatment * era, correlation = corCAR1(), data = plot_totals) -->
+
+<!-- sge_gls_noac <- gls(smgran_e ~ treatment * era, data = plot_totals) -->
+
+<!-- sge_lme_timeac <- lme(smgran_e ~ treatment * era, random = ~1|plot, data = plot_totals, correlation = corCAR1(form = ~ numericdate | plot)) -->
+
+<!-- sge_gls_timeac <- gls(smgran_e ~ treatment * era, correlation = corCAR1(form = ~ numericdate | plot), data = plot_totals) -->
+
+
+<!-- #AIC(sge_lme) # random plot effect and corAR1() -->
+<!-- AIC(sge_lme_no_ac) # random plot effect -->
+<!-- #AIC(sge_gls) # no plot effect and corAR1() -->
+<!-- AIC(sge_gls_noac) # no plot effect -->
+<!-- AIC(sge_lme_timeac) # random plot effect and corAR1(period) -->
+<!-- AIC(sge_gls_timeac) # no plot effect and cor(AR1(period)) -->
+
+
+<!-- summary(pairs(lsmeans(sge_lme_timeac, specs = ~treatment | era))) -->
+
+<!-- #summary(pairs(lsmeans(sge_gls_timeac, specs = ~treatment | era))) -->
+
+<!-- ``` -->
+
+<!-- # Tiny granivores -->
+
+<!-- ```{r} -->
+
+<!-- #tge_lme <- lme(tinygran_e ~ treatment * era, random = ~1|plot, data = plot_totals, correlation = corCAR1()) -->
+
+<!-- tge_lme_no_ac <- lme(tinygran_e ~ treatment * era, random = ~1|plot, data = plot_totals) -->
+
+<!-- #tge_gls <- gls(tinygran_e ~ treatment * era, correlation = corCAR1(), data = plot_totals) -->
+
+<!-- tge_gls_noac <- gls(tinygran_e ~ treatment * era, data = plot_totals) -->
+
+<!-- tge_lme_timeac <- lme(tinygran_e ~ treatment * era, random = ~1|plot, data = plot_totals, correlation = corCAR1(form = ~ numericdate | plot)) -->
+
+<!-- tge_gls_timeac <- gls(tinygran_e ~ treatment * era, correlation = corCAR1(form = ~ numericdate | plot), data = plot_totals) -->
+
+
+<!-- #AIC(tge_lme) # random plot effect and corAR1() -->
+<!-- AIC(tge_lme_no_ac) # random plot effect -->
+<!-- #AIC(tge_gls) # no plot effect and corAR1() -->
+<!-- AIC(tge_gls_noac) # no plot effect -->
+<!-- AIC(tge_lme_timeac) # random plot effect and corAR1(period) -->
+<!-- AIC(tge_gls_timeac) # no plot effect and cor(AR1(period)) -->
+
+
+<!-- summary(pairs(lsmeans(tge_lme_timeac, specs = ~treatment | era))) -->
+
+<!-- #summary(pairs(lsmeans(tge_gls_timeac, specs = ~treatment | era))) -->
+<!-- save.image("lmes.RData") -->
+<!-- ``` -->
+
+
 ```{r}
+load(here::here("scaffold", "Reports", "lmes.RData"))
+```
 
-use_christensen_plots <- F
+```{r}
+te_AICs <- lapply(list(te_gls_noac, te_gls_timeac, te_lme_no_ac, te_lme_timeac), FUN = AIC)
+te_AICs
 
-plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) %>%
-   mutate(tinygran_e = smgran_e - pb_e) %>%
-  mutate(treatment = ordered(plot_type),
-         plot = ordered(plot)) %>%
-  mutate(censusdate = as.Date(censusdate)) %>%
-  mutate(numericdate = as.numeric(censusdate) / 1000)
+anova(te_gls_timeac, te_lme_timeac)
+
+library(emmeans)
+
+te_emmeans <- emmeans(te_lme_timeac, specs = ~ treatment | era)
+
+pairs(te_emmeans, adjust = "bonf")
+
+
+te_gls_emmeans <- emmeans(te_gls_timeac, specs = ~ treatment | era)
+
+pairs(te_gls_emmeans, adjust = "bonf")
+
+te_pred <- predict(te_emmeans, interval = "confidence") 
+
+ggplot(te_pred, aes(treatment, emmean, color = treatment)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL)) +
+  facet_grid(cols = vars(era))
 
 ```
 
-Generalized least squares and linear mixed models, with and without autocorrelation.
 
-# Small granivores
+
+```{r}
+sg_AICs <- lapply(list(sge_gls_noac, sge_gls_timeac, sge_lme_no_ac, sge_lme_timeac), FUN = AIC)
+sg_AICs
+
+anova(sge_gls_timeac, sge_lme_timeac)
+
+sg_emmeans <- emmeans(sge_lme_timeac, specs = ~ treatment | era)
+
+pairs(sg_emmeans, adjust = "bonf")
+
+sg_gls_emmeans <- emmeans(sge_gls_timeac, specs = ~ treatment | era)
+
+pairs(sg_gls_emmeans, adjust = "bonf")
+
+
+sg_pred <- predict(sg_emmeans, interval = "confidence") 
+
+ggplot(sg_pred, aes(treatment, emmean, color = treatment)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL)) +
+  facet_grid(cols = vars(era))
+
+```
+
 
 ```{r}
 
-#sge_lme <- lme(smgran_e ~ treatment * era, random = ~1|plot, data = plot_totals, correlation = corCAR1())
+tg_AICs <- lapply(list(tge_gls_noac, tge_gls_timeac, tge_lme_no_ac, tge_lme_timeac), FUN = AIC)
+tg_AICs
 
-sge_lme_no_ac <- lme(smgran_e ~ treatment * era, random = ~1|plot, data = plot_totals)
+anova(tge_gls_timeac, tge_lme_timeac)
 
-#sge_gls <- gls(smgran_e ~ treatment * era, correlation = corCAR1(), data = plot_totals)
+tg_emmeans <- emmeans(tge_lme_timeac, specs = ~ treatment | era)
 
-sge_gls_noac <- gls(smgran_e ~ treatment * era, data = plot_totals)
+pairs(tg_emmeans, adjust = "bonf")
 
-sge_lme_timeac <- lme(smgran_e ~ treatment * era, random = ~1|plot, data = plot_totals, correlation = corCAR1(form = ~ numericdate | plot))
+tg_gls_emmeans <- emmeans(tge_gls_timeac, specs = ~ treatment | era)
 
-sge_gls_timeac <- gls(smgran_e ~ treatment * era, correlation = corCAR1(form = ~ numericdate | plot), data = plot_totals)
-
-
-#AIC(sge_lme) # random plot effect and corAR1()
-AIC(sge_lme_no_ac) # random plot effect
-#AIC(sge_gls) # no plot effect and corAR1()
-AIC(sge_gls_noac) # no plot effect
-AIC(sge_lme_timeac) # random plot effect and corAR1(period)
-AIC(sge_gls_timeac) # no plot effect and cor(AR1(period))
+pairs(tg_gls_emmeans, adjust = "bonf")
 
 
-summary(pairs(lsmeans(sge_lme_timeac, specs = ~treatment | era)))
+tg_pred <- predict(tg_emmeans, interval = "confidence") 
 
-summary(pairs(lsmeans(sge_gls_timeac, specs = ~treatment | era)))
+ggplot(tg_pred, aes(treatment, emmean, color = treatment)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL)) +
+  facet_grid(cols = vars(era))
 
 ```

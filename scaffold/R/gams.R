@@ -88,8 +88,7 @@ get_treatment_diff <- function(model, newdata, smooth_var, f1, f2, var, alpha = 
              diff = dif,
              se = se,
              upper = upr,
-             lower = lwr,
-             censusdate = newdata[r1,'censusdate'])  %>%
+             lower = lwr)  %>%
     mutate(diff_overlaps_zero = (upper * lower) < 0)
 }
 
