@@ -1,164 +1,202 @@
 GAM
 ================
 
-<!-- ```{r} -->
+    ## [[1]]
+    ## [1] 55179.22
+    ## 
+    ## [[2]]
+    ## [1] 55768.12
+    ## 
+    ## [[3]]
+    ## [1] 55425.49
 
-<!-- use_christensen_plots <- F -->
+    ## Joining, by = "oPlot"
 
-<!-- library(mgcv) -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->
 
-<!-- plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) %>% -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!--    mutate(tinygran_e = smgran_e - pb_e) %>% -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
 
-<!--   mutate(treatment = ordered(plot_type), -->
+    ## Warning in max(ids, na.rm = TRUE): no non-missing arguments to max; returning -
+    ## Inf
 
-<!--          plot = ordered(plot)) %>% -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->
 
-<!--   mutate(censusdate = as.Date(censusdate)) %>% -->
+    ## Joining, by = "oPlot"
 
-<!--   mutate(numericdate = as.numeric(censusdate) / 1000) -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-1-4.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-5.png)<!-- -->
 
-<!-- ``` -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!-- Following Christensen pretty closely. -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
+    
+    ## Warning: no non-missing arguments to max; returning -Inf
 
-<!-- # Total energy -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-1-6.png)<!-- -->
 
-<!-- - Fit GAM -->
+    ## Joining, by = "oPlot"
 
-<!--     - `total_e ~ plot + treatment + s(period, k = 100) + s(period, by = treatment, k = 100) + s(period, by = plot, k = 50), family = "tw", method = "REML", select = TRUE, control = gam.control(nthreads = 4))` takes a long time so dev with low k. -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-1-7.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-8.png)<!-- -->
 
-<!-- ```{r} -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!-- te_gam <- gam(total_e ~ plot + treatment + s(numericdate, k = 100) + s(numericdate, by = treatment, k = 100) + s(numericdate, by = plot), family = "tw", method = "REML", select = TRUE, control = gam.control(nthreads = 4), data = plot_totals) -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
+    
+    ## Warning: no non-missing arguments to max; returning -Inf
 
-<!-- te_pdat <- make_pdat(plot_totals, 1000) -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-1-9.png)<!-- -->
 
-<!-- te_pred <- get_treatment_prediction(plot_totals, te_pdat, te_gam) -->
+# smgran
 
-<!-- te_cc_ee_diff <- get_treatment_diff(te_gam, te_pred, smooth_var = "numericdate", "CC", "EE", var = "treatment") -->
+    ## [[1]]
+    ## [1] 40655.38
+    ## 
+    ## [[2]]
+    ## [1] 41205.04
+    ## 
+    ## [[3]]
+    ## [1] 40851.95
 
-<!-- te_cc_ce_diff <- get_treatment_diff(te_gam, te_pred, smooth_var = "numericdate", "CC", "CE", var = "treatment") -->
+    ## Joining, by = "oPlot"
 
-<!-- diff_overlaps <- bind_rows(te_cc_ce_diff, te_cc_ee_diff) %>% -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
 
-<!--   filter(diff_overlaps_zero) %>% -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!--   mutate(treatment = ordered(substr(pair, 4, 5))) %>% -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
 
-<!--   mutate(altitude = 1 + (50 * as.numeric((treatment)))) %>% -->
+    ## Warning in max(ids, na.rm = TRUE): no non-missing arguments to max; returning -
+    ## Inf
 
-<!--   left_join(distinct(select(te_pdat, censusdate, era))) -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-2-3.png)<!-- -->
 
-<!-- ggplot(te_pred, aes(censusdate, Fitted, color = treatment, fill = treatment)) + -->
+    ## Joining, by = "oPlot"
 
-<!--   geom_line() + -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-2-4.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-2-5.png)<!-- -->
 
-<!--   geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = .4) + -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!--   geom_point(data = diff_overlaps, aes(y= altitude), alpha = .4) + -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
+    
+    ## Warning: no non-missing arguments to max; returning -Inf
 
-<!--   facet_grid(cols= vars(era), scales = "free_x", space = "free") + -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-2-6.png)<!-- -->
 
-<!--   theme(legend.position = "top") -->
+    ## Joining, by = "oPlot"
 
-<!-- ``` -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-2-7.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-2-8.png)<!-- -->
 
-<!-- # Small granivores -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!-- ```{r} -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
+    
+    ## Warning: no non-missing arguments to max; returning -Inf
 
-<!-- sg_gam <- gam(smgran_e ~ plot + treatment + s(numericdate, k = 100) + s(numericdate, by = treatment, k = 100) + s(numericdate, by = plot), family = "tw", method = "REML", select = TRUE, control = gam.control(nthreads = 4), data = plot_totals) -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-2-9.png)<!-- -->
 
-<!-- sg_pdat <- make_pdat(plot_totals, 1000) -->
+# tinygran
 
-<!-- sg_pred <- get_treatment_prediction(plot_totals, sg_pdat, sg_gam) -->
+    ## [[1]]
+    ## [1] 36791.45
+    ## 
+    ## [[2]]
+    ## [1] 37183.71
+    ## 
+    ## [[3]]
+    ## [1] 36953.15
 
-<!-- sg_cc_ee_diff <- get_treatment_diff(sg_gam, sg_pred, smooth_var = "numericdate", "CC", "EE", var = "treatment") -->
+    ## Joining, by = "oPlot"
 
-<!-- sg_cc_ce_diff <- get_treatment_diff(sg_gam, sg_pred, smooth_var = "numericdate", "CC", "CE", var = "treatment") -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->
 
-<!-- diff_overlaps <- bind_rows(sg_cc_ce_diff, sg_cc_ee_diff) %>% -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!--   filter(diff_overlaps_zero) %>% -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
 
-<!--   mutate(treatment = substr(pair, 4, 5)) %>% -->
+    ## Warning in max(ids, na.rm = TRUE): no non-missing arguments to max; returning -
+    ## Inf
 
-<!--   mutate(altitude = 1 + (50 * as.numeric(as.factor(treatment))))%>% -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->
 
-<!--   left_join(distinct(select(te_pdat, censusdate, era))) -->
+    ## Joining, by = "oPlot"
 
-<!-- ggplot(sg_pred, aes(censusdate, Fitted, color = treatment, fill = treatment)) + -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-5.png)<!-- -->
 
-<!--   geom_line() + -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!--   geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = .4) + -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
+    
+    ## Warning: no non-missing arguments to max; returning -Inf
 
-<!--   geom_point(data = diff_overlaps, aes(censusdate, altitude), alpha = .4) + -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-3-6.png)<!-- -->
 
-<!--   facet_grid(cols= vars(era), scales = "free_x", space = "free") + -->
+    ## Joining, by = "oPlot"
 
-<!--   theme(legend.position = "top") -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-3-7.png)<!-- -->
 
-<!-- ``` -->
+    ## Joining, by = "oPlot"
 
-<!-- # Tiny granivores -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-3-8.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-9.png)<!-- -->
 
-<!-- ```{r} -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!-- tg_gam <- gam(tinygran_e ~ plot + treatment + s(numericdate, k = 100) + s(numericdate, by = treatment, k = 100) + s(numericdate, by = plot), family = "tw", method = "REML", select = TRUE, control = gam.control(nthreads = 4), data = plot_totals) -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
+    
+    ## Warning: no non-missing arguments to max; returning -Inf
 
-<!-- tg_pdat <- make_pdat(plot_totals, 1000) -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-3-10.png)<!-- -->
 
-<!-- tg_pred <- get_treatment_prediction(plot_totals, tg_pdat, tg_gam) -->
+# pb
 
-<!-- tg_cc_ee_diff <- get_treatment_diff(tg_gam, tg_pred, smooth_var = "numericdate", "CC", "EE", var = "treatment") -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
 
-<!-- tg_cc_ce_diff <- get_treatment_diff(tg_gam, tg_pred, smooth_var = "numericdate", "CC", "CE", var = "treatment") -->
+    ## [[1]]
+    ## [1] 15124.75
+    ## 
+    ## [[2]]
+    ## [1] 15426.73
+    ## 
+    ## [[3]]
+    ## [1] 15204.81
 
-<!-- diff_overlaps <- bind_rows(tg_cc_ce_diff, tg_cc_ee_diff) %>% -->
+    ## Joining, by = "oPlot"
 
-<!--   filter(diff_overlaps_zero) %>% -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-4-4.png)<!-- -->
 
-<!--   mutate(treatment = substr(pair, 4, 5)) %>% -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!--   mutate(altitude = 1 + (50 * as.numeric(as.factor(treatment))))%>% -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
 
-<!--   left_join(distinct(select(te_pdat, censusdate, era))) -->
+    ## Warning in max(ids, na.rm = TRUE): no non-missing arguments to max; returning -
+    ## Inf
 
-<!-- ggplot(tg_pred, aes(censusdate, Fitted, color = treatment, fill = treatment)) + -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-4-5.png)<!-- -->
 
-<!--   geom_line() + -->
+    ## Joining, by = "oPlot"
 
-<!--   geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = .4) + -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-4-6.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-4-7.png)<!-- -->
 
-<!--   geom_point(data = diff_overlaps, aes(censusdate, altitude), alpha = .4) + -->
+    ## Joining, by = c("censusdate", "compare_trt")
 
-<!--   facet_grid(cols= vars(era), scales = "free_x", space = "free") + -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
+    
+    ## Warning: no non-missing arguments to max; returning -Inf
 
-<!--   theme(legend.position = "top") -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-4-8.png)<!-- -->
 
-<!-- ``` -->
+    ## Joining, by = "oPlot"
 
-![](gam_ch_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-4.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-5.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-6.png)<!-- -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-4-9.png)<!-- -->
 
-    ## Joining, by = "censusdate"
+    ## Joining, by = "oPlot"
 
-![](gam_ch_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-4-10.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-4-11.png)<!-- -->
 
-### smgran
+    ## Joining, by = c("censusdate", "compare_trt")
 
-![](gam_ch_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-5.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-6.png)<!-- -->
+    ## Warning: Removed 500 row(s) containing missing values (geom_path).
+    
+    ## Warning: no non-missing arguments to max; returning -Inf
 
-    ## Joining, by = "censusdate"
-
-![](gam_ch_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
-
-### tiny gran
-
-![](gam_ch_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-5-5.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-5-6.png)<!-- -->
-
-    ## Joining, by = "censusdate"
-
-![](gam_ch_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](gam_ch_files/figure-gfm/unnamed-chunk-4-12.png)<!-- -->

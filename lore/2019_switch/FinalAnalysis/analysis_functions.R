@@ -124,6 +124,60 @@ predict_treat_effect2 = function(dat, np, MODEL, exVars) {
   return(treatPred)
 }
 
+
+predict_treat_effect3 = function(dat, np, MODEL, exVars) {
+  # Data to predict at; note the dummy plot - need to provide all variables used to
+  # fit the model when predicting
+  treatEff <- as.data.frame(
+                   expand.grid(censusdate = seq(min(dat$censusdate), max(dat$censusdate), length = np),
+                               oPlot = unique(dat$oPlot)))
+  
+  treatEff <- treatEff %>%
+    filter(oPlot %in% c(2, 3, 4)) %>%
+    left_join(distinct(select(dat, oPlot, oTreatment))) %>%
+    mutate(numericdate =as.numeric(censusdate) / 1000)
+ 
+  # actually predict, on link scale so we can get proper CIs, exclude
+  treatPred <- as.data.frame(predict(MODEL, treatEff, type = 'link', se.fit = TRUE,
+                                     exclude = exVars))
+  # bind predictions to data we predicted at
+  treatPred <- cbind(treatEff, treatPred)
+  # extract inverse of link function from the model
+  ilink <- family(MODEL)$linkinv
+  # form 95% bayesian credible interval / frequentist across-function confidence interval
+  treatPred <- transform(treatPred, Fitted = ilink(fit),
+                         Upper = ilink(fit + (2 * se.fit)),
+                         Lower = ilink(fit - (2 * se.fit)))
+  return(treatPred)
+}
+
+
+predict_treat_effect4 = function(dat, np, MODEL, exVars) {
+  # Data to predict at; note the dummy plot - need to provide all variables used to
+  # fit the model when predicting
+  treatEff <- as.data.frame(
+    expand.grid(censusdate = seq(min(dat$censusdate), max(dat$censusdate), length = np),
+                oPlot = unique(dat$oPlot)))
+  
+  treatEff <- treatEff %>%
+  #  filter(oPlot %in% c(2, 3, 4)) %>%
+    left_join(distinct(select(dat, oPlot, oTreatment))) %>%
+    mutate(numericdate =as.numeric(censusdate) / 1000)
+  
+  # actually predict, on link scale so we can get proper CIs, exclude
+  treatPred <- as.data.frame(predict(MODEL, treatEff, type = 'link', se.fit = TRUE,
+                                     exclude = exVars))
+  # bind predictions to data we predicted at
+  treatPred <- cbind(treatEff, treatPred)
+  # extract inverse of link function from the model
+  ilink <- family(MODEL)$linkinv
+  # form 95% bayesian credible interval / frequentist across-function confidence interval
+  treatPred <- transform(treatPred, Fitted = ilink(fit),
+                         Upper = ilink(fit + (2 * se.fit)),
+                         Lower = ilink(fit - (2 * se.fit)))
+  return(treatPred)
+}
+
 #' @title compute differences of smooths
 #' @description Compute pairwise differences of smooths when fitted using ordered factors
 #' 

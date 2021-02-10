@@ -65,14 +65,16 @@ get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv
   rodent_names <- c('BA','DM','DO','DS','PB','PE','PF','PH','PI','PL','PM','PP','RF','RM','RO')
   dipo_names <- c('DM', 'DO', 'DS')
   smgran_names <- c('BA','PB','PE','PF','PH','PI','PL','PM','PP','RF','RM','RO')
+  tinygran_names <- c('BA','PE','PF','PH','PI','PL','PM','PP','RF','RM','RO')
   
   plot_level_totals <- plot_level %>%
     dplyr::mutate(total_e = rowSums(.[rodent_names]),
                   dipo_e = rowSums(.[dipo_names]),
                   smgran_e = rowSums(.[smgran_names]),
+                  tinygran_e = rowSums(.[tinygran_names]),
                   pb_e = PB,
                   pp_e = PP) %>%
-    dplyr::select(period, censusdate, era, plot, plot_type, total_e, dipo_e, smgran_e, pb_e, pp_e) %>%
+    dplyr::select(period, censusdate, era, plot, plot_type, total_e, dipo_e, smgran_e, pb_e, pp_e, tinygran_e) %>%
     dplyr::mutate(censusdate = as.Date(censusdate),
     )
   
@@ -82,6 +84,7 @@ get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv
     dplyr::summarize(total_e = mean(total_e),
                      dipo_e = mean(dipo_e),
                      smgran_e = mean(smgran_e),
+                     tinygran_e = mean(tinygran_e),
                      pb_e = mean(pb_e),
                      pp_e = mean(pp_e),
                      nplots = dplyr::n()) %>%
