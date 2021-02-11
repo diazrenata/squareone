@@ -91,7 +91,7 @@ ggplot(treatment_annuals, aes(censusyear, tinygran_e, color = plot_type)) +
 ```
 
 ```{r}
-sg_e_mod <- gam(smgran_e ~ oplottype + s(period, k = 20) + s(period, by = oplottype, k = 20), family = "tw", data = treatment_means)
+sg_e_mod <- gam(smgran_e ~ oplottype + s(period, k = 50) + s(period, by = oplottype, k = 50), family = "tw", data = treatment_means)
 
 sg_e_pdat <- treatment_means %>%
   select(period, oplottype, era) %>%
@@ -131,7 +131,7 @@ plot_fitted_pred(filter(sg_rawe_ee_ce_pred, oplottype != "CC"), comparison_varia
 
 
 ```{r}
-tg_e_mod <- gam(tinygran_e ~ oplottype + s(period, k = 20) + s(period, by = oplottype, k = 20), family = "tw", data = treatment_means)
+tg_e_mod <- gam(tinygran_e ~ oplottype + s(period, k = 50) + s(period, by = oplottype, k = 50), family = "tw", data = treatment_means)
 
 tg_e_pdat <- treatment_means %>%
   select(period, oplottype, era) %>%
@@ -170,7 +170,7 @@ plot_fitted_pred(filter(tg_rawe_ee_ce_pred, oplottype != "CC"), comparison_varia
 
 
 ```{r}
-total_e_mod <- gam(total_e ~ oplottype + s(period, k = 20) + s(period, by = oplottype, k = 20), family = "tw", data = treatment_means)
+total_e_mod <- gam(total_e ~ oplottype + s(period, k = 50) + s(period, by = oplottype, k = 50), family = "tw", data = treatment_means)
 
 total_e_pdat <- treatment_means %>%
   select(period, oplottype, era) %>%

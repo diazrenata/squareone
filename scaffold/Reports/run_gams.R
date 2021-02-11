@@ -117,11 +117,12 @@ se.gam.randomplot.s <- gam(smgran_e ~ oTreatment + s(numericdate, k = 40) + s(nu
 
 
 
-tge.gam.randomplot.s <- gam(total_e ~ oTreatment + s(numericdate, k = 40) + s(numericdate, by = oTreatment, k = 40) + s(oPlot, bs = "re") + s(oPlot, numericdate, bs = "re"), data = plot_totals, method = "REML", family = "tw", select = T, control = gam.control(nthreads = 4))
+tge.gam.randomplot.s <- gam(tinygran_e ~ oTreatment + s(numericdate, k = 40) + s(numericdate, by = oTreatment, k = 40) + s(oPlot, bs = "re") + s(oPlot, numericdate, bs = "re"), data = plot_totals, method = "REML", family = "tw", select = T, control = gam.control(nthreads = 4))
+
+pb_totals <- filter(plot_totals, era != "a_pre_ba")
 
 
-
-pbe.gam.randomplot.s <- gam(total_e ~ oTreatment + s(numericdate, k = 40) + s(numericdate, by = oTreatment, k = 40) + s(oPlot, bs = "re") + s(oPlot, numericdate, bs = "re"), data = plot_totals, method = "REML", family = "tw", select = T, control = gam.control(nthreads = 4))
+pbe.gam.randomplot.s <- gam(total_e ~ oTreatment + s(numericdate, k = 40) + s(numericdate, by = oTreatment, k = 40) + s(oPlot, bs = "re") + s(oPlot, numericdate, bs = "re"), data = pb_totals, method = "REML", family = "tw", select = T, control = gam.control(nthreads = 4))
 
 
 save.image("randomplots_gams.RData")
