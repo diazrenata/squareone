@@ -12,7 +12,7 @@ cbbPalette <- c("#000000", "#009E73", "#e79f00", "#9ad0f3", "#0072B2", "#D55E00"
 
 # ==========================================================================================
 # Number of dipodomys
-dipo <- read.csv(here::here("lore", "2020_switch", "Data", "Dipo_counts.csv"))
+dipo <- read.csv(here::here("lore", "2019_switch", "Data", "Dipo_counts.csv"))
 dipo$censusdate <-as.Date(dipo$censusdate)
 
 # create variables needed for GAM
@@ -29,8 +29,12 @@ dipo.gam <- gam(n ~ oPlot + oTreatment + s(numericdate, k = 20) +
 
 # Look at the treatment effect smooths on count scale. 
 # terms to exclude; must be named exactly as printed in `summary(model)` output
-exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', c(5,6,7,11,13,14,17,18,24)))
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', c(5,6,7,11,13,14,17,18,24)),
+              coefficients(dipo.gam)[ which(grepl("oPlot", names(coefficients(dipo.gam))))])
 treatPred.dipo <- predict_treat_effect(dipo, np = 500, MODEL=dipo.gam, exVars.d)
+treatPred.dipo2 <- predict_treat_effect(dipo, np = 500, MODEL=dipo.gam, NULL)
+
+all.equal(treatPred.dipo, treatPred.dipo2)
 
 # plot GAM fit and data
 d.plt <- plot_gam_prediction(treatPred.dipo, dipo, Palette=cbbPalette[c(6,1,4)], ylab='Count')

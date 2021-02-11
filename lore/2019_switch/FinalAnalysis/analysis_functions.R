@@ -100,15 +100,15 @@ predict_treat_effect = function(dat, np, MODEL, exVars) {
 predict_treat_effect2 = function(dat, np, MODEL, exVars) {
   # Data to predict at; note the dummy plot - need to provide all variables used to
   # fit the model when predicting
-  treatEff <- with(dat,
-                   expand.grid(censusdate = seq(min(censusdate), max(censusdate), length = np),
-                               treatment  = c('CC','CE','EE'),
-                               plot       = 4)) 
-  ## create derived variables from the data we want to predict at
-  treatEff <- transform(treatEff,
-                        oPlot       = ordered(plot),
-                        oTreatment  = ordered(treatment, levels = c('CC','CE','EE')),
-                        numericdate = as.numeric(censusdate) / 1000)
+  treatEff <- as.data.frame(
+    expand.grid(censusdate = seq(min(dat$censusdate), max(dat$censusdate), length = np),
+                oPlot = unique(dat$oPlot),
+                oTreatment = unique(dat$oTreatment)))
+  
+  treatEff <- treatEff %>%
+    filter(oPlot == 4) %>%
+    left_join(distinct(select(dat, oPlot, oTreatment))) %>%
+    mutate(numericdate =as.numeric(censusdate) / 1000)
   
   # actually predict, on link scale so we can get proper CIs, exclude
   treatPred <- as.data.frame(predict(MODEL, treatEff, type = 'link', se.fit = TRUE,
@@ -167,6 +167,33 @@ predict_treat_effect4 = function(dat, np, MODEL, exVars) {
   # actually predict, on link scale so we can get proper CIs, exclude
   treatPred <- as.data.frame(predict(MODEL, treatEff, type = 'link', se.fit = TRUE,
                                      exclude = exVars))
+  # bind predictions to data we predicted at
+  treatPred <- cbind(treatEff, treatPred)
+  # extract inverse of link function from the model
+  ilink <- family(MODEL)$linkinv
+  # form 95% bayesian credible interval / frequentist across-function confidence interval
+  treatPred <- transform(treatPred, Fitted = ilink(fit),
+                         Upper = ilink(fit + (2 * se.fit)),
+                         Lower = ilink(fit - (2 * se.fit)))
+  return(treatPred)
+}
+
+
+predict_treat_effect5 = function(dat, np, MODEL, exVars) {
+  # Data to predict at; note the dummy plot - need to provide all variables used to
+  # fit the model when predicting
+  treatEff <- as.data.frame(
+    expand.grid(censusdate = seq(min(dat$censusdate), max(dat$censusdate), length = np),
+                oTreatment = unique(dat$oTreatment)))
+  
+  treatEff <- treatEff %>%
+    #  filter(oPlot %in% c(2, 3, 4)) %>%
+   # left_join(distinct(select(dat, oPlot, oTreatment))) %>%
+    mutate(numericdate =as.numeric(censusdate) / 1000)
+  
+  # actually predict, on link scale so we can get proper CIs, exclude
+  treatPred <- as.data.frame(predict(MODEL, treatEff, type = 'link', se.fit = TRUE,
+                                     exclude = exVars, newdata.guaranteed = TRUE))
   # bind predictions to data we predicted at
   treatPred <- cbind(treatEff, treatPred)
   # extract inverse of link function from the model
