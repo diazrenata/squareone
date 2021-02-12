@@ -158,6 +158,39 @@ Energy plots
 
 ![](tinygran_files/figure-gfm/unnamed-chunk-9-3.png)<!-- -->
 
+![](tinygran_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+### a short fiction
+
+Just to show that, if there was a **stronger** gain from tinygran, it
+would show up.
+
+![](tinygran_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+    ## Joining, by = "period"
+
+![](tinygran_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
+
+    ## Joining, by = "period"
+
+    ## Scale for 'fill' is already present. Adding another scale for 'fill', which
+    ## will replace the existing scale.
+
+    ## Scale for 'colour' is already present. Adding another scale for 'colour',
+    ## which will replace the existing scale.
+
+![](tinygran_files/figure-gfm/unnamed-chunk-11-3.png)<!-- -->
+
+    ## Joining, by = "period"
+
+    ## Scale for 'fill' is already present. Adding another scale for 'fill', which
+    ## will replace the existing scale.
+
+    ## Scale for 'colour' is already present. Adding another scale for 'colour',
+    ## which will replace the existing scale.
+
+![](tinygran_files/figure-gfm/unnamed-chunk-11-4.png)<!-- -->
+
     ## Joining, by = "period"
 
     ## Scale for 'colour' is already present. Adding another scale for 'colour',
@@ -166,14 +199,14 @@ Energy plots
     ## Scale for 'fill' is already present. Adding another scale for 'fill', which
     ## will replace the existing scale.
 
-![](tinygran_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](tinygran_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
     ## Scale for 'colour' is already present. Adding another scale for 'colour',
     ## which will replace the existing scale.
     ## Scale for 'fill' is already present. Adding another scale for 'fill', which
     ## will replace the existing scale.
 
-![](tinygran_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->
+![](tinygran_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
 
 ## By era
 
@@ -311,7 +344,7 @@ Energy plots
     ## 11 d_post-switch CE          0.489  0.439   0.385 
     ## 12 d_post-switch EE          0.393  0.363   0.357
 
-![](tinygran_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](tinygran_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ##### Total energy ratios GLS
 

@@ -335,6 +335,15 @@ plot_fitted_pred(filter(tg_ratio_ce_ee_pred, fplottype != "CC"), comparison_vari
   ggtitle("GAM diff tgran ratio CE v EE")+
   facet_grid(cols = vars(era), scales = "free_x", space = "free") +
   theme(legend.position = "top")
+```
+
+```{r, fig.dim = c(9,9)}
+
+ggplot(treatment_ratios, aes(censusdate, tg_of_c, color = oplottype)) +
+  geom_line() +
+  scale_color_viridis_d(end = .8) +
+  theme(legend.position = "top")+ 
+  facet_wrap(vars(era), scales= "free_x", ncol = 1)
 
 
 
@@ -356,6 +365,67 @@ plot_fitted_pred(filter(tg_ratio_ce_ee_pred, fplottype != "CC"), comparison_vari
 #   scale_color_viridis_d(end = .8) +
 #   geom_line(data = filter(tg_ratio_pred_annual, fplottype != "CE"), aes(censusyear, mean_fit))
 
+```
+
+### a short fiction
+
+Just to show that, if there was a **stronger** gain from tinygran, it would show up.
+
+```{r}
+treatment_ratios <- treatment_ratios %>%
+  mutate(tg_of_c_toy = ifelse(era == "d_post-switch",
+                               ifelse(oplottype != "CC",
+                                      tg_of_c * 1.2, tg_of_c),
+                               tg_of_c))
+
+ggplot(treatment_ratios, aes(censusdate, tg_of_c_toy, color = oplottype)) +
+  geom_line() +
+  scale_color_viridis_d(end = .8) +
+  theme(legend.position = "top")+ 
+  facet_wrap(vars(era), scales= "free_x", ncol = 1)
+
+tg_toy_ratio_gam <- gam(tg_of_c_toy ~ fplottype + s(period, k = 100) + s(period, by = fplottype, k =100), family = "Gamma", data = treatment_ratios)
+
+tg_toy_ratio_pdat <- select(treatment_ratios, era, fplottype, period) %>%
+  mutate(type = "tinygran")
+
+tg_toy_ratio_pred <- get_predicted_vals(tg_toy_ratio_gam, tg_toy_ratio_pdat)
+
+tg_toy_ratio_ee_cc_diff <- get_exclosure_diff(tg_toy_ratio_gam, tg_toy_ratio_pred, comparison_variable = "fplottype", comparison_level = 3)
+
+tg_toy_ratio_ee_cc_pred <- add_exclosure_diff(tg_toy_ratio_pred, tg_toy_ratio_ee_cc_diff)
+
+plot_fitted_pred(filter(tg_toy_ratio_ee_cc_pred, fplottype != "CE"), comparison_variable = "fplottype") +
+  geom_hline(yintercept = 1) +
+  ggtitle("GAM diff tg_toyran ratio EE v CC")+
+  facet_grid(cols = vars(era), scales = "free_x", space = "free") +
+  theme(legend.position = "top")
+
+
+tg_toy_ratio_ce_cc_diff <- get_exclosure_diff(tg_toy_ratio_gam, tg_toy_ratio_pred, comparison_variable = "fplottype", comparison_level = 2)
+
+tg_toy_ratio_ce_cc_pred <- add_exclosure_diff(tg_toy_ratio_pred, tg_toy_ratio_ce_cc_diff)
+
+plot_fitted_pred(filter(tg_toy_ratio_ce_cc_pred, fplottype != "EE"), comparison_variable = "fplottype") +
+  geom_hline(yintercept = 1)  +
+  scale_fill_viridis_d(end = .4) +
+  scale_color_viridis_d(end = .4) +
+  ggtitle("GAM diff tg_toyran ratio CE v CC")+
+  facet_grid(cols = vars(era), scales = "free_x", space = "free") +
+  theme(legend.position = "top")
+
+
+tg_toy_ratio_ce_ee_diff <- get_exclosure_diff(tg_toy_ratio_gam, tg_toy_ratio_pred, comparison_variable = "fplottype", comparison_level = 3, reference_level = 2)
+
+tg_toy_ratio_ce_ee_pred <- add_exclosure_diff(tg_toy_ratio_pred, tg_toy_ratio_ce_ee_diff)
+
+plot_fitted_pred(filter(tg_toy_ratio_ce_ee_pred, fplottype != "CC"), comparison_variable = "fplottype") +
+  geom_hline(yintercept = 1) +
+  scale_fill_viridis_d(begin = .4, end = .8) +
+  scale_color_viridis_d(begin = .4, end = .8) +
+  ggtitle("GAM diff tg_toyran ratio CE v EE")+
+  facet_grid(cols = vars(era), scales = "free_x", space = "free") +
+  theme(legend.position = "top")
 ```
 
 ```{r}
