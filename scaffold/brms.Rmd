@@ -1,0 +1,233 @@
+---
+title: "Energy plots"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      fig.dim = c(7, 3))
+library(dplyr)
+library(ggplot2)
+theme_set(theme_bw())
+source(here::here("scaffold", "R", "data.R"))
+```
+
+```{r}
+
+use_christensen_plots <- F
+
+library(mgcv)
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) %>%
+   mutate(tinygran_e = smgran_e - pb_e) %>%
+  mutate(oplottype = ordered(plot_type))
+
+plot_annuals <- plot_totals %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(censusyear = as.integer(format.Date(censusdate, "%Y"))) %>%
+  group_by(censusyear, plot, plot_type, era) %>%
+  summarize(annual_total_e = mean(total_e),
+            annual_smgran_e = mean(smgran_e),
+            annual_tinygran_e = mean(tinygran_e),
+            nsamples = length(unique(period)),
+            nrows = dplyr::n()) %>%
+  ungroup()
+
+treatment_means <- get_rodent_data(use_christensen_plots, F, F) %>%
+  mutate(tinygran_e = smgran_e - pb_e) %>%
+  mutate(oplottype = as.factor(plot_type))
+
+# treatment_ratios <- get_total_energy_ratios(treatment_means)
+
+```
+
+
+## Ratios
+
+
+```{r}
+treatment_ratios <- get_total_energy_ratios(treatment_means) 
+
+control_means <- filter(treatment_ratios, plot_type == "CC") %>%
+  select(period, censusdate, total_e_c)
+
+plot_ratio_totals <- plot_totals %>%
+  left_join(control_means) %>%
+  mutate(total_e_of_c = total_e / total_e_c,
+    sg_of_c = smgran_e / total_e_c,
+         tg_of_c = tinygran_e / total_e_c) %>%
+  mutate(total_e_of_c = 0.0000000001 + total_e_of_c,
+         sg_of_c = 0.0000000001 + sg_of_c,
+         tg_of_c = 0.0000000001 + tg_of_c) %>%
+  mutate(fplottype = factor(plot_type))
+
+```
+
+```{r}
+
+ggplot(plot_ratio_totals, aes(censusdate, sg_of_c, color = fplottype, group = plot)) +
+  geom_line()
+
+```
+
+<!-- ```{r} -->
+
+<!-- library(lme4) -->
+<!-- library(emmeans) -->
+
+
+<!-- sg_glm <- glm(sg_of_c ~ oplottype * era, data = plot_ratio_totals, family = Gamma) -->
+
+<!-- pairs(emmeans(sg_glm, ~ oplottype |era)) -->
+
+
+<!-- sg_glm2 <- glm(sg_of_c ~ oplottype * era + plot, data = plot_ratio_totals, family = Gamma) -->
+
+<!-- pairs(emmeans(sg_glm2, ~ oplottype |era)) -->
+
+
+<!-- sg_glmer <- glmer(sg_of_c ~ oplottype * era + (period | plot), data = plot_ratio_totals, family = Gamma) -->
+
+<!-- summary(sg_glmer) -->
+
+
+<!-- sg_emmeans <- emmeans(sg_glmer, specs = ~ oplottype | era) -->
+
+<!-- pairs(sg_emmeans) -->
+
+
+<!-- sg_glmer2 <- glmer(sg_of_c ~ oplottype * era + (1 | plot) + (period | plot), data = plot_ratio_totals, family = Gamma) -->
+
+<!-- summary(sg_glmer2) -->
+
+<!-- library(emmeans) -->
+
+<!-- sg_emmeans2 <- emmeans(sg_glmer2, specs = ~ oplottype | era) -->
+
+<!-- pairs(sg_emmeans2) -->
+
+
+
+<!-- sg_glmer3 <- glmer(sg_of_c ~ oplottype * era + (1 | plot) , data = plot_ratio_totals, family = Gamma) -->
+
+<!-- summary(sg_glmer3) -->
+
+<!-- library(emmeans) -->
+
+<!-- sg_emmeans3 <- emmeans(sg_glmer3, specs = ~ oplottype | era) -->
+
+<!-- pairs(sg_emmeans3) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- sg_pred <- plot_ratio_totals %>% -->
+<!--   select(period, oplottype, era, plot, sg_of_c) %>% -->
+<!--   mutate(glm_pred = predict(sg_glm, type = "response"), -->
+<!--          glm2_pred = predict(sg_glm2, type = "response"), -->
+<!--          glmer1_pred = predict(sg_glmer, type = "response", re.form=NA), -->
+<!--          glmer2_pred = predict(sg_glmer2, type = "response", re.form=NA), -->
+<!--          glmer3_pred = predict(sg_glmer3, type = "response", re.form=NA)) -->
+
+<!-- ggplot(sg_pred, aes(period, sg_of_c, group = plot, color = oplottype)) + -->
+<!--   geom_line(alpha = .1) + -->
+<!--   geom_line(aes(y = glm_pred), linetype = 2) + -->
+<!--   ylim(0, 1.5) -->
+
+<!-- ggplot(sg_pred, aes(period, sg_of_c, group = plot, color = oplottype)) + -->
+<!--   geom_line(alpha = .1) + -->
+<!--   geom_line(aes(y = glm2_pred), linetype = 2) + -->
+<!--   ylim(0, 1.5) -->
+<!-- ggplot(sg_pred, aes(period, sg_of_c, group = plot, color = oplottype)) + -->
+<!--   geom_line(alpha = .1) + -->
+<!--   geom_line(aes(y = glmer1_pred), linetype = 2) + -->
+<!--   ylim(0, 1.5) -->
+
+<!-- ggplot(sg_pred, aes(period, sg_of_c, group = plot, color = oplottype)) + -->
+<!--   geom_line(alpha = .1) + -->
+<!--   geom_line(aes(y = glmer2_pred), linetype = 2) + -->
+<!--   ylim(0, 1.5) -->
+
+<!-- ggplot(sg_pred, aes(period, sg_of_c, group = plot, color = oplottype)) + -->
+<!--   geom_line(alpha = .1) + -->
+<!--   geom_line(aes(y = glmer3_pred), linetype = 2) + -->
+<!--   ylim(0, 1.5) -->
+
+<!-- ``` -->
+
+Maybe autocorrelation is the wrong way to go about it.
+
+
+<!-- ```{r broken linear} -->
+
+<!-- sg_b <- glm(sg_of_c ~ period + oplottype*era, data = plot_ratio_totals, family = "Gamma") -->
+
+<!-- pairs(emmeans(sg_b, ~ oplottype | era)) -->
+
+
+<!-- sg_b2 <- glm(sg_of_c ~ period + oplottype*era + plot, data = plot_ratio_totals, family = "Gamma") -->
+
+<!-- pairs(emmeans(sg_b2, ~ oplottype | era)) -->
+
+<!-- sg_b_pred <- plot_ratio_totals %>% -->
+<!--   select(period, oplottype, era, plot, sg_of_c) %>% -->
+<!--   mutate(glm_pred = predict(sg_b, type = "response"), -->
+<!--          glm_pred2 = predict(sg_b2, type = "response")) -->
+<!-- ggplot(sg_b_pred, aes(period, sg_of_c, group = plot, color = oplottype)) + -->
+<!--   geom_line(alpha = .1) + -->
+<!--   geom_line(aes(y = glm_pred), linetype = 2) + -->
+<!--   ylim(0, 1.5) -->
+
+
+<!-- ggplot(sg_b_pred, aes(period, sg_of_c, group = plot, color = oplottype)) + -->
+<!--   geom_line(alpha = .1) + -->
+<!--   geom_line(aes(y = glm_pred2), linetype = 2) + -->
+<!--   ylim(0, 1.5) -->
+<!-- ``` -->
+
+```{r}
+
+library(brms)
+
+library(emmeans)
+
+sg_brms <- brm(sg_of_c ~ oplottype * era, data = plot_ratio_totals, family = Gamma)
+
+pairs(emmeans(sg_brms, ~ oplottype | era))
+
+brm_pred <- predict(sg_brms)
+
+brm_pred <- as.data.frame(brm_pred) %>%
+  cbind(select(plot_ratio_totals, period, plot, oplottype, era))
+
+ggplot(brm_pred, aes(oplottype, Estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = Q2.5, ymax = Q97.5)) +
+  facet_grid(cols = vars(era))
+
+
+ggplot(plot_ratio_totals, aes(period, sg_of_c, group = plot, color = oplottype, fill = oplottype)) +
+  geom_line(alpha = .1) +
+  geom_line(aes(y = brm_pred[,1]), linetype = 2)+
+  ylim(0, 1.5)
+
+plot_ratio_totals <- plot_ratio_totals %>%
+  mutate(smgran_e_int = ceiling(smgran_e))
+
+sg_brms2 <- brm(smgran_e_int ~ oplottype * era, data = plot_ratio_totals, family = poisson)
+
+pairs(emmeans(sg_brms2, ~ oplottype | era))
+
+brm_pred2 <- predict(sg_brms2)
+
+
+ggplot(plot_ratio_totals, aes(period, smgran_e_int, group = plot, color = oplottype, fill = oplottype)) +
+  geom_line(alpha = .1) +
+  geom_line(aes(y = brm_pred2[,1]), linetype = 2) +
+  geom_ribbon(aes(ymin = brm_pred2[,3], ymax = brm_pred2[,4]), alpha = .3) +
+  ylim(0, 1000)
+
+```

@@ -1,0 +1,91 @@
+---
+title: "Energy plots"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      fig.dim = c(7, 3))
+library(dplyr)
+library(ggplot2)
+theme_set(theme_bw())
+source(here::here("scaffold", "R", "data.R"))
+```
+
+```{r}
+
+use_christensen_plots <- F
+
+library(mgcv)
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) %>%
+   mutate(tinygran_e = smgran_e - pb_e) %>%
+  mutate(oplottype = ordered(plot_type))
+
+plot_annuals <- plot_totals %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(censusyear = as.integer(format.Date(censusdate, "%Y"))) %>%
+  group_by(censusyear, plot, plot_type, era) %>%
+  summarize(annual_total_e = mean(total_e),
+            annual_smgran_e = mean(smgran_e),
+            annual_tinygran_e = mean(tinygran_e),
+            nsamples = length(unique(period)),
+            nrows = dplyr::n()) %>%
+  ungroup()
+
+treatment_means <- get_rodent_data(use_christensen_plots, F, F) %>%
+  mutate(tinygran_e = smgran_e - pb_e) %>%
+  mutate(oplottype = as.factor(plot_type))
+
+# treatment_ratios <- get_total_energy_ratios(treatment_means)
+
+```
+
+```{r}
+
+control_means <- treatment_means %>%
+  filter(oplottype == "CC") %>%
+  select(period, total_e, dipo_e, smgran_e) %>%
+  rename(total_e_ctrl = total_e,
+         smgran_e_ctrl = smgran_e,
+         dipo_e_ctrl = dipo_e) %>%
+  distinct()
+
+plot_totals <- plot_totals
+
+discrepancy_offset <- plot_totals %>% 
+  left_join(control_means) %>%
+  filter(oplottype != "CC") %>%
+  mutate(smgran_gain = smgran_e - smgran_e_ctrl) %>%
+  mutate(smgran_gain_of_dipo = smgran_gain / dipo_e_ctrl) %>%
+  mutate(fplottype = as.factor(plot_type))
+
+ggplot(discrepancy_offset, aes(censusdate, smgran_gain_of_dipo, color = fplottype, group = plot)) +
+  geom_line() +
+  ylim(0, 1.5) +
+  facet_grid(rows = vars(fplottype), cols = vars(era), scales = "free_x", space = "free")
+
+discrepancy_gam <- gam(smgran_gain_of_dipo ~ s(period, k = 40) + s(period, by = fplottype, k = 40), data = discrepancy_offset)
+
+discrepancy_pdat <- make_pdat(discrepancy_offset, comparison_variable = "fplottype")
+# %>%
+#   mutate(plot_type = as.character(fplottype)) %>%
+#   filter(plot_type != "CC") %>%
+#   mutate(oplottype = as.factor(plot_type))
+
+discrepancy_pred <- get_predicted_vals(discrepancy_gam, discrepancy_pdat)
+
+plot_fitted_pred(discrepancy_pred, comparison_variable = "fplottype")
+
+discrepancy_offset %>%
+  group_by(fplottype, period, era) %>%
+  summarize(mean_offset = mean(smgran_gain_of_dipo)) %>%
+  ungroup() %>%
+  group_by(fplottype, era) %>%
+  summarize(mean__mean_offset = mean(mean_offset),
+            sd_offset = sd(mean_offset, na.rm =T),
+            nsamples = dplyr::n())
+
+
+```

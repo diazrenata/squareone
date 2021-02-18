@@ -248,10 +248,10 @@ osmooth_diff <- function(model, newdata, smooth_var, f1, f2, var, alpha = 0.05,
   crit <- qnorm(alpha/2, lower.tail = FALSE)
   upr <- dif + (crit * se)
   lwr <- dif - (crit * se)
-  data.frame(pair = paste(f1, f2, sep = '-'),
+  df2 <- data.frame(pair = paste(f1, f2, sep = '-'),
              diff = dif,
              se = se,
              upper = upr,
              lower = lwr,
-             censusdate = newdata[r1,'censusdate'])
+             censusdate = newdata[r1,'period'])
 }

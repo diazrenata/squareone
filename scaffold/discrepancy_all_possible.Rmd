@@ -1,0 +1,259 @@
+---
+title: "Energy plots"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      fig.dim = c(7, 3))
+library(dplyr)
+library(ggplot2)
+theme_set(theme_bw())
+source(here::here("scaffold", "R", "data.R"))
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+library(mgcv)
+
+```
+
+variables...
+
+- Dipo energy on a control plot (amount of energy left available given Dipo removal)
+- Smgran energy on a control plot (baseline smgran energy if no compensation happens)
+- Additional smgran energy on a treatment plot (amount of energy attributable to compensation)
+- Smgran_gain / dipo_control (approximates amount of POTENTIAL compensation ACHIEVED, but can be negative or > 1) ---> this is what we want to estimate.
+
+```{r}
+
+
+plot_totals <- get_rodent_data(use_christensen_plots = F, return_plot = T) %>%
+   mutate(tinygran_e = smgran_e - pb_e) %>%
+  mutate(oplottype = ordered(plot_type))
+
+controls <- filter(plot_totals, oplottype == "CC")
+# 
+# control_gam <- gam(total_e ~ s(period), family = "tw", data = controls)
+# 
+# control_samples <- gratia::fitted_samples(control_gam, n = 100, seed = 1977, scale = "response", newdata = data.frame(period = unique(controls$period)))
+# 
+# control_samples <- control_samples %>%
+#   left_join(data.frame(period = unique(controls$period), row = 1:length(unique(controls$period)))) %>%
+#   mutate(draw = as.factor(draw))
+# 
+# ggplot(control_samples, aes(period, fitted, group = draw)) +
+#   geom_line(alpha = .1)
+
+
+
+dipo_control_gam <- gam(dipo_e ~ s(period), family = "tw", data = controls)
+
+dipo_control_samples <- gratia::fitted_samples(dipo_control_gam, n = 100, seed = 1977, scale = "response", newdata = data.frame(period = unique(controls$period)))
+
+dipo_control_samples <- dipo_control_samples %>%
+  left_join(data.frame(period = unique(controls$period), row = 1:length(unique(controls$period)))) %>%
+  mutate(draw = as.factor(draw))
+
+ggplot(dipo_control_samples, aes(period, fitted, group = draw)) +
+  geom_line(alpha = .1)
+
+
+smgran_control_gam <- gam(smgran_e ~ s(period), family = "tw", data = controls)
+
+smgran_control_samples <- gratia::fitted_samples(smgran_control_gam, n = 100, seed = 1977, scale = "response", newdata = data.frame(period = unique(controls$period)))
+
+smgran_control_samples <- smgran_control_samples %>%
+  left_join(data.frame(period = unique(controls$period), row = 1:length(unique(controls$period)))) %>%
+  mutate(draw = as.factor(draw))
+
+ggplot(smgran_control_samples, aes(period, fitted, group = draw)) +
+  geom_line(alpha = .1)
+
+
+exclosures <- filter(plot_totals, oplottype == "EE")
+
+
+smgran_exclosure_gam <- gam(smgran_e ~ s(period), family = "tw", data = exclosures)
+
+smgran_exclosure_samples <- gratia::fitted_samples(smgran_exclosure_gam, n = 100, seed = 1977, scale = "response", newdata = data.frame(period = unique(exclosures$period)))
+
+smgran_exclosure_samples <- smgran_exclosure_samples %>%
+  left_join(data.frame(period = unique(exclosures$period), row = 1:length(unique(exclosures$period)))) %>%
+  mutate(draw = as.factor(draw))
+
+ggplot(smgran_exclosure_samples, aes(period, fitted, group = draw)) +
+  geom_line(alpha = .1) +
+  geom_line(data = smgran_control_samples, color = "blue", alpha = .1)
+
+
+smgran_sampled_diff <- smgran_exclosure_samples %>%
+  mutate(diff = fitted - smgran_control_samples$fitted)
+
+ggplot(smgran_sampled_diff, aes(period, diff, group = draw)) +
+  geom_line(alpha = .1) 
+
+smgran_sampled_prop <- smgran_sampled_diff %>%
+  mutate(prop = diff / dipo_control_samples$fitted)
+
+ggplot(smgran_sampled_prop, aes(period, prop, group = draw)) +
+  geom_line(alpha = .1) 
+
+smgran_sampled_prop_era <- left_join(smgran_sampled_prop, distinct(select(plot_totals, period, era, censusdate)))
+
+ggplot(smgran_sampled_prop_era, aes(censusdate, prop, group = draw)) +
+  geom_line(alpha = .1) +
+  facet_grid(cols = vars(era), scales = "free_x", space = "free")
+
+
+```
+
+```{r}
+
+all_together <- controls %>%
+  select(period, censusdate, era, dipo_e, smgran_e, plot) %>%
+  tidyr::pivot_longer(c(dipo_e, smgran_e), names_to = "rods", values_to = "e") %>%
+  mutate(rods = paste0(rods, "_c")) %>%
+  bind_rows(mutate(rename(select(exclosures, period, censusdate, era, plot, smgran_e), e = smgran_e), rods = "smgran_e_e")) %>%
+  mutate(frods = as.factor(rods),
+         orods = ordered(frods)) %>%
+  mutate(rod_group = ifelse(grepl("smgran", rods), "smgran", "dipo")) %>%
+  mutate(rod_group = as.factor(rod_group))
+
+all_together_gam <- gam(e ~ s(period, by = orods) + orods + s(period) + s(plot, bs = "re"), family = "tw", data = all_together)
+
+
+all_together_pdat <- select(all_together, period, orods, rod_group) %>%
+  distinct() %>%
+  mutate(row = dplyr::row_number())  %>%
+  mutate(plot = 4)
+
+all_together_samples <- gratia::fitted_samples(all_together_gam, n = 100, seed = 1977, scale = "response", newdata = all_together_pdat, exclude = "s(plot)")
+
+all_together_samples <- all_together_samples %>%
+  left_join(all_together_pdat) %>%
+  mutate(draw = as.factor(draw))
+
+ggplot(all_together_samples, aes(period, fitted, group = draw, color = orods)) +
+  geom_line(alpha = .1) +
+  geom_point(data = filter(all_together_samples, period > 1000)) +
+  facet_wrap(vars(orods))
+
+all_together_xp <-   predict(all_together_gam, newdata = all_together_pdat, type = 'lpmatrix', exclude = "s(plot)")
+
+dipo_xp <- all_together_xp[ filter(all_together_pdat, orods == "dipo_e_c")$row, ]
+sg_c_xp <- all_together_xp[ filter(all_together_pdat, orods == "smgran_e_c")$row, ]
+sg_e_xp <- all_together_xp[ filter(all_together_pdat, orods == "smgran_e_e")$row, ]
+
+dipo_cols <- colnames(all_together_xp)[ which(grepl('dipo', colnames(all_together_xp)))]
+sg_c_cols <- colnames(all_together_xp)[ which(grepl('smgran_e_c', colnames(all_together_xp)))]
+sg_e_cols <- colnames(all_together_xp)[ which(grepl('smgran_e_e', colnames(all_together_xp)))]
+alpha = .05
+sg_e_minus_c_xp <- sg_e_xp - sg_c_xp
+sg_e_minus_c_diff <- sg_e_minus_c_xp %*% coef(all_together_gam)
+sg_e_minus_c_se <- sqrt(rowSums((sg_e_minus_c_xp %*% vcov(all_together_gam, unconditional = F)) * sg_e_minus_c_xp))
+crit <- qnorm(alpha/2, lower.tail = FALSE)
+sg_e_minus_c_upr <- sg_e_minus_c_diff + (crit * sg_e_minus_c_se)
+sg_e_minus_c_lwr <- sg_e_minus_c_diff - (crit * sg_e_minus_c_se)
+sg_e_minus_c_df <- data.frame(
+             diff = sg_e_minus_c_diff,
+             se = sg_e_minus_c_se,
+             upper = sg_e_minus_c_upr,
+             lower = sg_e_minus_c_lwr,
+             period = unique(all_together_pdat$period),
+             pair = "sg_e_minus_c") %>%
+  mutate(diff_over_zero = upper * lower < 0)
+
+ggplot(sg_e_minus_c_df, aes(period, diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5)
+
+ilink <- all_together_gam$family$linkinv
+
+# 
+# sg_e_minus_c_minus_dipo_xp <- sg_e_minus_c_xp - dipo_xp
+# sg_e_minus_c_minus_dipo_diff <- sg_e_minus_c_minus_dipo_xp %*% coef(all_together_gam)
+# sg_e_minus_c_minus_dipo_se <- sqrt(rowSums((sg_e_minus_c_minus_dipo_xp %*% vcov(all_together_gam, unconditional = F)) * sg_e_minus_c_minus_dipo_xp))
+# crit <- qnorm(alpha/2, lower.tail = FALSE)
+# sg_e_minus_c_minus_dipo_upr <- sg_e_minus_c_minus_dipo_diff + (crit * sg_e_minus_c_minus_dipo_se)
+# sg_e_minus_c_minus_dipo_lwr <- sg_e_minus_c_minus_dipo_diff - (crit * sg_e_minus_c_minus_dipo_se)
+# sg_e_minus_c_minus_dipo_df <- data.frame(
+#              diff = sg_e_minus_c_minus_dipo_diff,
+#              se = sg_e_minus_c_minus_dipo_se,
+#              upper = sg_e_minus_c_minus_dipo_upr,
+#              lower = sg_e_minus_c_minus_dipo_lwr,
+#              period = unique(all_together_pdat$period),
+#              pair = "sg_minus_dipo")
+# 
+# ggplot(sg_e_minus_c_minus_dipo_df, aes(period, diff)) +
+#   geom_line() +
+#   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5)
+
+```
+
+
+```{r}
+
+
+
+ggplot(all_together_samples, aes(period, fitted, group = draw, color = orods)) +
+  geom_line(alpha = .1) +
+  geom_point(data = filter(all_together_samples, period > 1000)) +
+  facet_wrap(vars(orods))
+
+all_together_samples_wide <- all_together_samples %>%
+  tidyr::pivot_wider(id_cols = c(draw, period), names_from = orods, values_from = fitted) %>%
+  left_join(select(sg_e_minus_c_df, period, diff_over_zero))
+
+
+ggplot(all_together_samples_wide, aes(period, smgran_e_e, group = draw)) +
+  geom_line(alpha = .1) +
+  geom_line(aes(y = smgran_e_c), color = "blue")
+  geom_point(aes(period, 0, color = diff_over_zero))
+
+ggplot(all_together_samples_wide, aes(period, smgran_e_e - smgran_e_c, group = draw)) +
+  geom_line(alpha = .1) +
+  geom_point(aes(period, 0, color = diff_over_zero))
+
+
+ggplot(all_together_samples_wide, aes(period, (smgran_e_e - smgran_e_c)/dipo_e_c, group = draw)) +
+  geom_line(alpha = .1) +
+  geom_point(aes(period, 0, color = diff_over_zero))
+
+
+all_together_samples_big <- gratia::fitted_samples(all_together_gam, n = 10000, seed = 1977, scale = "response", newdata = all_together_pdat, exclude = "s(plot)")%>%
+  left_join(all_together_pdat) %>%
+  mutate(draw = as.factor(draw))
+
+all_together_samples_big_summary <- all_together_samples_big  %>%
+  group_by(row, period, orods, rod_group) %>%
+  summarize(meanfit = mean(fitted),
+            lowerq = quantile(fitted, probs = .025),
+            upperq = quantile(fitted, probs = .975)) %>%
+  ungroup()
+
+all_together_samples_big_summary_wide <- all_together_samples_big_summary %>%
+  tidyr::pivot_wider(id_cols = c(period), names_from = orods, values_from = c(meanfit, lowerq, upperq)) %>%
+  left_join(select(sg_e_minus_c_df, period, diff_over_zero))
+
+all_together_samples_big_wide<- all_together_samples_big %>%
+  tidyr::pivot_wider(id_cols = c(period, draw), names_from = orods, values_from = c(fitted)) %>%
+  mutate(sg_e_minus_c = smgran_e_e - smgran_e_c,
+         sg_e_minus_c_over_dipo = (smgran_e_e - smgran_e_c)/dipo_e_c)  %>%
+  select(-dipo_e_c, -smgran_e_c, -smgran_e_e) %>%
+  group_by(period) %>%
+  summarize(mean_sg_minus_c = mean(sg_e_minus_c),
+            lowerq_sg_minus_c = quantile(sg_e_minus_c, probs = .025),
+            upperq_sg_minus_c = quantile(sg_e_minus_c, probs = .975),
+            mean_sg_minus_c_over_dipo = mean(sg_e_minus_c_over_dipo),
+            lowerq_sg_minus_c_over_dipo = quantile(sg_e_minus_c_over_dipo, probs = .025),
+            upperq_sg_minus_c_over_dipo = quantile(sg_e_minus_c_over_dipo, probs = .975)) %>%
+  ungroup()
+
+all_together_samples_big_summary_wide <- all_together_samples_big_summary_wide %>%
+  left_join(all_together_samples_big_wide)
+
+ggplot(all_together_samples_big_summary_wide, aes(period, mean_sg_minus_c_over_dipo)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lowerq_sg_minus_c_over_dipo, ymax = upperq_sg_minus_c_over_dipo), alpha = .1)+
+  geom_point(aes(period, 0, color = diff_over_zero))
+
+
+```

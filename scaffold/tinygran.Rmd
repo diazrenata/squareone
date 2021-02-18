@@ -465,10 +465,15 @@ era_means <- treatment_means %>%
 #   scale_color_viridis_d(end = .8)
 
 select(era_means, era, oplottype, total_e_mean, smgran_e_mean, tinygran_e_mean) %>%
+  distinct()  
+
+era_means <- era_means %>%
+  mutate(treatment_era = ifelse(oplottype == "CE", ifelse(era == "d_post-switch", "exclosure", "control_e"), ifelse(oplottype == "EE", "exclosure", "control")))
+
+select(era_means, era, treatment_era, total_e_mean, smgran_e_mean, tinygran_e_mean) %>%
+  group_by(era, treatment_era) %>%
+  summarize(mean_e = mean(total_e_mean))
   distinct()
-
-
-
 ```
 
 ### gls on actual vals
