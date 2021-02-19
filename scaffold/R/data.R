@@ -1,4 +1,4 @@
-get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv = F, use_pre_switch = F) {
+get_rodent_data <- function(use_christensen_plots = F, return_plot = F, use_pre_switch = F) {
   
   plot_level <- portalr::energy(clean = T,
                                 level = "Plot",
@@ -20,44 +20,32 @@ get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv
                                       ifelse(period <= 434, "c_pre_switch", "d_post-switch")))) 
   
   
-  if(use_pre_switch) {
-    which_plots <- c(6,11,13,14,17,18, 2,3,4,8,15,19,22)
-    which_dir <- "PreSwitch"
-  } else {
-    if(use_christensen_plots) {
-      which_plots <-  c(5,6,7,11,13,14,17,18,24)
-      which_dir <- "Ch2019"
-    } else {
-      which_plots <- c(2,3,4,8,11,14,15,17,19,22)
-      which_dir <- "Diaz"
-    }
-  }
+  plot_treatments <- read.csv(here::here("scaffold", "Data", "plot_treatments.csv")) %>%
+    dplyr::rename(plot = Plot)
+  
+  plot_level <- plot_level %>%
+    dplyr::left_join(plot_treatments)
   
   if(use_pre_switch) {
     
     plot_level <- plot_level %>%
-      dplyr::filter(plot %in% which_plots,
+      dplyr::filter(Use_first,
                     period > 118,
                     period < 434) %>%
       dplyr::mutate(plot_type = 
-                      ifelse(plot %in% c(3, 6, 13, 15, 18, 19, 21), "E", "C"))
+                      first_trt)
     
   } else {
     if(use_christensen_plots) {
       plot_level <- plot_level %>%
-        dplyr::filter(plot %in% which_plots,
+        dplyr::filter(combined_trt %in% c("RC", "EC", "CC"),
                       period > 118) %>%
-        dplyr::mutate(plot_type =
-                        ifelse(plot %in% c(5, 7, 24), "XC", # removal -> control
-                               ifelse(plot %in% c(6, 13, 18), "EC", # exclosure -> control
-                                      ifelse(plot %in% c(11, 14, 17), "CC", NA)))) # control 
+        dplyr::mutate(plot_type = combined_trt) # control 
     } else {
       plot_level <- plot_level %>%
-        dplyr::filter(plot %in% which_plots) %>%
-        dplyr::mutate(plot_type = 
-                        ifelse(plot %in% c(2, 8, 22), "CE", # control -> exclosure
-                               ifelse(plot %in% c(3, 15, 19, 21), "EE", # exclosure
-                                      ifelse(plot %in% c(4, 11, 14, 17), "CC", NA))))  # control
+        dplyr::filter(Use_second,
+                      period > 118) %>%
+        dplyr::mutate(plot_type = combined_trt)  # control
     }
   }
   
@@ -76,6 +64,7 @@ get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv
                   pp_e = PP) %>%
     dplyr::select(period, censusdate, era, plot, plot_type, total_e, dipo_e, smgran_e, pb_e, pp_e, tinygran_e) %>%
     dplyr::mutate(censusdate = as.Date(censusdate),
+                  oplottype = ordered(plot_type)
     )
   
   
@@ -90,11 +79,6 @@ get_rodent_data <- function(use_christensen_plots = F, return_plot = F, save_csv
                      nplots = dplyr::n()) %>%
     dplyr::ungroup() 
   
-  if(save_csv) {
-    write.csv(plot_level_totals, row.names = F, here::here("scaffold", "Data", which_dir,  "plot_total_e.csv"))
-    
-    write.csv(treatment_means, row.names = F, here::here("scaffold", "Data", which_dir, "treatment_mean_e.csv"))
-  }
   if(return_plot) {
     return(plot_level_totals) 
   }
