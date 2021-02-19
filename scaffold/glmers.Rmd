@@ -1,0 +1,119 @@
+---
+title: "Energy plots"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      fig.dim = c(7, 3))
+library(dplyr)
+library(ggplot2)
+theme_set(theme_bw())
+source(here::here("scaffold", "R", "data.R"))
+```
+
+```{r}
+
+use_christensen_plots <- F
+
+library(mgcv)
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) %>%
+   mutate(tinygran_e = smgran_e - pb_e) %>%
+  mutate(oplottype = ordered(plot_type))
+
+plot_annuals <- plot_totals %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(censusyear = as.integer(format.Date(censusdate, "%Y"))) %>%
+  group_by(censusyear, plot, plot_type, era) %>%
+  summarize(annual_total_e = mean(total_e),
+            annual_smgran_e = mean(smgran_e),
+            annual_tinygran_e = mean(tinygran_e),
+            nsamples = length(unique(period)),
+            nrows = dplyr::n()) %>%
+  ungroup()
+
+treatment_means <- get_rodent_data(use_christensen_plots, F, F) %>%
+  mutate(tinygran_e = smgran_e - pb_e) %>%
+  mutate(oplottype = as.factor(plot_type))
+
+# treatment_ratios <- get_total_energy_ratios(treatment_means)
+
+```
+
+```{r}
+
+library(lme4)
+library(emmeans)
+
+plot_totals <- plot_totals %>%
+  mutate(tg_int = ceiling(tinygran_e),
+         sg_int = ceiling(smgran_e),
+         total_e_int = ceiling(total_e))
+
+tg_glmer <- glmer(tg_int ~ oplottype * era + (1 |plot), data = plot_totals, family= poisson)
+
+summary(tg_glmer)
+
+plot(emmeans(tg_glmer, ~ oplottype | era))
+
+
+plot(pairs(emmeans(tg_glmer, ~ oplottype | era)))
+(emmeans(tg_glmer, ~ oplottype | era))
+
+
+(pairs(emmeans(tg_glmer, ~ oplottype | era)))
+
+(emmeans(tg_glmer, ~ oplottype | era))
+
+regrid(emmeans(tg_glmer, ~ oplottype | era))
+
+
+
+```
+
+```{r}
+sg_glmer <- glmer(sg_int ~ oplottype * era + (1 |plot), data = plot_totals, family= poisson)
+
+summary(sg_glmer)
+
+plot(emmeans(sg_glmer, ~ oplottype | era))
+
+
+plot(pairs(emmeans(sg_glmer, ~ oplottype | era)))
+(emmeans(sg_glmer, ~ oplottype | era))
+
+
+(pairs(emmeans(sg_glmer, ~ oplottype | era)))
+
+(emmeans(sg_glmer, ~ oplottype | era))
+
+regrid(emmeans(sg_glmer, ~ oplottype | era))
+
+
+
+```
+
+
+```{r}
+te_glmer <- glmer(total_e_int ~ oplottype * era + (1 |plot), data = plot_totals, family= poisson)
+
+summary(te_glmer)
+
+plot(emmeans(te_glmer, ~ oplottype | era))
+
+
+plot(pairs(emmeans(te_glmer, ~ oplottype | era)))
+(emmeans(te_glmer, ~ oplottype | era))
+
+
+(pairs(emmeans(te_glmer, ~ oplottype | era)))
+
+(emmeans(te_glmer, ~ oplottype | era))
+
+regrid(emmeans(te_glmer, ~ oplottype | era))
+
+
+
+```
