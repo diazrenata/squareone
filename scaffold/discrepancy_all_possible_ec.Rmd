@@ -68,7 +68,7 @@ ggplot(smgran_control_samples, aes(period, fitted, group = draw)) +
   geom_line(alpha = .1)
 
 
-exclosures <- filter(plot_totals, oplottype == "EE")
+exclosures <- filter(plot_totals, oplottype == "CE")
 
 
 smgran_exclosure_gam <- gam(smgran_e ~ s(period), family = "tw", data = exclosures)
