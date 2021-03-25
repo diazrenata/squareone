@@ -1,0 +1,74 @@
+---
+title: "Raw data"
+author: Renata Diaz
+date: "`r Sys.Date()`"
+output: 
+    github_document:
+       df_print: kable
+       toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.dim =c(8, 4))
+library(soar)
+library(ggplot2)
+library(dplyr)
+
+theme_set(theme_bw())
+```
+
+# Total energy use on control and treatment plots
+
+## 1988-2015
+
+Allows for 8 plots of each treatment type.
+
+```{r}
+trt_ps <- get_treatment_means(use_pre_switch = T)
+
+ggplot(trt_ps, aes(censusdate, total_e, color = plot_type)) +
+ # geom_line() +
+  geom_line(aes(y = total_e_ma))
+
+```
+
+# Energy use on treatment relative to control plots
+
+## 1988-2015
+
+```{r}
+trt_ps_c <- add_control_values(trt_ps)
+
+
+ggplot(trt_ps_c, aes(censusdate, total_e_ma / total_e_control_ma, color = plot_type)) +
+  geom_line()
+```
+
+# Compensation
+
+## 1988-2015
+
+```{r}
+
+trt_ps_c_comp <- trt_ps_c %>%
+  mutate(smgran_comp = (smgran_e - smgran_e_control) / (dipo_e_control)) %>%
+  group_by(plot_type) %>%
+  mutate(smgran_comp_ma = maopts(smgran_comp)) %>%
+  ungroup()
+
+ggplot(trt_ps_c_comp, aes(censusdate, smgran_comp_ma, color = plot_type)) +
+  geom_line()
+
+```
+
+# PB energy use
+
+## 1988-2015
+
+```{r}
+
+
+ggplot(trt_ps, aes(censusdate, pb_e, color = plot_type)) +
+  geom_line()
+
+```
