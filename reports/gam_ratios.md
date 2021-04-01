@@ -12,8 +12,9 @@ each type of plot, and there’s variability between plots within a
 treatment.
 
 The naive way to handle this is to take the treatment-level mean for
-each time step, compute the ratio, and analyze that. This is what was
-done in Ernest and Brown (2001).
+each time step, compute the ratio, and analyze that. This is analogous
+to what was done in Ernest and Brown (2001). (They summed across equal
+numbers of plots).
 
     ## Loading in data version 2.49.0
 
@@ -190,7 +191,7 @@ ggplot(smgran_comp_gam_sim, aes(censusdate, smgran_comp_mean, color  = fplottype
   geom_line() +
   geom_ribbon(aes(ymin  = smgran_comp_lwr,
                   ymax = smgran_comp_upr), alpha = .3) +
-  ggtitle("Total energy ratio via GAM sims compared to means") +
+  ggtitle("Compensation via GAM sims compared to means") +
   scale_color_viridis_d() +
   scale_fill_viridis_d() +
   geom_line(data =compensation, aes(censusdate, smgran_comp_ma, color = fplottype), linetype = 2) +
@@ -210,3 +211,135 @@ fplottype) + s(plot, bs = "re"))`, identify the periods of time when the
 different treatment smooths overlap the control smooth, and flag those
 as periods when the “significance” of the compensatory effect is
 suspect.
+
+## Contrast models
+
+Whether we use the GAM sim method or just the treatment means, we would
+ultimately like a - general - estimate of the compensation and total
+energy values for the different “eras”.
+
+Suggestion: Use a generalized least squares. This will fit the ratio as
+Gaussian, which may not be totally correct…but at least it is a
+continuous value that can be positive or negative. It will allow for an
+autocorrelation term.
+
+### Contrasts on treatment means
+
+    ##                 Model df       AIC       BIC   logLik   Test  L.Ratio p-value
+    ## totale_mean_gls     1 14 -158.7526 -90.22722  93.3763                        
+    ## totale_mean_lm      2 13  191.2240 254.85470 -82.6120 1 vs 2 351.9766  <.0001
+
+![](gam_ratios_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](gam_ratios_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
+
+    ##               Model df      AIC      BIC     logLik   Test  L.Ratio p-value
+    ## comp_mean_gls     1 14 142.2500 210.7754  -57.12499                        
+    ## comp_mean_lm      2 13 348.8341 412.4649 -161.41707 1 vs 2 208.5842  <.0001
+
+![](gam_ratios_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->![](gam_ratios_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
+
+## Contrasts on gam sims
+
+There’s something weird about the GLS on the gam sims. It has enormous
+CIs and is attributing essentially no change to era.
+
+I also have a hard time fitting multiple grouping factors for the
+correlation in the GLS, and so went with the means (and not taking into
+account the draws).
+
+For now I suggest using the GLS on the means.
+
+<!-- ```{r} -->
+
+<!-- ratio_gam_sim <- ratio_gam_sim %>% -->
+
+<!--   mutate(plot_type = as.character(fplottype), -->
+
+<!--          era = as.character(fera)) -->
+
+<!-- totale_sim_gls <- gls(totale_rat_mean ~ plot_type * era,  correlation = corCAR1(form = ~ period | plot_type), data = ratio_gam_sim) -->
+
+<!-- totale_sim_gls_emmeans <- emmeans(totale_sim_gls, specs = ~ era | plot_type) -->
+
+<!-- totale_sim_lm <- lm(totale_rat_mean ~ plot_type * era, data = ratio_gam_sim) -->
+
+<!-- totale_sim_lm_emmeans <- emmeans(totale_sim_lm, specs = ~ era | plot_type) -->
+
+<!-- anova(totale_sim_gls, totale_sim_lm) -->
+
+<!-- totale_sim_pairs <- bind_rows(gls = as.data.frame(pairs(totale_sim_gls_emmeans)), -->
+
+<!--                               lm = as.data.frame(pairs(totale_sim_lm_emmeans)), -->
+
+<!--                               .id = "mod") -->
+
+<!-- ggplot(totale_sim_pairs, aes(contrast, estimate, shape = mod, color = p.value < .05)) + -->
+
+<!--   geom_jitter() + -->
+
+<!--   facet_wrap(vars(plot_type)) + -->
+
+<!--   theme(axis.text.x = element_text(angle = 90)) -->
+
+<!-- totale_sim_pred <- bind_rows(gls = as.data.frame(totale_sim_gls_emmeans), -->
+
+<!--                               lm = as.data.frame(totale_sim_lm_emmeans), -->
+
+<!--                               .id = "mod") -->
+
+<!-- ggplot(filter(totale_sim_pred), aes(era, emmean, color = mod)) + -->
+
+<!--   geom_point() + -->
+
+<!--   #geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL)) + -->
+
+<!--   facet_wrap(vars(plot_type)) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- smgran_comp_gam_sim <- smgran_comp_gam_sim %>% -->
+
+<!--   mutate(plot_type = as.character(fplottype), -->
+
+<!--          era = as.character(fera)) -->
+
+<!-- comp_sim_gls <- gls(smgran_comp_mean ~ plot_type * era,  correlation = corCAR1(form = ~ period | plot_type), data = smgran_comp_gam_sim) -->
+
+<!-- comp_sim_gls_emmeans <- emmeans(comp_sim_gls, specs = ~ era | plot_type) -->
+
+<!-- comp_sim_lm <- lm(smgran_comp_mean ~ plot_type * era, data = smgran_comp_gam_sim) -->
+
+<!-- comp_sim_lm_emmeans <- emmeans(comp_sim_lm, specs = ~ era | plot_type) -->
+
+<!-- anova(comp_sim_gls, comp_sim_lm) -->
+
+<!-- comp_sim_pairs <- bind_rows(gls = as.data.frame(pairs(comp_sim_gls_emmeans)), -->
+
+<!--                               lm = as.data.frame(pairs(comp_sim_lm_emmeans)), -->
+
+<!--                               .id = "mod") -->
+
+<!-- ggplot(comp_sim_pairs, aes(contrast, estimate, shape = mod, color = p.value < .05)) + -->
+
+<!--   geom_jitter() + -->
+
+<!--   facet_wrap(vars(plot_type)) + -->
+
+<!--   theme(axis.text.x = element_text(angle = 90)) -->
+
+<!-- comp_sim_pred <- bind_rows(gls = as.data.frame(comp_sim_gls_emmeans), -->
+
+<!--                               lm = as.data.frame(comp_sim_lm_emmeans), -->
+
+<!--                               .id = "mod") -->
+
+<!-- ggplot(filter(comp_sim_pred), aes(era, emmean, color = mod)) + -->
+
+<!--   geom_point() + -->
+
+<!--   #geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL)) + -->
+
+<!--   facet_wrap(vars(plot_type)) -->
+
+<!-- ``` -->

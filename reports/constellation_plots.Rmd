@@ -1,0 +1,237 @@
+---
+title: "hold this loosely..."
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+library(soar)
+library(ggplot2)
+library(dplyr)
+library(mgcv)
+library(gratia)
+theme_set(theme_bw())
+
+library(nlme)
+library(emmeans)
+
+```
+
+
+```{r}
+
+treatl <- get_treatment_means() %>%
+  mutate(fplottype = as.factor(plot_type),
+         pb_prop = pb_e / total_e) %>%
+  group_by(oplottype) %>%
+  mutate(pb_prop_ma = maopts(pb_prop)) %>%
+  ungroup()
+
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+
+
+pb <- filter(treatl, as.numeric(oera) != 1) %>%
+  filter(paste0(oplottype, oera) != "CCd_post-switch") 
+
+
+just_controls <- filter(treatl, oplottype == "CC")
+
+e_ratios <- treatl %>%
+  filter(oplottype != "CC") %>%
+  select(period, censusdate, era, oera, plot_type, oplottype, total_e, smgran_e, tinygran_e, fplottype) %>%
+  left_join(select(just_controls, period, total_e, smgran_e, tinygran_e) %>% rename(total_e_c = total_e, smgran_e_c = smgran_e, tinygran_e_c = tinygran_e)) %>%
+  mutate(total_e_rat = total_e / total_e_c,
+         smgran_e_rat = smgran_e / smgran_e_c,
+         tinygran_e_rat = tinygran_e / tinygran_e_c) %>%
+  group_by(oplottype) %>%
+  mutate(total_e_rat_ma = maopts(total_e_rat),
+         smgran_e_rat_ma = maopts(smgran_e_rat),
+         tinygran_e_rat_ma = maopts(tinygran_e_rat)) %>%
+  ungroup()
+
+compensation <- treatl %>%
+  filter(oplottype != "CC") %>%
+  select(period, censusdate, era, oera, plot_type, oplottype, smgran_e, fplottype) %>%
+  left_join(select(just_controls, period, dipo_e, smgran_e) %>% rename(dipo_e_c = dipo_e, smgran_e_c = smgran_e)) %>%
+  mutate(smgran_increase = smgran_e - smgran_e_c) %>%
+  mutate(smgran_comp = smgran_increase / dipo_e_c)%>%
+  group_by(oplottype) %>%
+  mutate(smgran_comp_ma = maopts(smgran_comp)) %>%
+  ungroup()
+```
+
+# Raw data
+
+```{r}
+ggplot(treatl, aes(censusdate, pb_prop_ma, color = oplottype)) +
+  geom_line() +
+  ggtitle("PB % of energy use, from treatment means") +
+  era_grid
+
+ggplot(e_ratios, aes(censusdate, total_e_rat_ma, color = oplottype)) +
+  geom_line() +
+  ggtitle("Total E ratio, from treatment means") +
+  era_grid
+
+ggplot(compensation, aes(censusdate, smgran_comp_ma, color = oplottype)) +
+  geom_line() +
+  ggtitle("Small granivore compensation, from treatment means") +
+  era_grid
+
+ggplot(treatl, aes(censusdate, smgran_e, color = oplottype)) +
+  geom_line() +
+  ggtitle("Small granivore energy use, treatment means") +
+  era_grid
+
+```
+
+# Era models
+
+```{r}
+
+
+pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb)
+
+plot(pairs(emmeans(pb_glm_treat, specs = ~ oera | oplottype)))
+#plot(regrid(emmeans(pb_glm_treat, specs = ~ oera | oplottype)))
+
+ilink <- pb_glm_treat$family$linkinv
+
+pb_glm_treat_se <- predict(pb_glm_treat, type = "link", se.fit = T, newdata = pb) %>%
+  as.data.frame() %>%
+  mutate(est = ilink(fit),
+         lower = ilink(fit - 2*se.fit),
+         upper = ilink(fit + 2*se.fit),
+         period = filter(pb)$period,
+         oplottype = filter(pb)$oplottype)
+# 
+# 
+# ggplot(pb_glm_treat_se, aes(period, est, color = oplottype, fill = oplottype)) +
+#   geom_line() +
+#   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3)
+
+
+pb_glm_treat_se <- pb_glm_treat_se %>%
+  right_join(select(pb, oera, oplottype, period, censusdate, pb_prop_ma))
+
+
+ggplot(pb_glm_treat_se, aes(censusdate, est, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = pb_prop_ma)) +
+  facet_grid(cols = vars(oera), space = "free_x", scales = "free_x") +
+  ylab("PB % of energy use") +
+  ggtitle("PB ratio over time") +
+  theme(legend.position = "top")
+```
+
+
+```{r}
+
+
+
+totale_mean_gls <- gls(total_e_rat ~ plot_type * era,  correlation = corCAR1(form = ~ period | plot_type), data = e_ratios)
+
+totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ era | plot_type)
+
+plot(pairs(totale_mean_gls_emmeans))
+
+# 
+# totale_mean_lm <- lm(total_e_rat ~ plot_type * era, data = totale_ratio)
+# 
+# totale_mean_lm_emmeans <- emmeans(totale_mean_lm, specs = ~ era | plot_type)
+# 
+# 
+# anova(totale_mean_gls, totale_mean_lm)
+# 
+# totale_mean_pairs <- bind_rows(gls = as.data.frame(pairs(totale_mean_gls_emmeans)),
+#                               lm = as.data.frame(pairs(totale_mean_lm_emmeans)),
+#                               .id = "mod")
+# 
+# ggplot(totale_mean_pairs, aes(contrast, estimate, shape = mod, color = p.value < .05)) +
+#   geom_jitter() +
+#   facet_wrap(vars(plot_type)) +
+#   theme(axis.text.x = element_text(angle = 90))
+
+totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
+  right_join(e_ratios)
+  
+ggplot(totale_mean_pred, aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  era_grid +
+  geom_line(aes(y = total_e_rat_ma)) +
+  scale_color_viridis_d(begin  = .25) +
+  scale_fill_viridis_d(begin = .25) +
+  ggtitle("Total E on treatments as % of control E") +
+  ylab("Treatment E / Control E") +
+  theme(legend.position = "top") +
+  ylim(0, 2)
+```
+
+
+```{r}
+
+
+comp_mean_gls <- gls(smgran_comp ~ plot_type * era,  correlation = corCAR1(form = ~ period | plot_type), data = compensation)
+
+comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ era | plot_type)
+
+plot(pairs(comp_mean_gls_emmeans)) 
+
+comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
+  right_join(compensation)
+
+ggplot(comp_mean_pred, aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  era_grid +
+  geom_line(aes(y = smgran_comp_ma)) +
+  scale_color_viridis_d(begin  = .25) +
+  scale_fill_viridis_d(begin = .25) +
+  ggtitle("Compensation") +
+  ylab("Smgran_trt - Smgran_ctrl / Dipo_ctrl") +
+  theme(legend.position = "top") +
+  ylim(-.25, 1)
+
+```
+
+```{r}
+treatl <- treatl %>%
+  mutate(smgran_e_int = round(smgran_e))
+
+smgran_gam <- gam(smgran_e ~ plot_type * era, data = treatl, family = "tw")
+
+
+smgran_gam_emmeans <- emmeans(smgran_gam, specs = ~ plot_type | era)
+
+plot(pairs(smgran_gam_emmeans)) 
+
+ilink <- smgran_gam$family$linkinv
+
+smgran_pred <-  predict(smgran_gam, type = "link", se.fit = T, newdata = treatl) %>%
+  as.data.frame() %>%
+  mutate(est = ilink(fit),
+         lower = ilink(fit - 2*se.fit),
+         upper = ilink(fit + 2*se.fit),
+         period = filter(treatl)$period,
+         oplottype = filter(treatl)$oplottype,
+         oera = treatl$oera,
+         censusdate = treatl$censusdate,
+         smgran_e_ma = treatl$smgran_e_ma)
+
+ggplot(smgran_pred, aes(censusdate, est, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .2) +
+  era_grid +
+  geom_line(aes(y = smgran_e_ma))  +
+  theme(legend.position = "top")
+
+
+ggplot(smgran_pred, aes(oplottype, est, color = oplottype)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower, ymax = upper)) +
+  era_grid +
+  theme(legend.position = "top")
+
+```
