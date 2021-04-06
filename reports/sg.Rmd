@@ -1,0 +1,126 @@
+---
+title: "Small granivore energy use"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+library(soar)
+library(ggplot2)
+library(dplyr)
+library(nlme)
+library(emmeans)
+theme_set(theme_bw())
+```
+
+
+
+SG as a % of treatment use
+
+```{r}
+
+treatl <- get_treatment_means() %>%
+  mutate(fplottype = as.factor(plot_type))
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+
+sg_prop <- treatl %>%
+  mutate(sg_prop = smgran_e / total_e) %>%
+  group_by(plot_type) %>%
+  mutate(sg_prop_ma = maopts(sg_prop)) %>%
+  ungroup()
+
+just_ee <- filter(treatl, oplottype == "EE")
+
+ggplot(sg_prop, aes(censusdate, sg_prop_ma, color = oplottype)) +
+  geom_line() +
+  era_grid
+
+
+sg_glm <- glm(sg_prop ~ plot_type * era, data = sg_prop, family = quasibinomial())
+
+
+
+plot(pairs(emmeans(sg_glm, specs = ~ era | plot_type)))
+#plot(regrid(emmeans(sg_glm, specs = ~ oera | oplottype)))
+
+ilink <- sg_glm$family$linkinv
+
+sg_glm_se <- predict(sg_glm, type = "link", se.fit = T, newdata = sg_prop) %>%
+  as.data.frame() %>%
+  mutate(est = ilink(fit),
+         lower = ilink(fit - 2*se.fit),
+         upper = ilink(fit + 2*se.fit),
+         period = filter(sg_prop)$period,
+         plot_type = filter(sg_prop)$plot_type)
+# 
+# 
+# ggplot(sg_glm_se, aes(period, est, color = oplottype, fill = oplottype)) +
+#   geom_line() +
+#   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3)
+
+
+sg_glm_se <- sg_glm_se %>%
+  right_join(select(sg_prop, oera, plot_type, oplottype, period, censusdate, sg_prop_ma))
+
+
+ggplot(sg_glm_se, aes(censusdate, est, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = sg_prop_ma)) +
+  facet_grid(cols = vars(oera), space = "free_x", scales = "free_x") +
+  ylab("sg % of energy use") +
+  ggtitle("sg ratio over time") +
+  theme(legend.position = "top")
+
+```
+
+SG on non-exclosures v EE
+
+```{r}
+smgran_e_ratio <- treatl %>%
+  filter(oplottype != "EE") %>%
+  select(period, censusdate, era, oera, plot_type, oplottype, smgran_e, fplottype) %>%
+  left_join(select(just_ee, period, smgran_e) %>% rename(smgran_e_e = smgran_e)) %>%
+  mutate(smgran_e_rat = smgran_e / smgran_e_e) %>%
+  group_by(period) %>%
+  mutate(anyna = any(is.na(smgran_e_rat))) %>%
+  ungroup() %>%
+  filter(!anyna) %>%
+  group_by(oplottype) %>%
+  mutate(smgran_e_rat_ma = maopts(smgran_e_rat)) %>%
+  ungroup()
+
+ggplot(smgran_e_ratio, aes(censusdate, smgran_e_rat_ma, color = oplottype)) +
+  geom_line() +
+  ggtitle("Smgran E ratio, from treatment means") +
+  era_grid +
+  scale_color_viridis_d(end = .75)
+
+
+sge_mean_gls <- gls(smgran_e_rat ~ plot_type * era,  correlation = corCAR1(form = ~ period | plot_type), data = smgran_e_ratio)
+
+sge_mean_gls_emmeans <- emmeans(sge_mean_gls, specs = ~ era | plot_type)
+
+plot(pairs(sge_mean_gls_emmeans))
+
+
+sge_mean_pred <- as.data.frame(sge_mean_gls_emmeans) %>%
+  right_join(smgran_e_ratio)
+  
+ggplot(sge_mean_pred, aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  era_grid +
+  geom_line(aes(y = smgran_e_rat_ma)) +
+  scale_color_viridis_d(end  = .75) +
+  scale_fill_viridis_d(end = .75) +
+  ggtitle("Smgran E on non-EE as % of EE E") +
+  ylab("Treatment E / EE E") +
+  theme(legend.position = "top") +
+  ylim(0, 2)
+
+
+sge_mean_gls_emmeans <- emmeans(sge_mean_gls, specs = ~ plot_type | era)
+
+(pairs(sge_mean_gls_emmeans))
+```
