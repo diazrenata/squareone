@@ -1,0 +1,40 @@
+---
+title: "PB"
+author: Renata Diaz
+date: "`r Sys.Date()`"
+output: 
+    github_document:
+       df_print: kable
+       toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.dim =c(8, 4))
+library(soar)
+library(ggplot2)
+library(dplyr)
+
+theme_set(theme_bw())
+```
+
+```{r}
+plot_ps <- get_plot_totals(use_pre_switch = F)
+
+treat_ps <- get_treatment_means(use_pre_switch = T) 
+```
+
+```{r}
+
+ggplot(treat_ps, aes(censusdate, pb_e_ma, color = oplottype)) +
+  geom_line()
+
+pb_ratio <- treat_ps %>%
+  filter(as.numeric(oera) > 1) %>%
+  select(period, censusdate, oplottype, oera, pb_e_ma) %>% #use of 6mo moving average gets rid of 0s
+  tidyr::pivot_wider(id_cols = c("period", "censusdate", "oera"), names_from = oplottype, values_from = pb_e_ma) %>%
+  mutate(c_over_e = C / E)
+
+ggplot(pb_ratio, aes(censusdate, c_over_e)) +
+  geom_line()
+
+```

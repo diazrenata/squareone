@@ -149,7 +149,7 @@ pb_glm_treat_se <- pb_glm_treat_se %>%
   right_join(select(pb, oera, oplottype, period, censusdate, pb_prop_ma))
 
 
-ggplot(pb_glm_treat_se, aes(censusdate, est, color = oplottype, fill = oplottype)) +
+ggplot(filter(pb_glm_treat_se, oplottype %in% c("CC", "EE")), aes(censusdate, est, color = oplottype, fill = oplottype)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
   geom_line(aes(y = pb_prop_ma)) +
@@ -188,6 +188,8 @@ out
 
 ```
 
+
+
 ## Treatment:control total E ratio
 
 ```{r}
@@ -204,7 +206,7 @@ out
 totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
   right_join(e_ratios)
   
-ggplot(totale_mean_pred, aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
   era_grid +
@@ -218,6 +220,41 @@ ggplot(totale_mean_pred, aes(censusdate, emmean, color = oplottype, fill = oplot
 
 out <- (totale_mean_pred %>% select(oera, oplottype, emmean, lower.CL, upper.CL) %>% distinct())
 out
+```
+
+#### total e only longterm
+
+```{r}
+
+e_ratios_lt <- e_ratios %>%
+  filter(oplottype == "EE") %>%
+  mutate(era = ifelse(era == "d_post-switch", "c_pre_switch", era))
+
+totale_mean_gls_lt <- gls(total_e_rat ~  era,  correlation = corCAR1(form = ~ period), data = e_ratios_lt)
+
+totale_mean_gls_lt_emmeans <- emmeans(totale_mean_gls_lt, specs = ~ era )
+
+out <- (as.data.frame(pairs(totale_mean_gls_lt_emmeans)) %>% select(contrast, p.value) %>%
+  mutate(p.value= round(p.value, 3)))
+out
+totale_mean_pred_lt <- as.data.frame(totale_mean_gls_lt_emmeans) %>%
+  right_join(e_ratios_lt)
+  
+ggplot(filter(totale_mean_pred_lt, oplottype %in% c("CC", "EE")), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  era_grid +
+  geom_line(aes(y = total_e_rat_ma)) +
+  scale_color_viridis_d(begin  = .25) +
+  scale_fill_viridis_d(begin = .25) +
+  ggtitle("Total E on treatments as % of control E") +
+  ylab("Treatment E / Control E") +
+  theme(legend.position = "top") +
+  ylim(0, 2)
+
+out <- (totale_mean_pred_lt%>% select(oera, oplottype, emmean, lower.CL, upper.CL) %>% distinct())
+out
+
 ```
 
 
@@ -235,7 +272,7 @@ out
 comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
   right_join(compensation)
 
-ggplot(comp_mean_pred, aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
   era_grid +
@@ -257,6 +294,49 @@ Consider using sg_c, sg_ce, sg_ec / sg_ee
 And sg_c / total_c
 
 Using EE as the denominator escapes (almost all) the infinite/NA values. 
+
+```{r}
+
+ctrl_dipos <- filter(treatl, oplottype == "CC") %>%
+  mutate(dipo_of_total = dipo_e / total_e) %>%
+  mutate(dipo_of_total_ma = maopts(dipo_of_total))
+
+ggplot(ctrl_dipos, aes(censusdate, dipo_of_total)) +
+  geom_line() +
+  era_grid
+
+ctrl_dipos_glm <- glm(dipo_of_total ~ era, data = ctrl_dipos,family = quasibinomial())
+ctrl_dipos_glm_emmeans <- emmeans(ctrl_dipos_glm, specs = ~ era)
+out <- (as.data.frame(pairs(ctrl_dipos_glm_emmeans)) %>% mutate(p.value = round(p.value, 3)))
+out
+
+
+ilink <- ctrl_dipos_glm$family$linkinv
+
+ctrl_dipos_glm_se <- predict(ctrl_dipos_glm, type = "link", se.fit = T, newdata = ctrl_dipos) %>%
+  as.data.frame() %>%
+  mutate(est = ilink(fit),
+         lower = ilink(fit - 2*se.fit),
+         upper = ilink(fit + 2*se.fit),
+         period = filter(ctrl_dipos)$period)
+
+ctrl_dipos_glm_se <- ctrl_dipos_glm_se %>%
+  right_join(select(ctrl_dipos, oera, period, censusdate, dipo_of_total_ma))
+
+
+ggplot(ctrl_dipos_glm_se, aes(censusdate, est)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = dipo_of_total_ma)) +
+  facet_grid(cols = vars(oera), space = "free_x", scales = "free_x") +
+  ylab("Dipo % of energy use") +
+  ggtitle("Dipo ratio  on control plots") +
+  theme(legend.position = "top")
+
+ctrl_dipos_glm_se %>%
+  select(oera, est, lower, upper) %>%
+  distinct()
+```
 
 # Whole story
 

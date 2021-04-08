@@ -200,9 +200,39 @@ And sg\_c / total\_c
 
 Using EE as the denominator escapes (almost all) the infinite/NA values.
 
+![](constellation_plots_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+<div class="kable-table">
+
+| contrast                          |    estimate |        SE |  df |     z.ratio | p.value |
+| :-------------------------------- | ----------: | --------: | --: | ----------: | ------: |
+| a\_pre\_ba - b\_pre\_cpt          |   1.5792882 | 0.1748810 | Inf |   9.0306458 |   0.000 |
+| a\_pre\_ba - c\_pre\_switch       |   1.8220876 | 0.1977242 | Inf |   9.2152976 |   0.000 |
+| a\_pre\_ba - (d\_post-switch)     |   1.5923098 | 0.2044278 | Inf |   7.7891059 |   0.000 |
+| b\_pre\_cpt - c\_pre\_switch      |   0.2427994 | 0.1407837 | Inf |   1.7246272 |   0.311 |
+| b\_pre\_cpt - (d\_post-switch)    |   0.0130216 | 0.1500530 | Inf |   0.0867797 |   1.000 |
+| c\_pre\_switch - (d\_post-switch) | \-0.2297778 | 0.1761460 | Inf | \-1.3044737 |   0.560 |
+
+</div>
+
+    ## Joining, by = "period"
+
+![](constellation_plots_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
+
+<div class="kable-table">
+
+| oera           |       est |     lower |     upper |
+| :------------- | --------: | --------: | --------: |
+| a\_pre\_ba     | 0.9294915 | 0.9057767 | 0.9475830 |
+| b\_pre\_cpt    | 0.7309832 | 0.7004049 | 0.7595121 |
+| c\_pre\_switch | 0.6806623 | 0.6268617 | 0.7300463 |
+| d\_post-switch | 0.7284149 | 0.6741225 | 0.7766587 |
+
+</div>
+
 # Whole story
 
-![](constellation_plots_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](constellation_plots_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
     ##                            2.5 %        97.5 %
     ## (Intercept)        -1.808366e-01  0.2065857474
@@ -214,7 +244,7 @@ Using EE as the denominator escapes (almost all) the infinite/NA values.
     ## plot_typeEC:period -2.481733e-03 -0.0007999753
     ## plot_typeEE:period -1.493897e-03  0.0001878612
 
-![](constellation_plots_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
+![](constellation_plots_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
 
     ## 
     ## Call:
@@ -248,4 +278,4 @@ Using EE as the denominator escapes (almost all) the infinite/NA values.
 
     ## Joining, by = c("period", "plot_type")
 
-![](constellation_plots_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
+![](constellation_plots_files/figure-gfm/unnamed-chunk-7-3.png)<!-- -->
