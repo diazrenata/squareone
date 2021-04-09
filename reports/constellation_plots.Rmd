@@ -209,14 +209,16 @@ totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
 ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
-  era_grid +
+ # era_grid +
   geom_line(aes(y = total_e_rat_ma)) +
   scale_color_viridis_d(begin  = .25) +
   scale_fill_viridis_d(begin = .25) +
-  ggtitle("Total E on treatments as % of control E") +
-  ylab("Treatment E / Control E") +
-  theme(legend.position = "top") +
-  ylim(0, 2)
+  ggtitle("Total energy use on exclosures relative to controls") +
+  ylab("Exclosure energy use / Control energy use") +
+  theme(legend.position = "none") +
+  ylim(0, 2) +
+  geom_vline(xintercept= c(as.Date("1996-01-01"), as.Date("2010-01-01"))) +
+  xlab("Date")
 
 out <- (totale_mean_pred %>% select(oera, oplottype, emmean, lower.CL, upper.CL) %>% distinct())
 out

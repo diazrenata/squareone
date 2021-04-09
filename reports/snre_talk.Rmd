@@ -1,0 +1,483 @@
+---
+title: "hold this loosely..."
+output:
+  github_document:
+       df_print: kable
+       toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+library(soar)
+library(ggplot2)
+library(dplyr)
+library(mgcv)
+library(gratia)
+theme_set(theme_bw())
+
+library(nlme)
+library(emmeans)
+
+```
+
+
+```{r}
+
+treatl <- get_treatment_means() %>%
+  mutate(fplottype = as.factor(plot_type),
+         pb_prop = pb_e / total_e) %>%
+  group_by(oplottype) %>%
+  mutate(pb_prop_ma = maopts(pb_prop)) %>%
+  ungroup()
+
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+
+
+pb <- filter(treatl, as.numeric(oera) != 1) #%>%
+ # filter(paste0(oplottype, oera) != "CCd_post-switch") 
+
+
+just_controls <- filter(treatl, oplottype == "CC")
+
+zero_to_one <- function(val) {
+  if(val == 0) {
+    return(1)
+  }
+  return(val)
+}
+# 
+# e_ratios <- treatl %>%
+#   filter(oplottype != "CC") %>%
+#   select(period, censusdate, era, oera, plot_type, oplottype, total_e, smgran_e, tinygran_e, fplottype) %>%
+#   left_join(select(just_controls, period, total_e, smgran_e, tinygran_e) %>% group_by_all() %>% mutate_at(c("smgran_e", "tinygran_e"), .funs = zero_to_one) %>% ungroup() %>% rename(total_e_c = total_e, smgran_e_c = smgran_e, tinygran_e_c = tinygran_e)) %>%
+#   mutate(total_e_rat = total_e / total_e_c,
+#          smgran_e_rat = smgran_e / smgran_e_c,
+#          tinygran_e_rat = tinygran_e / tinygran_e_c) %>%
+#   
+#   group_by(oplottype) %>%
+#   mutate(total_e_rat_ma = maopts(total_e_rat),
+#          smgran_e_rat_ma = maopts(smgran_e_rat),
+#          tinygran_e_rat_ma = maopts(tinygran_e_rat)) %>%
+#   ungroup()
+
+e_ratios <- treatl %>%
+  filter(oplottype != "CC") %>%
+  select(period, censusdate, era, oera, plot_type, oplottype, total_e, smgran_e, tinygran_e, fplottype) %>%
+  left_join(select(just_controls, period, total_e, smgran_e, tinygran_e) %>%  rename(total_e_c = total_e, smgran_e_c = smgran_e, tinygran_e_c = tinygran_e)) %>%
+  mutate(total_e_rat = total_e / total_e_c,
+         smgran_e_rat = smgran_e / smgran_e_c,
+         tinygran_e_rat = tinygran_e / tinygran_e_c) %>%
+  mutate(total_e_lograt = log(total_e_rat)) %>%
+  group_by_all() %>%
+  mutate(lograt_interp = is.infinite(total_e_lograt),
+    total_e_lograt = ifelse(is.infinite(total_e_lograt), log((1 + total_e) / total_e_c), total_e_lograt)) %>%
+  ungroup() %>%
+  group_by(oplottype) %>%
+  mutate(total_e_rat_ma = maopts(total_e_rat),
+         total_e_lograt_ma = maopts(total_e_lograt),
+         smgran_e_rat_ma = maopts(smgran_e_rat),
+         tinygran_e_rat_ma = maopts(tinygran_e_rat)) %>%
+  ungroup()
+compensation <- treatl %>%
+  filter(oplottype != "CC") %>%
+  select(period, censusdate, era, oera, plot_type, oplottype, smgran_e, fplottype) %>%
+  left_join(select(just_controls, period, dipo_e, smgran_e) %>% rename(dipo_e_c = dipo_e, smgran_e_c = smgran_e)) %>%
+  mutate(smgran_increase = smgran_e - smgran_e_c) %>%
+  mutate(smgran_comp = smgran_increase / dipo_e_c)%>%
+  group_by(oplottype) %>%
+  mutate(smgran_comp_ma = maopts(smgran_comp)) %>%
+  ungroup()
+```
+
+# Raw data
+
+```{r}
+ggplot(treatl, aes(censusdate, pb_prop_ma, color = oplottype)) +
+  geom_line() +
+  ggtitle("PB % of energy use, from treatment means") +
+  era_grid
+
+ggplot(e_ratios, aes(censusdate, (total_e_rat_ma), color = oplottype)) +
+  geom_line() +
+  ggtitle("Total E ratio, from treatment means") +
+  era_grid
+
+ggplot(compensation, aes(censusdate, smgran_comp_ma, color = oplottype)) +
+  geom_line() +
+  ggtitle("Small granivore compensation, from treatment means") +
+  era_grid
+
+ggplot(treatl, aes(censusdate, smgran_e, color = oplottype)) +
+  geom_line() +
+  ggtitle("Small granivore energy use, treatment means") +
+  era_grid
+
+```
+
+# Era models
+
+## PB over time
+
+```{r}
+
+
+pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb)
+
+out <- (as.data.frame(pairs(emmeans(pb_glm_treat, specs = ~ oera | oplottype))) %>%
+        mutate(p.value=round(p.value, 3)))
+
+out
+#plot(regrid(emmeans(pb_glm_treat, specs = ~ oera | oplottype)))
+
+ilink <- pb_glm_treat$family$linkinv
+
+pb_glm_treat_se <- predict(pb_glm_treat, type = "link", se.fit = T, newdata = pb) %>%
+  as.data.frame() %>%
+  mutate(est = ilink(fit),
+         lower = ilink(fit - 2*se.fit),
+         upper = ilink(fit + 2*se.fit),
+         period = filter(pb)$period,
+         oplottype = filter(pb)$oplottype)
+# 
+# 
+# ggplot(pb_glm_treat_se, aes(period, est, color = oplottype, fill = oplottype)) +
+#   geom_line() +
+#   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3)
+
+
+pb_glm_treat_se <- pb_glm_treat_se %>%
+  right_join(select(pb, oera, oplottype, period, censusdate, pb_prop_ma))
+
+
+ggplot(filter(pb_glm_treat_se, oplottype %in% c("CC", "EE")), aes(censusdate, est, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = pb_prop_ma)) +
+  facet_grid(cols = vars(oera), space = "free_x", scales = "free_x") +
+  ylab("PB % of energy use") +
+  ggtitle("PB ratio over time") +
+  theme(legend.position = "top")
+
+out <- (pb_glm_treat_se %>% select(oera, est, lower, upper, oplottype) %>% distinct())
+out
+# 
+# 
+# pb_no0 <- filter(pb, total_e > 0)
+# 
+# pb_gls_treat <- gls(pb_prop ~ era * plot_type, correlation = corCAR1(form = ~ period | plot_type), data= pb_no0)
+# 
+# as.data.frame(pairs(emmeans(pb_gls_treat, specs = ~ era | plot_type))) %>%
+#   select(contrast, plot_type, p.value) %>%
+#   mutate(p.value = round(p.value, 3))
+# 
+# pb_pred <- as.data.frame(emmeans(pb_gls_treat, specs = ~ era | plot_type)) %>%
+#   right_join(pb_no0)
+#   
+# ggplot(pb_pred, aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+#   geom_line() +
+#   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+#   era_grid +
+#   geom_line(aes(y = pb_prop_ma)) 
+
+
+
+out <- (as.data.frame(pairs(emmeans(pb_glm_treat, specs = ~ oplottype | oera))) %>%
+        mutate(p.value=round(p.value, 3)) %>% select(contrast, oera, p.value))
+
+out
+
+```
+
+
+
+## Treatment:control total E ratio
+
+```{r}
+
+
+
+totale_mean_gls <- gls(total_e_rat ~ plot_type * era,  correlation = corCAR1(form = ~ period | plot_type), data = e_ratios)
+
+totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ era | plot_type)
+
+out <- (as.data.frame(pairs(totale_mean_gls_emmeans)) %>% select(contrast, plot_type, p.value) %>%
+  mutate(p.value= round(p.value, 3)))
+out
+totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
+  right_join(e_ratios)
+  
+ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+ # era_grid +
+  geom_line(aes(y = total_e_rat_ma)) +
+  scale_color_viridis_d(begin  = .25) +
+  scale_fill_viridis_d(begin = .25) +
+  ggtitle("Total energy use on exclosures relative to controls") +
+  ylab("Exclosure energy use / Control energy use") +
+  theme(legend.position = "none") +
+  ylim(0, 2) +
+  geom_vline(xintercept= c(as.Date("1996-01-01"), as.Date("2010-01-01"))) +
+  xlab("Date")
+
+out <- (totale_mean_pred %>% select(oera, oplottype, emmean, lower.CL, upper.CL) %>% distinct())
+out
+```
+
+#### total e only longterm
+
+```{r}
+
+e_ratios_lt <- e_ratios %>%
+  filter(oplottype == "EE") %>%
+  mutate(era = ifelse(era == "d_post-switch", "c_pre_switch", era))
+
+totale_mean_gls_lt <- gls(total_e_rat ~  era,  correlation = corCAR1(form = ~ period), data = e_ratios_lt)
+
+totale_mean_gls_lt_emmeans <- emmeans(totale_mean_gls_lt, specs = ~ era )
+
+out <- (as.data.frame(pairs(totale_mean_gls_lt_emmeans)) %>% select(contrast, p.value) %>%
+  mutate(p.value= round(p.value, 3)))
+out
+totale_mean_pred_lt <- as.data.frame(totale_mean_gls_lt_emmeans) %>%
+  right_join(e_ratios_lt)
+  
+ggplot(filter(totale_mean_pred_lt, oplottype %in% c("CC", "EE")), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  geom_line(aes(y = total_e_rat_ma)) +
+  scale_color_viridis_d(begin  = .25) +
+  scale_fill_viridis_d(begin = .25)  +
+  ggtitle("Total energy use on exclosures relative to controls") +
+  ylab("Exclosure energy use / Control energy use") +
+  theme(legend.position = "none") +
+  ylim(0, 1.1) +
+  geom_vline(xintercept= c(as.Date("1996-01-01"), as.Date("2010-01-01"))) +
+  xlab("Date") +
+  geom_text(aes(x = as.Date("1998-03-01"), y = 0.05, label = "C. baileyi \narrival"), inherit.aes = F, alpha = .01)+
+  geom_text(aes(x = as.Date("2012-03-01"), y = 0.05, label = "C. baileyi \n decline"), inherit.aes = F, alpha = .01)
+
+
+ggplot(filter(totale_mean_pred_lt, oplottype %in% c("CC", "EE"), as.numeric(oera)  < 3), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  geom_line(aes(y = total_e_rat_ma)) +
+  scale_color_viridis_d(begin  = .25) +
+  scale_fill_viridis_d(begin = .25)  +
+  ggtitle("Total energy use on exclosures relative to controls") +
+  ylab("Exclosure energy use / Control energy use") +
+  theme(legend.position = "none") +
+  ylim(0, 1.1) +
+  geom_vline(xintercept= c(as.Date("1996-01-01"))) +
+  xlab("Date") +
+  geom_text(aes(x = as.Date("1998-03-01"), y = 0.05, label = "C. baileyi \narrival"), inherit.aes = F, alpha = .01)
+out <- (totale_mean_pred_lt%>% select(oera, oplottype, emmean, lower.CL, upper.CL) %>% distinct())
+out
+
+```
+
+
+## Compensation
+
+```{r}
+
+
+comp_mean_gls <- gls(smgran_comp ~ plot_type * era,  correlation = corCAR1(form = ~ period | plot_type), data = compensation)
+
+comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ era | plot_type)
+
+out <- (as.data.frame(pairs(comp_mean_gls_emmeans)) %>% mutate(p.value = round(p.value, 3)))
+out
+comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
+  right_join(compensation)
+
+ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  era_grid +
+  geom_line(aes(y = smgran_comp_ma)) +
+  scale_color_viridis_d(begin  = .25) +
+  scale_fill_viridis_d(begin = .25) +
+  ggtitle("Compensation") +
+  ylab("Smgran_trt - Smgran_ctrl / Dipo_ctrl") +
+  theme(legend.position = "top") +
+  ylim(-.25, 1)
+
+out <- (comp_mean_pred %>% select(oera, oplottype, emmean, lower.CL, upper.CL) %>% distinct())
+out 
+```
+
+
+## compensation lt
+
+
+```{r}
+compensation_lt <- compensation %>%
+  filter(oplottype == "EE") %>%
+  mutate(era = ifelse(era == "d_post-switch", "c_pre_switch", era))
+
+  
+
+comp_mean_lt_gls <- gls(smgran_comp ~ era,  correlation = corCAR1(form = ~ period), data = compensation_lt)
+
+comp_mean_lt_gls_emmeans <- emmeans(comp_mean_lt_gls, specs = ~ era)
+
+out <- (as.data.frame(pairs(comp_mean_lt_gls_emmeans)) %>% mutate(p.value = round(p.value, 3)))
+out
+comp_mean_lt_pred <-  as.data.frame(comp_mean_lt_gls_emmeans) %>%
+  right_join(compensation_lt)
+
+ggplot(filter(comp_mean_lt_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+ # era_grid +
+  geom_line(aes(y = smgran_comp_ma)) +
+  scale_color_viridis_d(begin  = .25) +
+  scale_fill_viridis_d(begin = .25)+
+  theme(legend.position = "none") +
+  ylim(-0.05, 1) +
+  geom_vline(xintercept= c(as.Date("1996-01-01"), as.Date("2010-01-01"))) +
+  xlab("Date") +
+  geom_text(aes(x = as.Date("1998-03-01"), y = -0.03, label = "C. baileyi \narrival"), inherit.aes = F, alpha = .01)+
+  geom_text(aes(x = as.Date("2012-03-01"), y = -0.03, label = "C. baileyi \n decline"), inherit.aes = F, alpha = .01) +
+  ylab("Compensation") +
+  ggtitle("Energetic compensation over time")
+
+
+ggplot(filter(comp_mean_lt_pred, oplottype %in% c("CC", "EE"), as.numeric(oera) < 3), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+ # era_grid +
+  geom_line(aes(y = smgran_comp_ma)) +
+  scale_color_viridis_d(begin  = .25) +
+  scale_fill_viridis_d(begin = .25)+
+  theme(legend.position = "none") +
+  ylim(-0.05, 1) +
+  geom_vline(xintercept= c(as.Date("1996-01-01"))) +
+  xlab("Date") +
+  geom_text(aes(x = as.Date("1998-03-01"), y = -0.03, label = "C. baileyi \narrival"), inherit.aes = F, alpha = .01) +
+  ylab("Compensation") +
+  ggtitle("Energetic compensation over time")
+out <- (comp_mean_lt_pred %>% select(oera, oplottype, emmean, lower.CL, upper.CL) %>% distinct())
+out 
+
+
+```
+# Small granivores etc
+
+Consider using sg_c, sg_ce, sg_ec / sg_ee
+
+And sg_c / total_c
+
+Using EE as the denominator escapes (almost all) the infinite/NA values. 
+
+```{r}
+
+ctrl_dipos <- filter(treatl, oplottype == "CC") %>%
+  mutate(dipo_of_total = dipo_e / total_e) %>%
+  mutate(dipo_of_total_ma = maopts(dipo_of_total))
+
+ggplot(ctrl_dipos, aes(censusdate, dipo_of_total)) +
+  geom_line() +
+  era_grid
+
+ctrl_dipos_glm <- glm(dipo_of_total ~ era, data = ctrl_dipos,family = quasibinomial())
+ctrl_dipos_glm_emmeans <- emmeans(ctrl_dipos_glm, specs = ~ era)
+out <- (as.data.frame(pairs(ctrl_dipos_glm_emmeans)) %>% mutate(p.value = round(p.value, 3)))
+out
+
+
+ilink <- ctrl_dipos_glm$family$linkinv
+
+ctrl_dipos_glm_se <- predict(ctrl_dipos_glm, type = "link", se.fit = T, newdata = ctrl_dipos) %>%
+  as.data.frame() %>%
+  mutate(est = ilink(fit),
+         lower = ilink(fit - 2*se.fit),
+         upper = ilink(fit + 2*se.fit),
+         period = filter(ctrl_dipos)$period)
+
+ctrl_dipos_glm_se <- ctrl_dipos_glm_se %>%
+  right_join(select(ctrl_dipos, oera, period, censusdate, dipo_of_total_ma))
+
+
+ggplot(ctrl_dipos_glm_se, aes(censusdate, est)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = dipo_of_total_ma)) +
+  facet_grid(cols = vars(oera), space = "free_x", scales = "free_x") +
+  ylab("Dipo % of energy use") +
+  ggtitle("Dipo ratio  on control plots") +
+  theme(legend.position = "top")
+
+ctrl_dipos_glm_se %>%
+  select(oera, est, lower, upper) %>%
+  distinct()
+```
+
+# Whole story
+
+```{r}
+
+treatcomposition <- treatl %>%
+  select(censusdate, oera, oplottype, smgran_e, pb_e, tinygran_e, dipo_e, total_e) %>%
+  tidyr::pivot_longer(cols = c("pb_e", "tinygran_e", "smgran_e", "dipo_e"), names_to = "rodent_group", values_to = "energy_use") %>%
+  mutate(prop_energy_use = energy_use / total_e) %>%
+  mutate(rodent_group = substr(rodent_group, 1, nchar(rodent_group) - 2)) %>%
+  group_by(oplottype, rodent_group) %>%
+  mutate(prop_energy_use_ma = maopts(prop_energy_use)) %>%
+  ungroup()
+
+ggplot(filter(treatcomposition, oplottype == "CC", rodent_group != "pb"), aes(censusdate, prop_energy_use_ma, color = rodent_group)) +
+  geom_line() +
+era_grid +  scale_color_viridis_d(option  = "plasma", end = .7) +
+  theme(legend.position = "top") +
+  ggtitle("Community composition (energy) on controls")
+
+sg_prop <- treatl %>%
+  mutate(sg_rat = smgran_e / total_e) %>%
+  group_by(period) %>%
+  mutate(anyna = any(is.na(sg_rat))) %>%
+  ungroup() %>%
+  filter(!anyna)
+
+sg_prop_gls_slope <- gls(sg_rat ~ plot_type * period,  correlation = corCAR1(form = ~ period | plot_type), data = sg_prop)
+
+confint(sg_prop_gls_slope)
+
+sg_gls_pred <- sg_prop %>% mutate(pred = predict(sg_prop_gls_slope, newdata = sg_prop))
+ggplot(sg_gls_pred, aes(censusdate, pred, color = oplottype)) + geom_line() + geom_line(aes(y = sg_rat))
+
+
+sg_prop_glm_slope <- glm(sg_rat ~ plot_type * period, family = quasibinomial(), data = sg_prop)
+
+summary(sg_prop_glm_slope)
+
+ilink <- sg_prop_glm_slope$family$linkinv
+
+sg_prop_glm_slope_se <- predict(sg_prop_glm_slope, type = "link", se.fit = T, newdata = sg_prop) %>%
+  as.data.frame() %>%
+  mutate(est = ilink(fit),
+         lower = ilink(fit - 2*se.fit),
+         upper = ilink(fit + 2*se.fit),
+         period = filter(sg_prop)$period,
+         plot_type = filter(sg_prop)$plot_type)
+# 
+# 
+# ggplot(sg_prop_glm_slope_se, aes(period, est, color = oplottype, fill = oplottype)) +
+#   geom_line() +
+#   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3)
+
+
+sg_prop_glm_slope_se <- sg_prop_glm_slope_se %>%
+  right_join(select(sg_prop, oera, plot_type, oplottype,period, censusdate, sg_rat))
+
+
+ggplot(sg_prop_glm_slope_se, aes(censusdate, est, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = sg_rat)) +
+  facet_grid(cols = vars(oera), space = "free_x", scales = "free_x") +
+  ylab("SG % of energy use") +
+  ggtitle("SG ratio over time") +
+  theme(legend.position = "top")
+```
