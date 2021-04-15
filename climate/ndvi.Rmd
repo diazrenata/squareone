@@ -1,0 +1,52 @@
+---
+title: "ndvi anomaly"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+library(portalr)
+library(dplyr)
+library(ggplot2)
+
+theme_set(theme_bw())
+```
+
+```{r}
+
+ndvi <- ndvi()
+
+
+ndvi <- ndvi %>%
+  mutate(month = format.Date(date, "%m"),
+         year = format.Date(date, "%Y")) %>%
+  group_by(month) %>%
+  mutate(ndvi_norm = mean(ndvi)) %>%
+  ungroup() %>%
+  mutate(ndvi_difference = ndvi - ndvi_norm,
+         ndvi_prop = ndvi / ndvi_norm) %>%
+  mutate(numdate = as.numeric(date))
+
+ggplot(ndvi, aes(date, ndvi_prop)) +
+  geom_line()
+
+ggplot(ndvi, aes(date, ndvi_difference)) +
+  geom_line()
+```
+
+
+```{r}
+
+library(gratia)
+
+load_mgcv()
+
+diff_gam <- gam(ndvi_difference ~ s(numdate, k = 50), data = ndvi)
+
+ndvi_fit <- ndvi %>%
+  add_fitted(diff_gam)
+
+ggplot(ndvi_fit, aes(date, .value)) +
+  geom_line() +
+  geom_line(aes(y = ndvi_difference), alpha = .1)
+
+```
