@@ -1,0 +1,53 @@
+---
+title: "plot level compensation"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(soar)
+library(ggplot2)
+library(dplyr)
+theme_set(theme_bw())
+library(gratia)
+load_mgcv()
+
+```
+
+```{r}
+
+tms <- get_treatment_means()
+
+ctrls <- filter(tms, oplottype == "CC") %>%
+  select(period, smgran_e, total_e, dipo_e) %>%
+  rename(smgran_e_c = smgran_e,
+         total_e_c = total_e,
+         dipo_e_c = dipo_e)
+
+
+plotl <- get_plot_totals() 
+
+plotl_comp <- left_join(plotl, ctrls) %>%
+  mutate(smgran_increase = smgran_e - smgran_e_c) %>%
+  mutate(smgran_comp = smgran_increase / dipo_e_c) %>%
+  group_by(fplot) %>%
+  mutate(smgran_comp_ma = maopts(smgran_comp))
+
+ggplot(filter(plotl_comp, oplottype == "EE", as.numeric(oera) > 2), aes(censusdate, pb_e / total_e)) +
+  facet_wrap(vars(plot)) +
+  geom_line()
+
+ggplot(filter(plotl_comp, oplottype == "EE", as.numeric(oera) > 2), aes(censusdate, smgran_comp)) +
+  facet_wrap(vars(plot)) +
+  geom_line()
+
+
+ggplot(filter(plotl_comp, oplottype == "CE", as.numeric(oera) > 2), aes(censusdate, pb_e/ total_e)) +
+  facet_wrap(vars(plot)) +
+  geom_line()
+
+ggplot(filter(plotl_comp, oplottype == "CE", as.numeric(oera) > 2), aes(censusdate, smgran_comp)) +
+  facet_wrap(vars(plot)) +
+  geom_line()
+```

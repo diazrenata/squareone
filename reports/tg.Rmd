@@ -121,3 +121,44 @@ ggplot(tge_mean_pred, aes(censusdate, emmean, color = oplottype, fill = oplottyp
   ylim(0, 2)
 
 ```
+
+```{r}
+
+just_cc <- filter(treatl, oplottype == "CC") %>%
+  select(period, tinygran_e, smgran_e, dipo_e) %>%
+  rename(tinygran_e_c = tinygran_e,
+         smgran_e_c = smgran_e,
+         dipo_e_c = dipo_e)
+
+
+tinygran_comp <- treatl %>%
+  filter(oplottype != "CC") %>%
+  left_join(just_cc) %>%
+  mutate(tinygran_increase = tinygran_e - tinygran_e_c) %>%
+  mutate(tinygran_increase_of_dipo = tinygran_increase / dipo_e_c) %>%
+  group_by(oplottype) %>%
+  mutate(tinygran_increase_of_dipo_ma = maopts(tinygran_increase_of_dipo))
+
+
+ggplot(tinygran_comp, aes(censusdate, tinygran_increase_of_dipo_ma, color = oplottype)) +
+  geom_line() 
+
+ggplot(filter(tinygran_comp, as.numeric(oera) > 2), aes(censusdate, tinygran_increase_of_dipo_ma, color = oplottype)) +
+  geom_line() 
+
+
+tinygran_comp2 <- treatl %>%
+  left_join(just_cc) %>%
+  mutate(tinygran_of_dipo = tinygran_e / dipo_e_c) %>%
+  group_by(oplottype) %>%
+  mutate(tinygran_of_dipo_ma = maopts(tinygran_of_dipo))
+
+
+ggplot(tinygran_comp2, aes(censusdate, tinygran_of_dipo_ma, color = oplottype)) +
+  geom_line() 
+
+ggplot(filter(tinygran_comp2, as.numeric(oera) > 2), aes(censusdate, tinygran_of_dipo_ma, color = oplottype)) +
+  geom_line() 
+
+
+```
