@@ -1,0 +1,123 @@
+---
+title: "groups contributing to compensation"
+output: github_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.width =6, fig.height =3)
+library(dplyr)
+library(ggplot2)
+```
+
+# Data
+
+```{r}
+
+rats <- read.csv(here::here("lore", "2020_redux", "christensen_plots.csv")) %>%
+  mutate(plot = factor(plot),
+         treatment = factor(treatment)) %>%
+  filter(!is.na(species))%>%
+  mutate(era = NA) %>%
+  mutate(era = ifelse(
+    period <= 118, "a_pre_th",
+    ifelse(period <= 216, "b_pre_ba",
+           ifelse(period <= 356, "c_pre_cpt",
+                  ifelse(period <= 434, "d_pre_switch", "e_post-switch"))))) %>%
+  mutate(oera = as.ordered(era))
+
+
+```
+
+```{r}
+
+rat_groups <- rats %>% 
+  mutate(type = ifelse(type == "small_granivore", ifelse(species == "PB", "PB", "other_smgran"), "not_smgran")) %>%
+  group_by(period, censusdate, treatment, type) %>%
+  summarize(nind = dplyr::n(),
+            totale = sum(energy)) %>%
+  ungroup() %>%
+  mutate(nind = nind / 3,
+         totale = totale / 3)
+
+all_groups <- expand.grid(period = unique(rats$period), 
+                          treatment = unique(rats$treatment),
+                          type = unique(rat_groups$type)) %>%
+  left_join(distinct(select(rats, period, censusdate, era)))
+
+rat_groups <- left_join(all_groups, rat_groups) %>%
+  group_by_all() %>%
+  mutate(nind = ifelse(is.na(nind), 0, nind),
+         totale = ifelse(is.na(totale), 0, totale)) %>%
+  ungroup() 
+
+treatment_totals <- rat_groups %>%
+  group_by(period, censusdate, era, treatment) %>%
+  summarize(nind = sum(nind), totale = sum(totale)) %>%
+  ungroup() 
+
+treatment_level_energy <- treatment_totals %>%
+  select(period, treatment, censusdate, era, totale) %>%
+  rename(treatment_total_e = totale)
+
+control_treatment_level_energy <- treatment_totals %>%
+  filter(treatment == "CC") %>%
+  select(period, censusdate, era, totale) %>%
+  rename(control_treatment_total_e = totale)
+
+control_group_level_energy <- rat_groups %>%
+  filter(treatment == "CC") %>%
+  select(period, censusdate, era, totale, type) %>%
+  rename(control_group_total_e = totale)
+
+group_ratios <- left_join(rat_groups, treatment_level_energy) %>%
+  left_join(control_treatment_level_energy) %>%
+  left_join(control_group_level_energy) %>%
+  mutate(group_of_trt_e = totale / treatment_total_e,
+         group_of_ctrl_e = totale / control_treatment_total_e) %>%
+  mutate(group_of_trt_of_group_of_ctrl_e = group_of_trt_e/ group_of_ctrl_e)
+
+```
+
+```{r}
+theme_set(theme_bw())
+
+ggplot(group_ratios, aes(period, treatment_total_e / control_treatment_total_e, color = treatment)) +
+  geom_line()
+
+ggplot(group_ratios, aes(period, group_of_trt_e, color = type)) +
+  geom_line() +
+  facet_wrap(vars(treatment), nrow = 3)
+
+
+
+ggplot(group_ratios, aes(period, group_of_ctrl_e, color = type)) +
+  geom_line() +
+  facet_wrap(vars(treatment), nrow = 3) +
+  ylim(0, 1.5)
+
+
+ggplot(filter(group_ratios, treatment != "CC"), aes(period, group_of_trt_of_group_of_ctrl_e, color = type)) +
+  geom_line() +
+  facet_wrap(vars(treatment, type, era), nrow = 9, scales = "free")
+
+a <- all_groups %>%
+  left_join(select(group_ratios, period, treatment, censusdate, era, type, treatment_total_e, control_treatment_total_e)) %>%
+  mutate(trt_of_control_total_e = treatment_total_e / control_treatment_total_e) %>%
+  select(-treatment_total_e, -control_treatment_total_e)
+
+smgran_of_control <- group_ratios %>%
+  filter(type == "other_smgran", treatment == "CC") %>%
+  select(period, censusdate, era, group_of_ctrl_e) %>%
+  distinct() %>%
+  rename(other_smgran_of_control = group_of_ctrl_e)
+
+a <- left_join(a, smgran_of_control)
+
+ggplot(filter(a, treatment == "EC"), aes(period, trt_of_control_total_e)) +
+  geom_line() +
+  geom_line(aes(period, other_smgran_of_control), color = "blue") +
+  facet_wrap(vars(era), nrow = 1, scales = "free_x")
+
+```

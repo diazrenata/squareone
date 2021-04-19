@@ -1,0 +1,105 @@
+---
+title: "Plots from Heske, Brown, and Mistry 1994"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rats <- read.csv(here::here("lore", "1994_longterm", "1994_data_complete.csv"), stringsAsFactors = F)
+rat_totals_1977 <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars_1977.csv"), stringsAsFactors = F)
+rat_totals_1988 <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars_1988.csv"), stringsAsFactors = F)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r, echo = F}
+
+
+ggplot(filter(rat_totals_1977, type != "other", period > 2), aes(period, nind, color = trtmnt_1977)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8)
+
+
+ggplot(filter(rat_totals_1988, type != "other", period > 2), aes(period, nind, color = trtmnt_1988)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8) +
+  geom_vline(xintercept = 118)
+
+```
+
+```{r, echo = F}
+
+seventies_sv <- rat_totals_1977 %>%
+  group_by(period, trtmnt_1977) %>%
+  summarize(nind = sum(nind),
+            biomass = sum(biomass),
+            energy = sum(energy))
+
+ggplot(seventies_sv, aes(period, nind, color = trtmnt_1977)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  scale_colour_viridis_d(end = .8) 
+
+
+ggplot(seventies_sv, aes(period, biomass, color = trtmnt_1977)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  scale_colour_viridis_d(end = .8) 
+
+
+
+ggplot(seventies_sv, aes(period, energy, color = trtmnt_1977)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  scale_colour_viridis_d(end = .8) 
+
+
+```
+
+
+```{r, echo = F}
+
+eighties_sv <- rat_totals_1988 %>%
+  group_by(period, trtmnt_1988) %>%
+  summarize(nind = sum(nind),
+            biomass = sum(biomass),
+            energy = sum(energy))
+
+ggplot(eighties_sv, aes(period, nind, color = trtmnt_1988)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  scale_colour_viridis_d(end = .8) 
+
+
+ggplot(eighties_sv, aes(period, biomass, color = trtmnt_1988)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  scale_colour_viridis_d(end = .8) 
+
+
+
+ggplot(eighties_sv, aes(period, energy, color = trtmnt_1988)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  scale_colour_viridis_d(end = .8) 
+
+
+```
+
+
+Early on there was a *numerical* response in that there are *more small granivores* on exclosures, but this doesn't translate into anything like compensation, in any currency, for the contributions of the missing krats.

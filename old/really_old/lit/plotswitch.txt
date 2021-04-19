@@ -1,0 +1,29 @@
+
+In this vein, I'm taking as my model Erica's 2019 plot switch paper. Relevant scripts here:
+  
+  https://github.com/emchristensen/PlotSwitch/blob/master/FinalAnalysis/rodent-GAM-analyses.R
+
+and 
+
+https://github.com/emchristensen/PlotSwitch/blob/master/FinalAnalysis/analysis_functions.R 
+
+These *do not use gratia* but are working towards something similar to what I'm looking at:
+
+- Comparing **no rodents --> all rodents** and **no krats --> all rodents** plots. The "treatment effect" is the difference in the smooths between the manipulated plots and the control plots. The effect the paper is interested in is the difference in **that** difference between the manipulation types. 
+- Looking at **abundance** responses for two groups, **kangaroo rats** and **small granivores**. 
+- Kangaroo rats (DM, DO, DS) in order to capture how long it took krats to colonize the newly available plots to match controls, depending on whether other rodents were present or not.
+- Small granivores "because we expected inferior competitors to be displaced by the invasion of kangaroo rats". 
+- Results are not shown in the main text but described. "Before the switch, sg abundances were higher on krat removals than on controls. After all plots were converted to controls, sg abundances on both plot types quickly converged to control levels within a few months. The rapid decline in non krats is consistent with previous research showing that krats are behaviorally dominant over other rodents. Because differences in treatments in non krat species disappeared quickly, seems unlikely that direct interference with non krats explains the delay in recovery of krats on plots that had rodents present."
+- The "small granivores" species list is longer than it was in 1981, I think because more species showed up as time went on.
+
+
+Without, or rather **before** getting into the specific questions being asked/comparisons being made, the 2019 analysis illustrates that we can use GAMs and the difference in GAM smooths to
+
+- compare two time series to find when they diverge/converge
+- without making assumptions about the *form* of the timeseries
+- and possibly make reference to a reference state.
+
+additionally,
+
+- we can include effects for plot
+

@@ -1,0 +1,147 @@
+---
+title: "Small granivores originals"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rats <- read.csv(here::here("lore", "1994_longterm", "1994_data_complete.csv"), stringsAsFactors = F)
+rat_totals_1977 <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars_1977.csv"), stringsAsFactors = F)
+rat_totals_1988 <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars_1988.csv"), stringsAsFactors = F)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r}
+
+rat_totals <- rat_totals_1977 %>%
+  rename(trtmnt = trtmnt_1977) %>%
+  mutate(time_period = "seventies") %>%
+  bind_rows(mutate(rename(rat_totals_1988, trtmnt = trtmnt_1988), time_period = "eighties"))
+```
+
+
+```{r}
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+sg_all<- filter(rat_totals, type == "small_granivore") %>%
+  mutate(plot_type = paste(time_period, trtmnt, sep = "_")) %>%
+  mutate(oplot_type = ordered(plot_type, levels = c("seventies_control", "seventies_exclosure", "eighties_control", "eighties_exclosure")))
+
+ggplot(sg_all, aes(as.Date(censusdate), nind, color = oplot_type)) +
+  geom_line(size = 2) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) + 
+  theme(legend.position = "top")
+
+library(mgcv)
+
+sg.gam <- gam(nind ~ oplot_type + s(period, k  = 30) + s(period, by = oplot_type, k = 30), family = "poisson", data = sg_all)
+summary(sg.gam)
+
+gam.check(sg.gam)
+
+sg.pdat <- make_pdat(sg_all, comparison_variable = "oplot_type")
+sg.pred <- get_predicted_vals(sg.gam, sg.pdat)
+
+
+#sg.pred <- add_exclosure_diff(sg.pred, sg.diff)
+
+print(plot_link_pred(sg.pred, comparison_variable = "oplot_type"))
+
+print(plot_fitted_pred(sg.pred, comparison_variable = "oplot_type"))
+
+
+seventies_pred <- filter(sg.pred, oplot_type %in% c("seventies_control", "seventies_exclosure"))
+print(plot_fitted_pred(seventies_pred, comparison_variable = "oplot_type"))
+
+seventies_diff <- get_exclosure_diff(sg.gam, sg.pred, comparison_variable = "oplot_type", reference_level = 1, comparison_level = 2)
+
+print(plot_exclosure_diff(seventies_diff))
+
+print(plot_fitted_pred(add_exclosure_diff(seventies_pred, seventies_diff), comparison_variable = "oplot_type"))
+
+seventies_diff %>%
+  filter(diff_overlaps_zero) %>%
+  filter(period == max(period)) %>%
+  distinct()
+
+eighties_pred <- filter(sg.pred, oplot_type %in% c("eighties_control", "eighties_exclosure"))
+
+print(plot_fitted_pred(eighties_pred, comparison_variable = "oplot_type"))
+
+eighties_diff <- get_exclosure_diff(sg.gam, sg.pred, comparison_variable = "oplot_type", reference_level = 3, comparison_level = 4)
+
+print(plot_exclosure_diff(eighties_diff))
+
+eighties_pred <- add_exclosure_diff(eighties_pred, eighties_diff)
+print(plot_fitted_pred(eighties_pred, comparison_variable = "oplot_type"))
+
+max(eighties_pred$period [ which(eighties_pred$diff_overlaps_zero)])
+
+filter(rat_totals, period > 116, period < 122) %>%
+  select(period, censusdate) %>%
+  distinct()
+
+
+controls_pred <- filter(sg.pred, oplot_type %in% c("eighties_control", "seventies_control"))
+print(plot_fitted_pred(controls_pred, comparison_variable = "oplot_type"))
+
+controls_diff <- get_exclosure_diff(sg.gam, sg.pred, comparison_variable = "oplot_type", reference_level = 1, comparison_level = 3)
+print(plot_exclosure_diff(controls_diff))
+
+controls_pred <- add_exclosure_diff(controls_pred, controls_diff)
+
+print(plot_fitted_pred(controls_pred, comparison_variable = "oplot_type"))
+
+exclosures_pred <- filter(sg.pred, oplot_type %in% c("eighties_exclosure", "seventies_exclosure"))
+print(plot_fitted_pred(exclosures_pred, comparison_variable = "oplot_type"))
+
+exclosures_diff <- get_exclosure_diff(sg.gam, sg.pred, comparison_variable = "oplot_type", reference_level = 2, comparison_level = 4)
+print(plot_exclosure_diff(exclosures_diff))
+
+exclosures_pred <- add_exclosure_diff(exclosures_pred, exclosures_diff)
+print(plot_fitted_pred(exclosures_pred, comparison_variable = "oplot_type"))
+
+exclosures_pred %>%
+  filter(period > 100) %>%
+  filter(diff_overlaps_zero) %>%
+  select(period) %>%
+  distinct() %>%
+  filter(period == min(period))
+
+filter(rat_totals, period > 116, period < 122) %>%
+  select(period, censusdate) %>%
+  distinct()
+
+
+# 
+# sg.diff <- get_exclosure_diff(sg.gam, sg.pdat,comparison_variable = "trtmnt")
+# 
+# print(plot_exclosure_diff(sg.diff) +
+#         geom_vline(xintercept = 35))
+# 
+# 
+# min(sg.diff$period[ which(!sg.diff$diff_overlaps_zero)])
+
+```
+
+
+In this model (which has no "plot" effect):
+
+- The two sets of controls never diverge
+- The seventies exclosures exceed controls by period 13
+- The eighties exclosures exceed controls by period 119, which is Feb 1988
+- The eighties exclosures (mostly) diverge from the seventies exclosures until period 121, which is April 1988. 
+
+The eighties exclosures were implemented in Jan 1988. 
+
+So,
+
+- An almost immediate effect
+- And no appreciable lag (mayyyybe 2 months but I wouldn't put any stake in that) in new exclosures matching old exclosures.
+
+This is a lot of pairwise comparisons, but I think this may be the best way to do this? Because I don't think you can do factor interactions in a GAM, and even if you could it's a little mindbending how to set them up (because the treatments change). 
+
+There's also a fair amount of treatment mess embedded in the "control"/"exclosure" designations. Various seed additions, plant removals, ant removals. None of which were thought to have an impact, but it seems like it would be good practice to *confirm*. 

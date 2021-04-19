@@ -1,0 +1,164 @@
+GAM
+================
+
+<!-- ```{r} -->
+
+<!-- use_christensen_plots <- F -->
+
+<!-- library(mgcv) -->
+
+<!-- plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) %>% -->
+
+<!--    mutate(tinygran_e = smgran_e - pb_e) %>% -->
+
+<!--   mutate(treatment = ordered(plot_type), -->
+
+<!--          plot = ordered(plot)) %>% -->
+
+<!--   mutate(censusdate = as.Date(censusdate)) %>% -->
+
+<!--   mutate(numericdate = as.numeric(censusdate) / 1000) -->
+
+<!-- ``` -->
+
+<!-- Following Christensen pretty closely. -->
+
+<!-- # Total energy -->
+
+<!-- - Fit GAM -->
+
+<!--     - `total_e ~ plot + treatment + s(period, k = 100) + s(period, by = treatment, k = 100) + s(period, by = plot, k = 50), family = "tw", method = "REML", select = TRUE, control = gam.control(nthreads = 4))` takes a long time so dev with low k. -->
+
+<!-- ```{r} -->
+
+<!-- te_gam <- gam(total_e ~ plot + treatment + s(numericdate, k = 100) + s(numericdate, by = treatment, k = 100) + s(numericdate, by = plot), family = "tw", method = "REML", select = TRUE, control = gam.control(nthreads = 4), data = plot_totals) -->
+
+<!-- te_pdat <- make_pdat(plot_totals, 1000) -->
+
+<!-- te_pred <- get_treatment_prediction(plot_totals, te_pdat, te_gam) -->
+
+<!-- te_cc_ee_diff <- get_treatment_diff(te_gam, te_pred, smooth_var = "numericdate", "CC", "EE", var = "treatment") -->
+
+<!-- te_cc_ce_diff <- get_treatment_diff(te_gam, te_pred, smooth_var = "numericdate", "CC", "CE", var = "treatment") -->
+
+<!-- diff_overlaps <- bind_rows(te_cc_ce_diff, te_cc_ee_diff) %>% -->
+
+<!--   filter(diff_overlaps_zero) %>% -->
+
+<!--   mutate(treatment = ordered(substr(pair, 4, 5))) %>% -->
+
+<!--   mutate(altitude = 1 + (50 * as.numeric((treatment)))) %>% -->
+
+<!--   left_join(distinct(select(te_pdat, censusdate, era))) -->
+
+<!-- ggplot(te_pred, aes(censusdate, Fitted, color = treatment, fill = treatment)) + -->
+
+<!--   geom_line() + -->
+
+<!--   geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = .4) + -->
+
+<!--   geom_point(data = diff_overlaps, aes(y= altitude), alpha = .4) + -->
+
+<!--   facet_grid(cols= vars(era), scales = "free_x", space = "free") + -->
+
+<!--   theme(legend.position = "top") -->
+
+<!-- ``` -->
+
+<!-- # Small granivores -->
+
+<!-- ```{r} -->
+
+<!-- sg_gam <- gam(smgran_e ~ plot + treatment + s(numericdate, k = 100) + s(numericdate, by = treatment, k = 100) + s(numericdate, by = plot), family = "tw", method = "REML", select = TRUE, control = gam.control(nthreads = 4), data = plot_totals) -->
+
+<!-- sg_pdat <- make_pdat(plot_totals, 1000) -->
+
+<!-- sg_pred <- get_treatment_prediction(plot_totals, sg_pdat, sg_gam) -->
+
+<!-- sg_cc_ee_diff <- get_treatment_diff(sg_gam, sg_pred, smooth_var = "numericdate", "CC", "EE", var = "treatment") -->
+
+<!-- sg_cc_ce_diff <- get_treatment_diff(sg_gam, sg_pred, smooth_var = "numericdate", "CC", "CE", var = "treatment") -->
+
+<!-- diff_overlaps <- bind_rows(sg_cc_ce_diff, sg_cc_ee_diff) %>% -->
+
+<!--   filter(diff_overlaps_zero) %>% -->
+
+<!--   mutate(treatment = substr(pair, 4, 5)) %>% -->
+
+<!--   mutate(altitude = 1 + (50 * as.numeric(as.factor(treatment))))%>% -->
+
+<!--   left_join(distinct(select(te_pdat, censusdate, era))) -->
+
+<!-- ggplot(sg_pred, aes(censusdate, Fitted, color = treatment, fill = treatment)) + -->
+
+<!--   geom_line() + -->
+
+<!--   geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = .4) + -->
+
+<!--   geom_point(data = diff_overlaps, aes(censusdate, altitude), alpha = .4) + -->
+
+<!--   facet_grid(cols= vars(era), scales = "free_x", space = "free") + -->
+
+<!--   theme(legend.position = "top") -->
+
+<!-- ``` -->
+
+<!-- # Tiny granivores -->
+
+<!-- ```{r} -->
+
+<!-- tg_gam <- gam(tinygran_e ~ plot + treatment + s(numericdate, k = 100) + s(numericdate, by = treatment, k = 100) + s(numericdate, by = plot), family = "tw", method = "REML", select = TRUE, control = gam.control(nthreads = 4), data = plot_totals) -->
+
+<!-- tg_pdat <- make_pdat(plot_totals, 1000) -->
+
+<!-- tg_pred <- get_treatment_prediction(plot_totals, tg_pdat, tg_gam) -->
+
+<!-- tg_cc_ee_diff <- get_treatment_diff(tg_gam, tg_pred, smooth_var = "numericdate", "CC", "EE", var = "treatment") -->
+
+<!-- tg_cc_ce_diff <- get_treatment_diff(tg_gam, tg_pred, smooth_var = "numericdate", "CC", "CE", var = "treatment") -->
+
+<!-- diff_overlaps <- bind_rows(tg_cc_ce_diff, tg_cc_ee_diff) %>% -->
+
+<!--   filter(diff_overlaps_zero) %>% -->
+
+<!--   mutate(treatment = substr(pair, 4, 5)) %>% -->
+
+<!--   mutate(altitude = 1 + (50 * as.numeric(as.factor(treatment))))%>% -->
+
+<!--   left_join(distinct(select(te_pdat, censusdate, era))) -->
+
+<!-- ggplot(tg_pred, aes(censusdate, Fitted, color = treatment, fill = treatment)) + -->
+
+<!--   geom_line() + -->
+
+<!--   geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = .4) + -->
+
+<!--   geom_point(data = diff_overlaps, aes(censusdate, altitude), alpha = .4) + -->
+
+<!--   facet_grid(cols= vars(era), scales = "free_x", space = "free") + -->
+
+<!--   theme(legend.position = "top") -->
+
+<!-- ``` -->
+
+![](gam_ch_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-4.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-5.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-1-6.png)<!-- -->
+
+    ## Joining, by = "censusdate"
+
+![](gam_ch_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+### smgran
+
+![](gam_ch_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-5.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-3-6.png)<!-- -->
+
+    ## Joining, by = "censusdate"
+
+![](gam_ch_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+### tiny gran
+
+![](gam_ch_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-5-5.png)<!-- -->![](gam_ch_files/figure-gfm/unnamed-chunk-5-6.png)<!-- -->
+
+    ## Joining, by = "censusdate"
+
+![](gam_ch_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->

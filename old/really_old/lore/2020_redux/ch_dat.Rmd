@@ -1,0 +1,38 @@
+---
+title: "Christensen plots"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(dplyr)
+library(mgcv)
+library(ggplot2)
+library(cowplot)
+
+rats <- read.csv(here::here("lore", "2020_redux", "christensen_plots.csv"))
+
+energy <- rats %>%
+  select(censusdate, plot, treatment, energy) %>%
+  group_by(censusdate, plot, treatment) %>%
+  summarize(n = dplyr::n(),
+            e = sum(energy, na.rm = T))  %>%
+  ungroup() %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(numericdate = as.numeric(censusdate) / 1000) %>%
+  select(-n) %>%
+  rename(n = e) %>%
+  select(plot, censusdate, numericdate, treatment, n) %>%
+  filter(censusdate > "2013-03-11")
+
+
+source(here::here("lore", "2019_switch", "FinalAnalysis", 'analysis_functions.R'))
+theme_set(theme_bw())
+#cbPalette <- c( "#e19c02","#999999", "#56B4E9", "#0072B2", "#D55E00", "#F0E442", "#009E73", "#CC79A7")
+cbbPalette <- c("#000000", "#009E73", "#e79f00", "#9ad0f3", "#0072B2", "#D55E00", 
+                "#CC79A7", "#F0E442")
+```

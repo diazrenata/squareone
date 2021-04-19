@@ -1,0 +1,118 @@
+---
+title: "Energy plots"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      fig.dim = c(7, 3))
+library(dplyr)
+library(ggplot2)
+theme_set(theme_bw())
+source(here::here("scaffold", "R", "data.R"))
+```
+
+```{r}
+
+use_christensen_plots <- F
+
+library(mgcv)
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+plot_totals <- get_rodent_data(use_christensen_plots = use_christensen_plots, return_plot = T) %>%
+   mutate(tinygran_e = smgran_e - pb_e) %>%
+  mutate(oplottype = ordered(plot_type))
+
+plot_annuals <- plot_totals %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(censusyear = as.integer(format.Date(censusdate, "%Y"))) %>%
+  group_by(censusyear, plot, plot_type, era) %>%
+  summarize(annual_total_e = mean(total_e),
+            annual_smgran_e = mean(smgran_e),
+            annual_tinygran_e = mean(tinygran_e),
+            nsamples = length(unique(period)),
+            nrows = dplyr::n()) %>%
+  ungroup()
+
+treatment_means <- get_rodent_data(use_christensen_plots, F, F) %>%
+  mutate(tinygran_e = smgran_e - pb_e) %>%
+  mutate(oplottype = as.factor(plot_type))
+
+# treatment_ratios <- get_total_energy_ratios(treatment_means)
+
+```
+
+```{r}
+
+treatment_annuals <- treatment_means %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(censusyear = as.integer(format.Date(censusdate, "%Y"))) %>%
+  group_by(censusyear, plot_type, era, nplots) %>%
+  summarize(total_e = mean(total_e),
+            dipo_e = mean(dipo_e),
+            smgran_e = mean(smgran_e),
+            pb_e = mean(pb_e),
+            pp_e = mean(pp_e),
+            tinygran_e = mean(tinygran_e),
+            nsamples = dplyr::n(),
+            nperiods = length(unique(period))) %>%
+  ungroup()
+
+```
+
+```{r}
+
+control_means <- treatment_means %>%
+  select(period, plot_type, smgran_e, tinygran_e, dipo_e) %>%
+  filter(plot_type == "CC") %>%
+  select(-plot_type) %>%
+  rename(smgran_e_c = smgran_e,
+         tinygran_e_c = tinygran_e,
+         dipo_e_c = dipo_e)
+
+def <- treatment_means %>%
+  left_join(control_means)
+  
+def <- def %>% 
+  filter(plot_type != "CC") %>%
+  mutate(smgran_increase = smgran_e - smgran_e_c)  %>%
+  mutate(smgran_increase_of_control_dipo = smgran_increase / dipo_e_c)
+
+ggplot(def, aes(period, smgran_increase_of_control_dipo, color = oplottype)) +
+  geom_line()
+
+def %>%
+  group_by(era, oplottype) %>%
+  summarize(mean_inc = mean(smgran_increase_of_control_dipo),
+            sd_inc= sd(smgran_increase_of_control_dipo))
+
+def_glm <- glm(smgran_increase_of_control_dipo ~ oplottype * era, data = def)
+
+library(emmeans)
+
+
+plot(emmeans(def_glm, ~ oplottype | era))
+
+```
+
+```{r}
+
+e_controls <- filter(plot_totals, plot_type == "CC") %>%
+  select(period, censusdate, era, dipo_e, smgran_e, plot) %>%
+  rename(smgran_e_c = smgran_e) %>%
+  tidyr::pivot_longer(c(dipo_e, smgran_e_c), names_to = "rods", values_to = "energy")
+
+sg_e_treats <- filter(plot_totals, plot_type != 'CC') %>%
+  select(period, censusdate, era, oplottype, plot, smgran_e) %>%
+  mutate(rods = paste0("smgran_e", oplottype)) %>%
+  rename(energy = smgran_e) %>%
+  select(-oplottype)
+
+
+
+comp <- bind_rows(e_controls, sg_e_treats)
+
+ggplot(filter(comp, era == "d_post-switch"), aes(censusdate, energy, color = rods)) +
+  geom_smooth()
+
+```
