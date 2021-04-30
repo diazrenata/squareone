@@ -136,3 +136,16 @@ ggplot(filter(total_cover_contemp, combined_trt == "CE"), aes(year, total_shrub_
   geom_line() +
   facet_wrap(vars(combined_trt))
 ```
+
+
+1. How did shrub cover vary in the 2000s?
+
+```{r}
+
+ggplot(total_cover_hist, aes(year, total_shrub_cover, group = plot, color = first_trt)) +
+  geom_line()
+
+ggplot(total_cover_hist, aes(as.ordered(year), total_shrub_cover, color = first_trt)) +
+  geom_boxplot()
+
+```
