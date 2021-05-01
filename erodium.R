@@ -68,3 +68,40 @@ tms2 <- tms %>%
 ggplot(tms2, aes(prop_abund, mean_pb_prop, color = plot_type)) +
   geom_point() +
   geom_smooth(method = "glm", method.args = list(family = quasibinomial()))
+
+ggplot(filter(tms2, plot_type %in% c("CC", "CE")), aes(prop_abund, mean_pb_prop, color = plot_type)) +
+  geom_point() +
+  geom_smooth(method = "glm", method.args = list(family = quasibinomial()))
+
+
+ggplot(filter(winter_props, plot_type %in% c("CC", "CE")), aes(censusdate, prop_abund, color = plot_type)) +
+  geom_point() +
+  geom_line(linetype = 3) +
+  geom_line(data = filter(tms, plot_type %in% c("CC", "CE")), aes(y = pb_e_ma / total_e_ma)) +
+  facet_wrap(vars(plot_type))
+
+plotl <- soar::get_plot_totals(currency = "abundance") 
+
+plotl_erod <- plotl %>%
+  mutate(year = as.integer(format.Date(censusdate, "%Y"))) %>%
+  left_join(select(winter_props, year, abundance, prop_abund, plot_type, plot)) %>%
+  group_by(year, plot_type, plot) %>%
+  summarize(mean_pb = mean(pb_n, na.rm =T),
+            mean_pb_prop = mean(pb_n / total_n, na.rm = T),
+            total_abund = mean(abundance, na.rm = T),
+            prop_abund = mean(prop_abund, na.rm = T),
+            unique_erod_vals = length(unique(abundance))) %>%
+  ungroup() %>%
+  filter(year > 1995)
+
+
+ggplot(plotl_erod,  aes( mean_pb_prop, prop_abund, color = plot_type, group = plot)) +
+  geom_point() +
+  #geom_smooth(method = "glm", method.args = list(family = quasibinomial()), se = F) +
+  facet_wrap(vars(plot))
+
+ggplot(plotl_erod, aes(year, mean_pb_prop, color = plot_type, group = plot)) +
+  geom_line() +
+  geom_line(aes(y = prop_abund), linetype = 3) +
+  facet_wrap(vars(plot))
+
