@@ -107,3 +107,44 @@ plot(ndvi_gam$fitted.values)
 
 ```
 
+
+## diff
+
+```{r}
+
+
+ndvi_ts <- ts(ndvi_full$ndvi_difference, start = ndvi_full$newdate[1], frequency = 12)
+
+ndvi_ts_interp <- imputeTS::na_interpolation(ndvi_ts)
+
+ndvi_decomp <- decompose(ndvi_ts_interp, type = "additive")
+
+ndvi_stl <- stl(ndvi_ts_interp, "periodic")
+
+plot(ndvi_decomp)
+
+plot(ndvi_stl)
+
+ndvi_full$trend <- as.numeric(ndvi_decomp$trend)
+
+ggplot(ndvi_full, aes(newdate, trend)) +
+ # geom_line() +
+  geom_line( color = "green") 
+ndvi_full <- ndvi_full %>%
+  mutate(era = ifelse(year < 1996, "a", ifelse(year < 2010, "b", "c")))
+
+ndvi_full %>%
+  group_by(era) %>%
+  summarize(meantrend = mean(trend, na.rm = T),
+            sdtrend = sd(trend, na.rm = T)) %>%
+  ungroup()
+
+ggplot(ndvi_full, aes(newdate, trend)) +
+ # geom_line() +
+  geom_line( color = "green") 
+
+ndvi_gam <- gam(trend ~ s(as.numeric(newdate), k = 10), data = ndvi_full)
+
+plot(ndvi_gam$fitted.values)
+```
+
