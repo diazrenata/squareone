@@ -1,7 +1,7 @@
 PB
 ================
 Renata Diaz
-2021-04-01
+2021-05-03
 
   - [models](#models)
 
@@ -9,7 +9,7 @@ Renata Diaz
 plot_ps <- get_plot_totals(use_pre_switch = F)
 ```
 
-    ## Loading in data version 2.49.0
+    ## Loading in data version 2.95.0
 
     ## Joining, by = "plot"
 
@@ -17,7 +17,7 @@ plot_ps <- get_plot_totals(use_pre_switch = F)
 treat_ps <- get_treatment_means(use_pre_switch = F) 
 ```
 
-    ## Loading in data version 2.49.0
+    ## Loading in data version 2.95.0
     ## Joining, by = "plot"
 
 ``` r
@@ -104,28 +104,28 @@ pairs(emmeans(qbin_int_gam, specs = ~ oera | oplottype))
     ##     fplot %in% oplottype
 
     ## oplottype = CC:
-    ##  contrast                       estimate      SE   df t.ratio p.value
-    ##  b_pre_cpt - c_pre_switch        3.20256       1 3502  5.021  <.0001 
-    ##  b_pre_cpt - (d_post-switch)    32.45665 3331977 3502  0.000  1.0000 
-    ##  c_pre_switch - (d_post-switch) 29.25409 3331977 3502  0.000  1.0000 
+    ##  contrast                       estimate    SE   df t.ratio p.value
+    ##  b_pre_cpt - c_pre_switch         3.2025 0.632 3637  5.067  <.0001 
+    ##  b_pre_cpt - (d_post-switch)      5.1001 1.678 3637  3.039  0.0067 
+    ##  c_pre_switch - (d_post-switch)   1.8976 1.789 3637  1.061  0.5386 
     ## 
     ## oplottype = CE:
-    ##  contrast                       estimate      SE   df t.ratio p.value
-    ##  b_pre_cpt - c_pre_switch        1.71143       0 3502  9.758  <.0001 
-    ##  b_pre_cpt - (d_post-switch)     1.71531       0 3502  8.588  <.0001 
-    ##  c_pre_switch - (d_post-switch)  0.00387       0 3502  0.016  0.9999 
+    ##  contrast                       estimate    SE   df t.ratio p.value
+    ##  b_pre_cpt - c_pre_switch         1.7061 0.174 3637  9.799  <.0001 
+    ##  b_pre_cpt - (d_post-switch)      1.6951 0.180 3637  9.439  <.0001 
+    ##  c_pre_switch - (d_post-switch)  -0.0110 0.232 3637 -0.047  0.9988 
     ## 
     ## oplottype = EC:
-    ##  contrast                       estimate      SE   df t.ratio p.value
-    ##  b_pre_cpt - c_pre_switch        2.02833       0 3502 14.071  <.0001 
-    ##  b_pre_cpt - (d_post-switch)     4.67326       0 3502  9.930  <.0001 
-    ##  c_pre_switch - (d_post-switch)  2.64493       0 3502  5.465  <.0001 
+    ##  contrast                       estimate    SE   df t.ratio p.value
+    ##  b_pre_cpt - c_pre_switch         2.0264 0.143 3637 14.205  <.0001 
+    ##  b_pre_cpt - (d_post-switch)      4.4013 0.371 3637 11.857  <.0001 
+    ##  c_pre_switch - (d_post-switch)   2.3748 0.388 3637  6.122  <.0001 
     ## 
     ## oplottype = EE:
-    ##  contrast                       estimate      SE   df t.ratio p.value
-    ##  b_pre_cpt - c_pre_switch        2.12053       0 3502 17.582  <.0001 
-    ##  b_pre_cpt - (d_post-switch)     2.38736       0 3502 16.380  <.0001 
-    ##  c_pre_switch - (d_post-switch)  0.26682       0 3502  1.578  0.2551 
+    ##  contrast                       estimate    SE   df t.ratio p.value
+    ##  b_pre_cpt - c_pre_switch         2.1304 0.118 3637 17.989  <.0001 
+    ##  b_pre_cpt - (d_post-switch)      2.1552 0.123 3637 17.532  <.0001 
+    ##  c_pre_switch - (d_post-switch)   0.0248 0.151 3637  0.164  0.9852 
     ## 
     ## Results are averaged over the levels of: fplot 
     ## Results are given on the log odds ratio (not the response) scale. 
@@ -155,30 +155,32 @@ summary(qbin_glm)
     ## 
     ## Deviance Residuals: 
     ##      Min        1Q    Median        3Q       Max  
-    ## -1.39247  -0.47842  -0.09665   0.39033   2.11078  
+    ## -1.39247  -0.48083  -0.09665   0.38555   2.10920  
     ## 
     ## Coefficients:
-    ##                    Estimate Std. Error t value Pr(>|t|)
-    ## (Intercept)         -3.1642    16.6790  -0.190    0.850
-    ## oera.L              -4.2092    35.3813  -0.119    0.905
-    ## oera.Q              -0.6505    20.4279  -0.032    0.975
-    ## oplottype.L          4.9195    44.7544   0.110    0.912
-    ## oplottype.Q         -3.0243    33.3580  -0.091    0.928
-    ## oplottype.C          1.7550    14.9186   0.118    0.906
-    ## oera.L:oplottype.L   5.7965    94.9378   0.061    0.951
-    ## oera.Q:oplottype.L   2.7201    54.8136   0.050    0.960
-    ## oera.L:oplottype.Q  -3.9881    70.7627  -0.056    0.955
-    ## oera.Q:oplottype.Q  -1.7008    40.8558  -0.042    0.967
-    ## oera.L:oplottype.C   3.5343    31.6469   0.112    0.911
-    ## oera.Q:oplottype.C   1.5858    18.2721   0.087    0.931
+    ##                    Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)        -2.26314    0.16069 -14.084  < 2e-16 ***
+    ## oera.L             -2.29772    0.31811  -7.223 6.16e-13 ***
+    ## oera.Q              0.45306    0.23179   1.955   0.0507 .  
+    ## oplottype.L         2.68440    0.41930   6.402 1.73e-10 ***
+    ## oplottype.Q        -1.31670    0.32137  -4.097 4.27e-05 ***
+    ## oplottype.C         0.94664    0.17535   5.398 7.15e-08 ***
+    ## oera.L:oplottype.L  1.05518    0.83197   1.268   0.2048    
+    ## oera.Q:oplottype.L -0.01731    0.60224  -0.029   0.9771    
+    ## oera.L:oplottype.Q -0.36567    0.63622  -0.575   0.5655    
+    ## oera.Q:oplottype.Q  0.39063    0.46358   0.843   0.3995    
+    ## oera.L:oplottype.C  1.81953    0.34260   5.311 1.16e-07 ***
+    ## oera.Q:oplottype.C  0.59571    0.25908   2.299   0.0215 *  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for quasibinomial family taken to be 0.3992711)
+    ## (Dispersion parameter for quasibinomial family taken to be 0.4091462)
     ## 
-    ##     Null deviance: 2558.1  on 3524  degrees of freedom
-    ## Residual deviance: 1530.8  on 3513  degrees of freedom
+    ##     Null deviance: 2659.0  on 3659  degrees of freedom
+    ## Residual deviance: 1598.3  on 3648  degrees of freedom
     ## AIC: NA
     ## 
-    ## Number of Fisher Scoring iterations: 16
+    ## Number of Fisher Scoring iterations: 9
 
 The above GLM struggles, I think because the controls in d are literally
 all 0. One could either remove just that time period for controls, or
@@ -249,15 +251,15 @@ qbin_glm_se %>%
 | b\_pre\_cpt    | CC        |        NA |        NA |        NA |
 | c\_pre\_switch | CC        |        NA |        NA |        NA |
 | d\_post-switch | CC        |        NA |        NA |        NA |
-| b\_pre\_cpt    | CE        | 0.3773377 | 0.3456416 | 0.4101188 |
-| c\_pre\_switch | CE        | 0.1081368 | 0.0782210 | 0.1476612 |
-| d\_post-switch | CE        | 0.1077759 | 0.0740331 | 0.1543347 |
-| b\_pre\_cpt    | EC        | 0.6207243 | 0.5879197 | 0.6524612 |
-| c\_pre\_switch | EC        | 0.1793774 | 0.1407084 | 0.2258798 |
-| d\_post-switch | EC        | 0.0153667 | 0.0054865 | 0.0422832 |
-| b\_pre\_cpt    | EE        | 0.5917202 | 0.5661429 | 0.6168103 |
-| c\_pre\_switch | EE        | 0.1768627 | 0.1464487 | 0.2120239 |
-| d\_post-switch | EE        | 0.1436942 | 0.1122944 | 0.1820731 |
+| b\_pre\_cpt    | CE        | 0.3773377 | 0.3454396 | 0.4103348 |
+| c\_pre\_switch | CE        | 0.1081368 | 0.0780539 | 0.1479533 |
+| d\_post-switch | CE        | 0.1091666 | 0.0778756 | 0.1509720 |
+| b\_pre\_cpt    | EC        | 0.6207243 | 0.5877035 | 0.6526634 |
+| c\_pre\_switch | EC        | 0.1793774 | 0.1404816 | 0.2262083 |
+| d\_post-switch | EC        | 0.0200208 | 0.0088405 | 0.0447028 |
+| b\_pre\_cpt    | EE        | 0.5917202 | 0.5659753 | 0.6169715 |
+| c\_pre\_switch | EE        | 0.1768627 | 0.1462660 | 0.2122683 |
+| d\_post-switch | EE        | 0.1735686 | 0.1420966 | 0.2103025 |
 
 </div>
 
@@ -278,19 +280,19 @@ treat_ps %>%
 | a\_pre\_ba     | CC        |      0.0000000 |
 | b\_pre\_cpt    | CC        |      0.1046083 |
 | c\_pre\_switch | CC        |      0.0046035 |
-| d\_post-switch | CC        |      0.0000000 |
+| d\_post-switch | CC        |      0.0008429 |
 | a\_pre\_ba     | CE        |      0.0004537 |
 | b\_pre\_cpt    | CE        |      0.3667359 |
 | c\_pre\_switch | CE        |      0.1072642 |
-| d\_post-switch | CE        |      0.1273288 |
+| d\_post-switch | CE        |      0.1312703 |
 | a\_pre\_ba     | EC        |      0.0009833 |
 | b\_pre\_cpt    | EC        |      0.6523698 |
 | c\_pre\_switch | EC        |      0.2174779 |
-| d\_post-switch | EC        |      0.0148593 |
+| d\_post-switch | EC        |      0.0227079 |
 | a\_pre\_ba     | EE        |      0.0000000 |
 | b\_pre\_cpt    | EE        |      0.6541999 |
 | c\_pre\_switch | EE        |      0.2246082 |
-| d\_post-switch | EE        |      0.2481597 |
+| d\_post-switch | EE        |      0.2796247 |
 
 </div>
 
