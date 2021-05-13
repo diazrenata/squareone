@@ -75,7 +75,7 @@ plot_pcca_ellipses = function(pcca.obj, plantdat, title, Palette) {
 # Data I'm using is all censuses before flip, back to 2008 (many summers were missed)
 # Summer: 2008, 2011, 2014 and Winter: 2008, 2012, 2013, 2014, 2015
 
-dat.winter <- read.csv(here::here("lore", "2019_switch", 'PlantAnalysis/WinterAnnualTreatments.csv'), stringsAsFactors = T)
+dat.winter <- read.csv(here::here("old", "really_old", "lore", "2019_switch", 'PlantAnalysis/WinterAnnualTreatments.csv'), stringsAsFactors = T)
 dat.summer <- read.csv(here::here("lore", "2019_switch",'PlantAnalysis/SummerAnnualTreatments.csv'), stringsAsFactors = T)
 
 # ===================================================================

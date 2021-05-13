@@ -1,0 +1,334 @@
+library(dplyr)
+library(ggplot2)
+library(soar)
+library(vegan)
+winter <- soar::get_plants_plots()
+
+winter <- winter %>%
+filter(combined_trt %in% c("CC", "EE")) 
+
+plantnames <- colnames(winter)[5:ncol(winter)]
+
+replace_na <- function(aval) {
+  if(is.na(aval)) {
+    return(0)
+  } else {
+  return(aval)
+  }
+}
+
+winter_full <- expand.grid(year = unique(winter$year),
+                           plot = unique(winter$plot)) %>%
+  left_join(distinct(select(winter, plot, combined_trt, season))) %>%
+  left_join(winter) %>%
+  group_by_all() %>%
+  mutate_at(plantnames, replace_na) %>%
+  ungroup()
+
+
+wintertrts <- winter_full %>%
+  group_by(combined_trt, year, season) %>%
+  mutate_at(plantnames, sqrt) %>%
+  summarize_at(plantnames, mean) %>%
+  ungroup()
+
+# working from - following Erica - 
+# another example: https://rgriff23.github.io/2017/05/23/mosquito-community-ecology-in-vegan.html
+
+winter.trts.abundance.matrix <- wintertrts %>%
+  select(-(c(year, season, combined_trt))) %>%
+  mutate(rs = rowSums(.)) %>%
+  filter(rs > 0) %>%
+  select(-rs)
+
+winter.abundance.matrix <- winter_full %>%
+  select(-(c(plot, year, season, combined_trt)))  %>%
+  mutate(rs = rowSums(.)) %>%
+  filter(rs > 0) %>%
+  select(-rs) %>%
+  mutate_all(sqrt)
+
+winter.ca <- cca(winter.abundance.matrix)
+
+barplot(winter.ca$CA$eig / winter.ca$tot.chi, names.arg = 1:winter.ca$CA$rank, cex.names = 0.5)
+
+winter.ca$CA$eig / winter.ca$tot.chi
+
+
+tcols <- data.frame(combined_trt = c("CC", "EE"),
+                    tcol = terrain.colors(2)) %>%
+  right_join(select(wintertrts, combined_trt))
+
+layout(matrix(1:2, 1, 1))
+plot(winter.ca, display = "sites", scaling = "sites", type = "t")
+
+preds <-  winter_full %>%
+  mutate(rs = rowSums(select(winter_full, -c(plot, year, season, combined_trt)))) %>%
+  filter(rs > 0) %>%
+  select(-rs) %>%
+  select((c(plot, year, combined_trt)))%>%
+  mutate(rod_era = as.ordered(ifelse(year < 1997, "a",
+                                     ifelse(year < 2010, "b",
+                                            "c"))),
+         fiveyr_era = as.ordered(ceiling((year - 1989.5) / 4)),
+         fyear = as.ordered(year))
+
+winter.ca.scores <- as.data.frame(scores(winter.ca, display = "sites", scaling = "sites")) %>%
+  cbind(preds)
+
+ggplot(winter.ca.scores, aes(CA1, CA2, color = rod_era)) + 
+  geom_point()  +
+  stat_ellipse() +
+    ylim(-2.5, 1) +
+  facet_wrap(vars(combined_trt))
+
+winter.ca.trt <- cca(winter.trts.abundance.matrix)
+predstrt <- wintertrts %>%
+ mutate(rs = rowSums(select(wintertrts, -(c(year, season, combined_trt))))) %>%
+  filter(rs > 0) %>%
+  select(-rs) %>%
+  select((c( year, combined_trt)))%>%
+  mutate(rod_era = as.ordered(ifelse(year < 1997, "a",
+                                     ifelse(year < 2010, "b",
+                                            "c"))),
+         fiveyr_era = as.ordered(ceiling((year - 1989.5) / 4)))
+
+
+winter.ca.trt.scores <- as.data.frame(scores(winter.ca.trt, display = "sites", scaling = "sites")) %>%
+  cbind(predstrt)
+  
+ggplot(winter.ca.trt.scores, aes(CA1, CA2, color = rod_era)) + 
+  geom_point()  +
+stat_ellipse() +
+    facet_wrap(vars(combined_trt))
+
+
+#### cca ####
+
+
+winter.cca <- cca(winter.abundance.matrix ~ ., data = select(preds, combined_trt, rod_era))
+winter.cca2 <- cca(winter.abundance.matrix ~ ., data = select(preds, rod_era))
+winter.cca3 <- cca(winter.abundance.matrix ~ ., data = select(preds, combined_trt))
+
+extractAIC(winter.cca)
+extractAIC(winter.cca2)
+extractAIC(winter.cca3)
+
+vif.cca(winter.cca)
+
+# none > 10
+
+barplot(winter.cca$CA$eig / winter.cca$tot.chi)
+
+# MINISCULE. .08 of VAR. But, Erica's are like this too.
+
+# var explained
+
+winter.cca$CCA$tot.chi / winter.cca$tot.chi
+
+# perm test
+anova(winter.cca, by = "margin")
+anova(winter.cca)
+
+
+winter.cca.scores <- as.data.frame(scores(winter.cca, display = "sites", scaling = "sites")) %>%
+  cbind(preds)
+
+ggplot(winter.cca.scores,aes(CCA1, CCA2)) + 
+  stat_ellipse(aes(color = rod_era)) +
+  geom_point(aes(color = rod_era)) +
+  facet_wrap(vars(combined_trt))
+
+ggplot(winter.cca.scores, aes(CCA1, CCA2, color = rod_era)) + 
+  geom_point()  +
+  #  ylim(-1, 1) +
+  facet_wrap(vars(combined_trt))
+
+
+winter.cca <- cca(winter.abundance.matrix ~ ., data = select(preds, combined_trt, rod_era))
+
+vif.cca(winter.cca)
+
+# none > 10
+
+barplot(winter.cca$CA$eig / winter.cca$tot.chi)
+
+# MINISCULE. .08 of VAR. But, Erica's are like this too.
+
+# var explained
+
+winter.cca$CCA$tot.chi / winter.cca$tot.chi
+
+# perm test
+anova(winter.cca, by = "margin")
+anova(winter.cca)
+
+winter.cca.trt <- cca(winter.trts.abundance.matrix ~ ., data = select(predstrt, combined_trt, rod_era))
+
+
+vif.cca(winter.cca.trt)
+
+# none > 10
+
+barplot(winter.cca.trt$CA$eig / winter.cca.trt$tot.chi)
+
+# MINISCULE. .08 of VAR. But, Erica's are like this too.
+
+# var explained
+
+winter.cca.trt$CCA$tot.chi / winter.cca.trt$tot.chi
+
+winter.cca.trt_scores <- as.data.frame(scores(winter.cca.trt, display = "sites", scaling = "sites")) %>%
+  cbind(predstrt)
+
+ggplot(winter.cca.trt_scores, aes(CCA1, CCA2, color = rod_era)) + 
+  geom_point()  +
+  stat_ellipse() +
+  facet_wrap(vars(combined_trt))
+
+
+#### pcca ####
+
+winter.pcca <- cca(winter.abundance.matrix, Y = select(preds, combined_trt, rod_era), Z = select(preds, plot))
+
+winter.pcca2 <- cca(winter.abundance.matrix, Y = select(preds, combined_trt), Z = select(preds, plot))
+winter.pcca3 <- cca(winter.abundance.matrix, Y = select(preds, rod_era), Z = select(preds, plot))
+
+extractAIC(winter.pcca)
+extractAIC(winter.pcca2)
+extractAIC(winter.pcca3)
+
+
+vif.cca(winter.pcca)
+barplot(winter.pcca$CA$eig / winter.pcca$tot.chi)
+winter.pcca$CCA$tot.chi / winter.pcca$tot.chi
+anova(winter.pcca)
+winter.pcca2 <- cca(winter.abundance.matrix, Y = select(preds, combined_trt), Z = select(preds, plot))
+winter.pcca3 <- cca(winter.abundance.matrix, Y = select(preds, rod_era), Z = select(preds, plot))
+
+
+winter.pcca.scores <- as.data.frame(scores(winter.pcca, display = "sites", scaling = "sites")) %>%
+  cbind(preds)
+
+ggplot(winter.pcca.scores, aes(CCA1, CCA2, color = rod_era)) + 
+  geom_point()  +
+stat_ellipse() +  facet_wrap(vars(combined_trt))
+
+#### Summer ####
+
+summer <- soar::get_plants_plots("summer")
+
+summer <- summer %>%
+  filter(combined_trt %in% c("CC", "EE")) 
+
+plantnames <- colnames(summer)[5:ncol(summer)]
+
+
+summer_full <- expand.grid(year = unique(summer$year),
+                           plot = unique(summer$plot)) %>%
+  left_join(distinct(select(summer, plot, combined_trt, season))) %>%
+  left_join(summer) %>%
+  group_by_all() %>%
+  mutate_at(plantnames, replace_na) %>%
+  ungroup()
+
+
+summertrts <- summer_full %>%
+  group_by(combined_trt, year, season) %>%
+  mutate_at(plantnames, sqrt) %>%
+  summarize_at(plantnames, mean) %>%
+  ungroup()
+
+
+summer.trts.abundance.matrix <- summertrts %>%
+  select(-(c(year, season, combined_trt))) %>%
+  mutate(rs = rowSums(.)) %>%
+  filter(rs > 0) %>%
+  select(-rs)
+
+summer.abundance.matrix <- summer_full %>%
+  select(-(c(plot, year, season, combined_trt)))  %>%
+  mutate(rs = rowSums(.)) %>%
+  filter(rs > 0) %>%
+  select(-rs) %>%
+  mutate_all(sqrt)
+
+summer.ca <- cca(summer.abundance.matrix)
+
+barplot(summer.ca$CA$eig / summer.ca$tot.chi, names.arg = 1:summer.ca$CA$rank, cex.names = 0.5)
+
+summer.ca$CA$eig / summer.ca$tot.chi
+
+
+summer_preds <-  summer_full %>%
+  mutate(rs = rowSums(select(summer_full, -c(plot, year, season, combined_trt)))) %>%
+  filter(rs > 0) %>%
+  select(-rs) %>%
+  select((c(plot, year, combined_trt)))%>%
+  mutate(rod_era = as.ordered(ifelse(year < 1997, "a",
+                                     ifelse(year < 2010, "b",
+                                            "c"))),
+         fiveyr_era = as.ordered(ceiling((year - 1989.5) / 4)))
+
+summer.ca.scores <- as.data.frame(scores(summer.ca, display = "sites", scaling = "sites")) %>%
+  cbind(summer_preds)
+
+ggplot(summer.ca.scores, aes(CA1, CA2, color = rod_era)) + 
+  geom_point()  +
+stat_ellipse() +
+    facet_wrap(vars(combined_trt))
+
+
+summer.ca.trt <- cca(summer.trts.abundance.matrix)
+summer_predstrt <- summertrts %>%
+  mutate(rs = rowSums(select(summertrts, -(c(year, season, combined_trt))))) %>%
+  filter(rs > 0) %>%
+  select(-rs) %>%
+  select((c( year, combined_trt)))%>%
+  mutate(rod_era = as.ordered(ifelse(year < 1997, "a",
+                                     ifelse(year < 2010, "b",
+                                            "c"))),
+         fiveyr_era = as.ordered(ceiling((year - 1989.5) / 4)))
+
+
+summer.ca.trt.scores <- as.data.frame(scores(summer.ca.trt, display = "sites", scaling = "sites")) %>%
+  cbind(summer_predstrt)
+
+ggplot(summer.ca.trt.scores, aes(CA1, CA2, color = rod_era)) +
+  geom_point()  +
+  stat_ellipse() +
+  #  ylim(-1, 1) +
+  facet_wrap(vars(combined_trt))
+
+
+
+
+summer.cca <- cca(summer.abundance.matrix ~ ., data = select(summer_preds, combined_trt, rod_era))
+
+vif.cca(summer.cca)
+
+# none > 10
+
+barplot(summer.cca$CA$eig / summer.cca$tot.chi)
+
+# var explained
+
+summer.cca$CCA$tot.chi / summer.cca$tot.chi
+
+# perm test
+anova(summer.cca, by = "margin")
+anova(summer.cca)
+
+
+
+summer.cca.scores <- as.data.frame(scores(summer.cca, display = "sites", scaling = "sites")) %>%
+  cbind(summer_preds)
+
+
+ggplot(summer.cca.scores,aes(CCA1, CCA2)) + 
+  stat_ellipse(aes(color = rod_era)) +
+  geom_point(aes(color = rod_era)) +
+  facet_wrap(vars(combined_trt))
+
+
+

@@ -1,7 +1,7 @@
 Shrub sprint
 ================
 Renata Diaz
-2021-04-16
+2021-05-13
 
 ``` r
 shrub_cover_fixed <- function(path = get_default_data_path(), type = "Shrubs", plots = "all", 
@@ -144,3 +144,21 @@ ggplot(filter(total_cover_contemp, combined_trt == "CE"), aes(year, total_shrub_
 ```
 
 ![](shrub_sprint_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
+
+1.  How did shrub cover vary in the 2000s?
+
+<!-- end list -->
+
+``` r
+ggplot(total_cover_hist, aes(year, total_shrub_cover, group = plot, color = first_trt)) +
+  geom_line()
+```
+
+![](shrub_sprint_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+``` r
+ggplot(total_cover_hist, aes(as.ordered(year), total_shrub_cover, color = first_trt)) +
+  geom_boxplot()
+```
+
+![](shrub_sprint_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
