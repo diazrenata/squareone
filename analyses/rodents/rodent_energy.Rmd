@@ -75,48 +75,6 @@ Small granivore (gold) and PB (blue) energy use as a proportion of the total ene
 
 Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS.
 
-<!-- Shown are 6-month moving averages. -->
-
-<!-- ## PB -->
-
-<!-- ```{r} -->
-<!-- ggplot(pb, aes(censusdate, pb_prop_ma, color = oplottype)) + -->
-<!--   geom_line() + -->
-<!--   ggtitle("PB % of energy use, from treatment means") + -->
-<!--   era_grid + both_scale + -->
-<!--   ylim(0,1) -->
-<!-- ``` -->
-
-<!--  -->
-
-
-<!-- ## Compensation -->
-
-<!-- ```{r} -->
-
-<!-- ggplot(compensation, aes(censusdate, smgran_comp_ma, color = oplottype)) + -->
-<!--   geom_line() + -->
-<!--   ggtitle("Small granivore compensation, from treatment means") + -->
-<!--   era_grid + ee_scale -->
-
-<!-- ``` -->
-
-<!-- Compensatory gains in energy use by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$.  -->
-
-<!-- ## Total energy ratio -->
-
-<!-- ```{r} -->
-<!-- ggplot(energy_ratio, aes(censusdate, (total_e_rat_ma), color = oplottype)) + -->
-<!--   geom_line() + -->
-<!--   ggtitle("Total E ratio") + -->
-<!--   era_grid + ee_scale -->
-
-<!-- ``` -->
-
-<!-- Total energy use on exclosures relative to total energy use on controls. -->
-
-<!-- # Time period means -->
-
 ## PB over time
 
 
