@@ -19,6 +19,7 @@ library(dplyr)
 ``` r
 library(soar)
 library(ggplot2)
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
 
 theme_set(theme_bw())
 
@@ -38,41 +39,56 @@ winter <- portalr::plant_abundance(level = "Plot", type = "Winter Annuals", leng
 
     ## Loading in data version 2.95.0
 
-# Plot level
+    ## Joining, by = "plot"
 
-``` r
-winter <- winter %>%
-  filter(season == "winter") %>%
-  soar::add_plot_types() %>%
-  filter(combined_trt %in% c("CC", "EE")) %>%
-  mutate(plot_type = combined_trt) %>%
-  mutate(era = ifelse(year < 1996, "a", ifelse(year < 2010, "b", "c"))) %>%
-  filter(year >= 1988)  %>%
-  mutate(oera = as.ordered(era))
-```
+# Treatment levels
 
     ## Joining, by = "plot"
 
-``` r
-ggplot(filter(winter, species == "erod cicu"), aes(year, abundance, color = treatment, group = plot)) +
-  geom_line() +
-  facet_wrap(vars(combined_trt), ncol = 1) + geom_vline(xintercept = c(1996, 2010)) + both_scale
-```
+    ## Joining, by = "year"
 
-![](erodium_results_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+    ## `summarise()` has grouped output by 'year', 'plot', 'plot_type'. You can override using the `.groups` argument.
 
-``` r
-winter_plot_props <- winter %>%
-  group_by(year, plot) %>%
-  mutate(total_abund = sum(abundance)) %>%
-  ungroup() %>%
-  filter(species == "erod cicu") %>%
-  mutate(prop_abund = abundance / total_abund) %>%
-  mutate(censusdate = as.Date(paste0(year, "-03-15"), origin =  "%Y-%m-%d"))
+    ## Joining, by = c("year", "plot", "plot_type", "oera")
 
-ggplot(winter_plot_props, aes(year, prop_abund, color = treatment, group = plot)) +
-  geom_line() +
-  facet_wrap(vars(combined_trt), ncol = 1) + geom_vline(xintercept = c(1996, 2010)) + both_scale
-```
+    ## `summarise()` has grouped output by 'year', 'plot', 'plot_type'. You can override using the `.groups` argument.
 
-![](erodium_results_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
+    ## Joining, by = c("year", "plot", "plot_type", "oera")
+
+    ## `summarise()` has grouped output by 'year', 'plot_type'. You can override using the `.groups` argument.
+
+![](erodium_results_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->![](erodium_results_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
+
+    ## Joining, by = c("period", "oplottype")
+
+![](erodium_results_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+    ##   oera oplottype         est        lower     upper
+    ## 1    a        CC 0.007715796 0.0002100903 0.2234425
+    ## 2    a        EE 0.057428745 0.0154251810 0.1915570
+    ## 3    b        CC 0.388550771 0.2677117420 0.5248413
+    ## 4    b        EE 0.559731557 0.4305392969 0.6813096
+    ## 5    c        CC 0.042839716 0.0093132477 0.1756575
+    ## 6    c        EE 0.217457152 0.1144022568 0.3741271
+
+    ## oplottype = CC:
+    ##  contrast estimate    SE  df z.ratio p.value
+    ##  a - b       -4.40 1.827 Inf -2.411  0.0421 
+    ##  a - c       -1.75 1.967 Inf -0.890  0.6467 
+    ##  b - c        2.65 0.828 Inf  3.205  0.0039 
+    ## 
+    ## oplottype = EE:
+    ##  contrast estimate    SE  df z.ratio p.value
+    ##  a - b       -3.04 0.727 Inf -4.178  0.0001 
+    ##  a - c       -1.52 0.780 Inf -1.946  0.1258 
+    ##  b - c        1.52 0.463 Inf  3.285  0.0029 
+    ## 
+    ## Results are given on the log odds ratio (not the response) scale. 
+    ## P value adjustment: tukey method for comparing a family of 3 estimates
+
+# Plot level
+
+Broken out by plot, we get gaps for years and plots when there were no
+individuals (of any species) observed:
+
+![](erodium_results_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->![](erodium_results_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->

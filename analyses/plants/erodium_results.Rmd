@@ -2,10 +2,11 @@
 title: "Erodium"
 output: github_document
 ---
-```{r}
+```{r setup}
 library(dplyr)
 library(soar)
 library(ggplot2)
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
 
 theme_set(theme_bw())
 
@@ -21,7 +22,6 @@ winter <- portalr::plant_abundance(level = "Plot", type = "Winter Annuals", leng
 
 ```
 
-# Plot level
 
 ```{r}
 winter <- winter %>%
@@ -32,10 +32,10 @@ winter <- winter %>%
   mutate(era = ifelse(year < 1996, "a", ifelse(year < 2010, "b", "c"))) %>%
   filter(year >= 1988)  %>%
   mutate(oera = as.ordered(era))
-
-ggplot(filter(winter, species == "erod cicu"), aes(year, abundance, color = treatment, group = plot)) +
-  geom_line() +
-  facet_wrap(vars(combined_trt), ncol = 1) + geom_vline(xintercept = c(1996, 2010)) + both_scale
+# 
+# ggplot(filter(winter, species == "erod cicu"), aes(year, abundance, color = treatment, group = plot)) +
+#   geom_line() +
+#   facet_wrap(vars(combined_trt), ncol = 1) + geom_vline(xintercept = c(1996, 2010)) + both_scale
 
 winter_plot_props <- winter %>%
   group_by(year, plot) %>%
@@ -44,9 +44,121 @@ winter_plot_props <- winter %>%
   filter(species == "erod cicu") %>%
   mutate(prop_abund = abundance / total_abund) %>%
   mutate(censusdate = as.Date(paste0(year, "-03-15"), origin =  "%Y-%m-%d"))
+# 
+# ggplot(winter_plot_props, aes(year, prop_abund, color = treatment, group = plot)) +
+#   geom_line() +
+#   facet_wrap(vars(combined_trt), ncol = 1) + geom_vline(xintercept = c(1996, 2010)) + both_scale
 
-ggplot(winter_plot_props, aes(year, prop_abund, color = treatment, group = plot)) +
+```
+
+# Treatment levels
+
+```{r}
+na_to_zero <- function(val) {
+  if(is.na(val)) {
+    return(0) 
+  } 
+  return(val)
+}
+all_winter_plots_possible <- (expand.grid(plot = unique(winter$plot),
+                                          year = unique(winter$year))) %>%
+  left_join(distinct(select(winter, plot, plot_type))) %>%
+  left_join(distinct(select(winter, year, oera)))
+
+all_winter_plots <- winter %>%
+  group_by(year, plot, plot_type, oera) %>%
+  summarize(total_abund = sum(abundance))  %>%
+  ungroup() %>%
+  right_join(all_winter_plots_possible) %>%
+  group_by_all() %>%
+  mutate(total_abund = na_to_zero(total_abund)) %>%
+  ungroup()
+
+
+
+erodium_plot <- winter %>%
+  filter(species=="erod cicu") %>%
+  group_by(year, plot, plot_type, oera) %>%
+  summarize(erod_abund = sum(abundance))  %>%
+  ungroup() %>%
+  right_join(all_winter_plots) %>%
+  group_by_all() %>%
+  mutate(erod_abund = na_to_zero(erod_abund)) %>%
+  ungroup()
+
+
+
+winter_means <- erodium_plot %>%
+  group_by(year, plot_type, oera) %>%
+  summarize(mean_total_abund = mean(total_abund),
+            mean_erod_abund = mean(erod_abund),
+            nplots = dplyr::n()) %>%
+  ungroup() %>%
+  mutate(erod_prop_abund = mean_erod_abund / mean_total_abund,
+         oplottype = as.ordered(plot_type),
+         period = year, 
+         censusdate = year)
+
+ggplot(winter_means, aes(year,erod_prop_abund, color = plot_type)) +
   geom_line() +
-  facet_wrap(vars(combined_trt), ncol = 1) + geom_vline(xintercept = c(1996, 2010)) + both_scale
+  facet_wrap(vars(plot_type)) +
+  era_grid + both_scale + ggtitle("Erodium proportional abundance", subtitle = "Mean erodium abund / mean total abund")
 
+
+
+ggplot(winter_means, aes(year, mean_erod_abund, color = plot_type)) +
+  geom_line() +
+  facet_wrap(vars(plot_type)) +
+  era_grid + both_scale + ggtitle("Erodium mean total abundance")
+
+```
+
+```{r}
+
+prop_glm <- glm(erod_prop_abund ~ oplottype * oera, data = winter_means, family = quasibinomial())
+ilink <- prop_glm$family$linkinv
+
+prop_glm_est <- predict(prop_glm, type = "link", se.fit = T, newdata = winter_means) %>%
+  as.data.frame() %>%
+  dplyr::mutate(est = ilink(fit),
+                lower = ilink(fit - 2*se.fit),
+                upper = ilink(fit + 2*se.fit),
+                period = filter(winter_means)$period,
+                oplottype = filter(winter_means)$oplottype) %>%
+  right_join(winter_means)
+
+ggplot(prop_glm_est, aes(year, erod_prop_abund, color = plot_type, fill = plot_type)) +
+  geom_line() +
+  geom_line(aes(y = est)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .1) +
+  facet_wrap(vars(plot_type), ncol = 1) +
+  both_scale + both_fscale
+
+prop_glm_est %>%
+  select(oera, oplottype, est, lower, upper) %>%
+  distinct()
+
+glm_emmeans <- emmeans::emmeans(prop_glm, specs = ~ oera | oplottype)
+
+pairs(glm_emmeans)
+
+```
+
+# Plot level
+
+Broken out by plot, we get gaps for years and plots when there were no individuals (of any species) observed:
+
+
+```{r}
+
+
+ggplot(erodium_plot, aes(year, erod_abund, color = plot_type, group = plot)) +
+  geom_line() + 
+  facet_wrap(vars(plot_type)) +
+  both_scale
+
+ggplot(erodium_plot, aes(year, erod_abund/total_abund, color = plot_type, group = plot)) +
+  geom_line() + 
+  facet_wrap(vars(plot_type)) +
+  both_scale
 ```
