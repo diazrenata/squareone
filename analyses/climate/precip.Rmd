@@ -31,6 +31,38 @@ weather_full <- expand.grid(year = c(min(weather$year) : max(weather$year)),
   arrange(newdate)
 ```
 
+## warm days annual
+
+```{r}
+
+daily <- weather(level = "daily", fill = T)
+
+hot_days <- daily %>%
+  filter(!is.na(maxtemp)) %>%
+  mutate(is_hot = maxtemp > 35, na.rm = T) %>%
+  group_by(year, month) %>%
+  summarize(nhot_days = sum(is_hot),
+            ndays = dplyr::n()) %>%
+  ungroup() %>% 
+  group_by(year) %>%
+  summarize(nhot_days = sum(nhot_days),
+            ndays = sum(ndays)) %>%
+  ungroup() %>%
+  filter(ndays > 360, year %in% c(1988:2019))
+
+hot_days <- hot_days  %>%
+  mutate(era = ifelse(year < 1988, "z", ifelse(year < 1996, "a", ifelse(year < 2010, "b", "c"))))
+
+
+ggplot(hot_days, aes(year, nhot_days)) +
+  geom_line()
+
+hot_days %>%
+  group_by(era) %>%
+  summarize(meanhot = mean(nhot_days))
+
+```
+
 ## precip
 
 ### Total precip
