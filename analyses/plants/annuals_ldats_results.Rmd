@@ -1,0 +1,18 @@
+---
+title: "LDATS on annual plants"
+output: 
+    github_document:
+       df_print: kable
+       toc: true
+---
+```{r setup, include=FALSE}
+library(dplyr)
+library(soar)
+library(ggplot2)
+library(vegan)
+
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+
+theme_set(theme_bw())
+
+```
