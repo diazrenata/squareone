@@ -24,11 +24,34 @@ summer_plot_abunds <- get_plot_abundance_matrix("summer")
 
 ```
 
+# Summary
+
+I am not at expert-level in correspondence analysis, so this is to the best of my understanding. 
+
+With CA, we just try to summarize the variability in the community composition data and then plot each sample (community composition of a plot in a census year) on the first 2 axes. I then colored the points and plotted the centroids of three "eras": a, 1988-96, b, 1996-2010, and c, 2010-2019. The analysis has no idea these are structuring variables of interest. 
+
+The CA plot for winter shows strong temporal structure; in particular, b and c are very different from a (but not really different from each other). The CA for summer shows no such structure.
+
+For the pCCA, we tell the cca function to pay attention to treatment and "era", and condition on the effect of plot (similar to a random effect). Adding these constraints results in greater separation of b and c for the winter annuals, and less - but still huge - overlap for the different eras for the summer annuals. 
+
+The constraints, combined, account for about 20% of variation in winter and 10% in summer. All the constraints (treatment, era, and plot) come up as "significant" in permutation tests.
+
+#### Takeaway
+
+What I take away from this is that:
+
+- The annuals change over time!
+- Winter has more temporal structure than summer.
+- I am hesitant to interpret this as there being a really pronounced shift in 2010, though. 
+    - The plotted axes account for very little of the total variation in the pCCAs (20% for winter, 9% for summer). 
+    - I haven't found a way to test contrasts in CCA (e.g. "is b significantly different from c"). 
+    - The eras may be arbitrary (with respect to this data) - although trying this with other time chunking strategies gives qualitatively similar answers.
+
 # Winter
 
 ## CA
 
-### Plot level
+Combined, these two axes account for about 27% of variation. 
 
 ```{r}
 
@@ -41,12 +64,12 @@ winter_plot_abund_matrix <- winter_plot_abunds %>%
 
 winter_plot_ca <- cca(winter_plot_abund_matrix)
 
-barplot(winter_plot_ca$CA$eig / winter_plot_ca$tot.chi, names.arg = 1:winter_plot_ca$CA$rank, cex.names = 0.5)
+#barplot(winter_plot_ca$CA$eig / winter_plot_ca$tot.chi, names.arg = 1:winter_plot_ca$CA$rank, cex.names = 0.5)
 
 (winter_plot_ca$CA$eig / winter_plot_ca$tot.chi)[1:5]
 
 
-preds <-  winter_plot_abunds %>%
+winter_preds <-  winter_plot_abunds %>%
   ungroup() %>%
   filter(plot_total_abundance > 0) %>%
   select((c(plot, year, combined_trt)))%>%
@@ -55,7 +78,7 @@ preds <-  winter_plot_abunds %>%
                                             "c"))))
 
 winter_plot_ca_scores <- as.data.frame(scores(winter_plot_ca, display = "sites", scaling = "sites")) %>%
-  cbind(preds)
+  cbind(winter_preds)
 
 ggplot(winter_plot_ca_scores, aes(CA1, CA2, color = rod_era)) + 
   geom_point()  +
@@ -64,58 +87,51 @@ ggplot(winter_plot_ca_scores, aes(CA1, CA2, color = rod_era)) +
   facet_wrap(vars(combined_trt))
 ```
 
-### Treatment level
+
+<!-- ## CCA -->
+
+<!-- ```{r} -->
+
+<!-- winter_plot_cca <- cca(winter_plot_abund_matrix ~ ., data = select(winter_preds, combined_trt, rod_era)) -->
+
+<!-- summary(winter_plot_cca) -->
+
+<!-- winter_plot_cca_scores <- as.data.frame(scores(winter_plot_cca, display = "sites", scaling = "sites")) %>% -->
+<!--   cbind(winter_preds) -->
+
+<!-- ggplot(winter_plot_cca_scores, aes(CCA1, CCA2, color = rod_era)) +  -->
+<!--   geom_point()  + -->
+<!--   stat_ellipse() + -->
+<!--   facet_wrap(vars(combined_trt)) -->
+
+<!-- ``` -->
+
+## pCCA
+
+The constraints account for about 20% of total variation. These two axes account for about 19%. 
 
 ```{r}
 
-plantcols <- colnames(winter_treat_abunds)[7:ncol(winter_treat_abunds)]
-
-stdize <- function(plantcol, totalcol) {
-  return(5 * (plantcol / totalcol))
-}
-
-winter_treat_abund_matrix <- winter_treat_abunds 
-winter_treat_abund_matrix[,plantcols] <- apply(winter_treat_abund_matrix[, plantcols], MARGIN =2, FUN = stdize, totalcol = winter_treat_abund_matrix[,"total_plots"])
-colnames(winter_treat_abund_matrix)[7:ncol(winter_treat_abund_matrix)] <- plantcols
-
-winter_treat_abund_matrix <- winter_treat_abund_matrix %>%
-  ungroup() %>%
-  filter(total_abundance >0 ) %>%
-  select(-c(year, season, combined_trt, total_plots, total_empty_plots, total_abundance)) %>%
-  mutate_all(sqrt)
+winter_plot_pcca <- cca(winter_plot_abund_matrix ~  rod_era + combined_trt + Condition(plot), winter_preds)
 
 
+winter_plot_pcca
 
-winter_treat_ca <- cca(winter_treat_abund_matrix)
+(winter_plot_pcca$CCA$eig / winter_plot_pcca$tot.chi)
 
-barplot(winter_treat_ca$CA$eig / winter_treat_ca$tot.chi, names.arg = 1:winter_treat_ca$CA$rank, cex.names = 0.5)
+winter_plot_pcca_scores <- as.data.frame(scores(winter_plot_pcca, display = "sites", scaling = "sites")) %>%
+  cbind(winter_preds)
 
-(winter_treat_ca$CA$eig / winter_treat_ca$tot.chi)[1:5]
-
-
-preds <-  winter_treat_abunds %>%
-  ungroup() %>%
-  filter(total_abundance > 0) %>%
-  select((c(year, combined_trt)))%>%
-  mutate(rod_era = as.ordered(ifelse(year < 1997, "a",
-                                     ifelse(year < 2010, "b",
-                                            "c"))))
-
-winter_treat_ca_scores <- as.data.frame(scores(winter_treat_ca, display = "sites", scaling = "sites")) %>%
-  cbind(preds)
-
-ggplot(winter_treat_ca_scores, aes(CA1, CA2, color = rod_era)) + 
+ggplot(winter_plot_pcca_scores, aes(CCA1, CCA2, color = rod_era)) + 
   geom_point()  +
   stat_ellipse() +
   facet_wrap(vars(combined_trt))
-```
 
+```
 
 # Summer
 
 ## CA
-
-### Plot level
 
 ```{r}
 
@@ -128,12 +144,10 @@ summer_plot_abund_matrix <- summer_plot_abunds %>%
 
 summer_plot_ca <- cca(summer_plot_abund_matrix)
 
-barplot(summer_plot_ca$CA$eig / summer_plot_ca$tot.chi, names.arg = 1:summer_plot_ca$CA$rank, cex.names = 0.5)
-
 (summer_plot_ca$CA$eig / summer_plot_ca$tot.chi)[1:5]
 
 
-preds <-  summer_plot_abunds %>%
+summer_preds <-  summer_plot_abunds %>%
   ungroup() %>%
   filter(plot_total_abundance > 0) %>%
   select((c(plot, year, combined_trt)))%>%
@@ -142,7 +156,7 @@ preds <-  summer_plot_abunds %>%
                                             "c"))))
 
 summer_plot_ca_scores <- as.data.frame(scores(summer_plot_ca, display = "sites", scaling = "sites")) %>%
-  cbind(preds)
+  cbind(summer_preds)
 
 ggplot(summer_plot_ca_scores, aes(CA1, CA2, color = rod_era)) + 
   geom_point()  +
@@ -151,48 +165,25 @@ ggplot(summer_plot_ca_scores, aes(CA1, CA2, color = rod_era)) +
   facet_wrap(vars(combined_trt))
 ```
 
-### Treatment level
+
+## pCCA
+
+The plotted axes account for a combined 9% of total variation.
 
 ```{r}
 
-plantcols <- colnames(summer_treat_abunds)[7:ncol(summer_treat_abunds)]
+summer_plot_pcca <- cca(summer_plot_abund_matrix ~  rod_era + combined_trt + Condition(plot), summer_preds)
 
-stdize <- function(plantcol, totalcol) {
-  return(5 * (plantcol / totalcol))
-}
+summer_plot_pcca
 
-summer_treat_abund_matrix <- summer_treat_abunds 
-summer_treat_abund_matrix[,plantcols] <- apply(summer_treat_abund_matrix[, plantcols], MARGIN =2, FUN = stdize, totalcol = summer_treat_abund_matrix[,"total_plots"])
-colnames(summer_treat_abund_matrix)[7:ncol(summer_treat_abund_matrix)] <- plantcols
+(summer_plot_pcca$CCA$eig / summer_plot_pcca$tot.chi)
 
-summer_treat_abund_matrix <- summer_treat_abund_matrix %>%
-  ungroup() %>%
-  filter(total_abundance >0 ) %>%
-  select(-c(year, season, combined_trt, total_plots, total_empty_plots, total_abundance)) %>%
-  mutate_all(sqrt)
+summer_plot_pcca_scores <- as.data.frame(scores(summer_plot_pcca, display = "sites", scaling = "sites")) %>%
+  cbind(summer_preds)
 
-
-
-summer_treat_ca <- cca(summer_treat_abund_matrix)
-
-barplot(summer_treat_ca$CA$eig / summer_treat_ca$tot.chi, names.arg = 1:summer_treat_ca$CA$rank, cex.names = 0.5)
-
-(summer_treat_ca$CA$eig / summer_treat_ca$tot.chi)[1:5]
-
-
-preds <-  summer_treat_abunds %>%
-  ungroup() %>%
-  filter(total_abundance > 0) %>%
-  select((c(year, combined_trt)))%>%
-  mutate(rod_era = as.ordered(ifelse(year < 1997, "a",
-                                     ifelse(year < 2010, "b",
-                                            "c"))))
-
-summer_treat_ca_scores <- as.data.frame(scores(summer_treat_ca, display = "sites", scaling = "sites")) %>%
-  cbind(preds)
-
-ggplot(summer_treat_ca_scores, aes(CA1, CA2, color = rod_era)) + 
+ggplot(summer_plot_pcca_scores, aes(CCA1, CCA2, color = rod_era)) + 
   geom_point()  +
   stat_ellipse() +
   facet_wrap(vars(combined_trt))
+
 ```
