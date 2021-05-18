@@ -1,6 +1,9 @@
 ---
 title: "Erodium"
-output: github_document
+output: 
+    github_document:
+       df_print: kable
+       toc: true
 ---
 ```{r setup}
 library(dplyr)
@@ -55,6 +58,12 @@ ggplot(erodium_treatments, aes(year, erod_total_abundance_std, color = plot_type
 
 ```
 
+### GLM on proportional abundance
+
+
+`prop_abund ~ treatment + era, family = quasibinomial`
+
+
 ```{r}
 
 erodium_treatments_noz <- filter(erodium_treatments, total_total_abundance > 0)
@@ -62,9 +71,9 @@ erodium_treatments_noz <- filter(erodium_treatments, total_total_abundance > 0)
 prop_glm <- glm(erod_treatment_prop_abundance ~ oplottype * oera, data = erodium_treatments_noz, family = quasibinomial())
 
 prop_glm_noint <-  glm(erod_treatment_prop_abundance ~ oplottype + oera, data = erodium_treatments_noz, family = quasibinomial())
-
-(anova(prop_glm, prop_glm_noint, test = "Chisq"))
-
+# 
+# (anova(prop_glm, prop_glm_noint, test = "Chisq"))
+# 
 
 
 ilink <- prop_glm_noint$family$linkinv

@@ -1,6 +1,10 @@
 Erodium
 ================
 
+  - [Treatment levels](#treatment-levels)
+      - [GLM on proportional abundance](#glm-on-proportional-abundance)
+  - [Plot level](#plot-level)
+
 ``` r
 library(dplyr)
 ```
@@ -46,25 +50,26 @@ censused but no individuals were found (of any species).
 
 ![](erodium_results_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->![](erodium_results_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
 
-    ## Analysis of Deviance Table
-    ## 
-    ## Model 1: erod_treatment_prop_abundance ~ oplottype * oera
-    ## Model 2: erod_treatment_prop_abundance ~ oplottype + oera
-    ##   Resid. Df Resid. Dev Df Deviance Pr(>Chi)
-    ## 1        49     11.182                     
-    ## 2        51     11.594 -2 -0.41254    0.356
+### GLM on proportional abundance
+
+`prop_abund ~ treatment + era, family = quasibinomial`
 
     ## Joining, by = c("oera", "oplottype")
 
 ![](erodium_results_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-    ##   oera oplottype        est       lower      upper
-    ## 1    a        CC 0.01838244 0.004807979 0.06767576
-    ## 2    a        EE 0.04676210 0.013398288 0.15053085
-    ## 3    b        EE 0.59047576 0.468058639 0.70261984
-    ## 4    b        CC 0.35501164 0.245745901 0.48182498
-    ## 5    c        CC 0.07828937 0.036407384 0.16033442
-    ## 6    c        EE 0.18200750 0.098626027 0.31151939
+<div class="kable-table">
+
+| oera | oplottype |       est |     lower |     upper |
+| :--- | :-------- | --------: | --------: | --------: |
+| a    | CC        | 0.0183824 | 0.0048080 | 0.0676758 |
+| a    | EE        | 0.0467621 | 0.0133983 | 0.1505308 |
+| b    | EE        | 0.5904758 | 0.4680586 | 0.7026198 |
+| b    | CC        | 0.3550116 | 0.2457459 | 0.4818250 |
+| c    | CC        | 0.0782894 | 0.0364074 | 0.1603344 |
+| c    | EE        | 0.1820075 | 0.0986260 | 0.3115194 |
+
+</div>
 
     ## oplottype = CC:
     ##  contrast estimate    SE  df z.ratio p.value
