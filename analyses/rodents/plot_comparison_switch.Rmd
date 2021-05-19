@@ -1,0 +1,45 @@
+---
+title: "Plot variability"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+library(soar)
+library(ggplot2)
+library(dplyr)
+library(gratia)
+library(emmeans)
+theme_set(theme_bw())
+```
+
+Wondering if maybe controls are less variable between-plots than other treatment types. That would make it more OK to compare plot-level values for other treatments to a control-level mean.
+
+```{r}
+
+plotl <- get_plot_totals()
+
+```
+
+
+```{r}
+
+plot_composition <- plotl %>%
+  select(censusdate, period, oera, oplottype, fplot, total_e, dipo_e, pb_e, tinygran_e) %>%
+  tidyr::pivot_longer(cols = c(dipo_e, pb_e, tinygran_e), names_to = "rodents", values_to = "energy") %>%
+  mutate(prop_energy = energy / total_e) %>%
+  group_by(fplot) %>%
+  mutate(prop_energy_ma = maopts(prop_energy))
+
+ggplot(filter(plot_composition, oplottype == "CE", as.numeric(oera) > 2, fplot == 2), aes(censusdate, energy, color = rodents, group = fplot)) +
+  facet_wrap(vars(oplottype, fplot), ncol = 1) +
+  geom_line()
+
+ggplot(filter(plotl, oplottype == "CE",as.numeric(oera) > 2), aes(censusdate, total_e_ma)) +
+  geom_line() +
+  geom_line(aes(y = pb_e_ma), color = "green") +
+  geom_line(aes(y = pb_e_ma + tinygran_e_ma), color = "blue") +
+  facet_wrap(vars(oplottype, fplot), ncol = 1)
+
+
+```

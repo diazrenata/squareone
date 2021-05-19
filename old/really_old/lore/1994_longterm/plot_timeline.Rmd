@@ -1,0 +1,151 @@
+---
+title: "Treatments 1977-1991"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rats <- read.csv(here::here("lore", "1994_longterm", "1994_data_complete.csv"), stringsAsFactors = F)
+rat_totals_1977 <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars_1977.csv"), stringsAsFactors = F)
+rat_totals_1988 <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars_1988.csv"), stringsAsFactors = F)
+library(dplyr)
+library(ggplot2)
+
+```
+
+
+This is as best as RMD can reconstruct based on the text of Brown & Munger 1981 and Heske, Brown, and Mistry 1994, and the [PortalData plot treatments table](https://github.com/weecology/PortalData/blob/master/SiteandMethods/Portal_plot_treatments.csv).
+
+
+```{r}
+
+plots <- data.frame(plot = as.factor(c(1:24)),
+                    treatment = NA)
+
+plots$treatment[c(3,15,19,21)] <- "orig_exclosure"
+plots$treatment[c(8,11,12,14)] <- "orig_control"
+plots$treatment[c(6,13,18,20)] <- "second_exclosure"
+plots$treatment[c(2,4,17,22)] <- "second_control"
+
+plots <- plots %>%
+  mutate(seventies = ifelse(treatment == "orig_exclosure", "exclosure", "control"),
+         eighties = ifelse(grepl(treatment, pattern = "exclosure"), "exclosure", ifelse(is.na(treatment), NA, "control"))) %>%
+  filter(!is.na(treatment)) %>%
+  tidyr::pivot_longer(cols = c(seventies, eighties), names_to = "time_period") %>%
+  mutate(time_period = ordered(time_period, levels = c("seventies", "eighties"))) %>%
+  mutate(paper_period = ifelse(grepl(treatment, pattern = "orig"), "Brown and Munger 1981", "Heske et al 1994")) %>%
+  mutate(paper_period = ordered(paper_period, levels = c("Brown and Munger 1981", "Heske et al 1994")))
+
+timeperiods <- data.frame(year = c(1977:1991)) %>%
+  mutate(time_period = ifelse(year < 1988, "seventies", "eighties"))
+
+plots <- right_join(plots, timeperiods)
+
+ggplot(plots, aes(year, plot, color = value)) +
+  geom_line(size = 2) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  facet_wrap(vars(paper_period), ncol = 1)
+
+
+ggplot(plots, aes(year, plot, color = value, linetype = paper_period)) +
+  geom_line(size = 2) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) 
+```
+
+
+Looking ahead to 2015...
+
+
+```{r}
+plots_longer <- data.frame(plot = c(1:24),
+                           initial = NA,
+                           nineties = NA,
+                           aughts = NA,
+                           now = NA)
+
+plots_longer$initial <- c("ctrl", "ctrl", "excl", "ctrl", "spec", "ctrl", "rmvl", "ctrl", "ctrl", "rmvl", "ctrl", "ctrl", "ctrl", "ctrl", "excl", "rmvl", "ctrl", "ctrl", "excl", "ctrl", "excl", "ctrl", "rmvl", "spec")
+
+plots_longer$nineties <- c("spec", "ctrl", "excl", "ctrl", "rmvl", "excl", "rmvl", "ctrl", "spec", "rmvl", "ctrl", "ctrl", "excl", "ctrl", "excl", "rmvl", "ctrl", "excl", "excl", "excl", "excl", "ctrl", "rmvl", "rmvl")
+
+plots_longer$aughts <- c("ctrl", "ctrl", "excl", "ctrl", "rmvl", "excl", "rmvl", "ctrl", "ctrl", "rmvl", "ctrl", "ctrl", "excl", "ctrl", "excl", "rmvl", "ctrl", "excl", "excl", "excl", "excl", "ctrl", "rmvl", "rmvl")
+
+
+plots_longer$now <- c("rmvl", "excl", "excl", "ctrl", "ctrl", "ctrl", "ctrl", "excl", "rmvl", "rmvl", "ctrl", "rmvl", "ctrl", "ctrl", "excl", "rmvl", "ctrl", "ctrl", "excl", "excl", "excl", "excl", "rmvl", "ctrl")
+
+longer_timeperiods <- data.frame(year = 1977:2020, timeperiod = NA)
+
+longer_timeperiods <- longer_timeperiods %>%
+  mutate(timeperiod = ifelse(
+    year < 1988, "initial",
+    ifelse(year < 2005, "nineties",
+           ifelse(year < 2015, "aughts",
+           "now")
+  )
+  )
+  )
+
+plots_longer <- plots_longer %>%
+  tidyr::pivot_longer(-plot, names_to = "timeperiod", values_to = "treatment")
+
+plots_longer_years <- left_join(longer_timeperiods, plots_longer) %>%
+  mutate(plot = factor(plot))
+
+ggplot(plots_longer_years, aes(year, plot, color = treatment)) +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis_d(end = .8)
+
+paper_treatments <- data.frame(plot = c(1:24), brown_treatment = NA, heske_treatment = NA, chr_treatment = NA, diaz_treatment = NA) %>%
+  mutate(plot = as.factor(plot))
+
+paper_treatments$heske_treatment[c(2, 4, 17, 22)] <- "ctrl"
+
+paper_treatments$heske_treatment[c(6, 13, 18, 20)] <- "excl"
+
+paper_treatments$brown_treatment[c(8, 11, 12, 14)] <- "ctrl"
+
+paper_treatments$brown_treatment[c(3, 15, 19, 21)] <- "excl"
+
+paper_treatments$chr_treatment[c(4, 11, 14, 17)] <- "ctrl"
+
+paper_treatments$diaz_treatment[c(4, 11, 14, 17)] <- "ctrl"
+paper_treatments$diaz_treatment[c(2, 8, 22)] <- "excl"
+paper_treatments$diaz_treatment[c(3, 15, 19, 21)] <- "orig_excl"
+paper_treatments$diaz_treatment[c(20)] <- "heske_excl"
+
+plots_longer_years <- left_join(plots_longer_years, paper_treatments)
+
+
+ggplot(plots_longer_years, aes(year, plot, color = treatment)) +
+  geom_line(size = 2, alpha = .6) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) +
+  xlim(1976, 2022) +
+  geom_point(data = filter(plots_longer_years, !is.na(brown_treatment)), aes(1981, plot, shape = brown_treatment), color = "black", size = 3) +
+  geom_point(data = filter(plots_longer_years, !is.na(heske_treatment)), aes(1994, plot, shape = heske_treatment), color = "black", size = 3) +
+  geom_point(data = filter(plots_longer_years, !is.na(chr_treatment)), aes(2019, plot, shape = chr_treatment), color = "black", size = 3)+
+  geom_point(data = filter(plots_longer_years, !is.na(diaz_treatment)), aes(2021, plot, shape = diaz_treatment), color = "black", size = 3)
+```
+
+Given the structure here. I think the 2015 analysis comparisons would be 
+
+* Comparing new exclosures to (old) controls
+* Comparing old exclosures to (old) controls
+* Comparing new exclosures to old exclosures
+    * This is maybe the most interesting one. 
+    * It's a little different from Heske because Heske has 2 sets of control plots and by 2015 we just have one.
+    * Particularly interested in the **difference** between new excl-ctrl vs old excl-ctrl. In this instance this is going to be the same as comparing the two exclosures because the control plots are the same.
+    * Do new exclosures match old exclosures, and does this happen rapidly or after a time lag?
+        * Possible divergence in the plant communities over time on the plots
+        * Also curious about contributions from PB
+    * This comparison kind of encompasses what we learn from the first two. In particular, the magnitude of whatever response does or doesn't occur on the new exclosures is most meaningful *compared to* the magnitude of the difference we're seeing between old exclosures and controls. To the extent that that reflects a "baseline" capacity for the small granivore community at this point in time. Over or underperformance means the new exclosures are extra good/bad; matching means there isn't a strong habitat effect on net. 
+* Comparing new exclosures, pre-treatment, to (old) controls
+    * This is a check to confirm that, prior to the switch, the plots that end up being converted are not systematically different from the ones that stay controls.
+    
+
+Also, given the checkered history of the plots - the designations here are specifically **not** including various ant, plant, and seed treatments in the first few decades - I think it is **very important** to include the plot effect. 
+
+
+I had some thought that maybe it doesn't make sense to include treatment as an **ordered** factor because the controls differ. That's the case for the Heske analysis but not for 2015, so for now I will stick with the ordered factor.

@@ -1,0 +1,107 @@
+---
+title: "to 2015"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r}
+rats <- read.csv(here::here("lore", "2020_redux", "2020_data_complete.csv")) %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  filter(censusdate >= "2010-01-01")
+
+```
+
+```{r}
+
+rat_type_totals <- rats %>%
+  group_by(plot, period, censusdate, treatment, type) %>%
+  summarize(nind = dplyr::n()) %>%
+  ungroup()
+
+
+ggplot(filter(rat_type_totals, type == "small_granivore"), aes(censusdate, nind, group = plot, color = treatment)) +
+  geom_smooth(method = "loess", se = F) +
+  theme_bw() +
+  scale_color_viridis_d(end = .9)
+```
+
+
+```{r}
+
+rat_species_totals <- rats %>%
+  mutate(species = ifelse(is.na(species), "NA", species)) %>%
+  group_by(plot, period, censusdate, treatment, species) %>%
+  summarize(nind = dplyr::n()) %>%
+  ungroup() %>%
+  tidyr::pivot_wider(names_from = species, values_from = nind, values_fill = 0)
+
+
+ggplot((rat_species_totals), aes(censusdate, PP, group = plot, color = treatment)) +
+  geom_smooth(method = "loess", se = F) +
+  theme_bw() +
+  scale_color_viridis_d(end = .9)
+
+
+ggplot((rat_species_totals), aes(censusdate, PB, group = plot, color = treatment)) +
+  geom_smooth(method = "loess", se = F) +
+  theme_bw() +
+  scale_color_viridis_d(end = .9)
+
+
+```
+
+
+```{r pp gam}
+
+pp <- rat_species_totals %>%
+  select(period, plot, treatment, PP) %>%
+  rename(nind = PP) %>%
+  mutate(treatment = ordered(treatment, levels = c("control", "new_exclosure", "orig_exclosure")),
+         oplot = ordered(plot, levels = c(4,2,3,8,11,14,15,17,18,21,22)),
+         type = "small_granivore") %>%
+  as.data.frame()
+
+library(mgcv)
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+#pp.mod <- gam(nind ~  treatment + s(period, k = 70) + s(period, by = treatment, k = 70), family = "poisson", data  = pp)
+
+#pp.mod <- gam(nind ~  treatment + s(period, k = 20) + s(period, by = treatment, k = 20) + oplot + s(period, by = oplot), family = "poisson", data  = pp)
+
+pp.mod <- gam(nind ~  treatment + s(period, k = 20) + s(period, by = treatment, k = 20), family = "poisson", data  = pp)
+
+summary(pp.mod)
+
+gam.check(pp.mod)
+
+#pp.pdat <- make_pdat(pp, include_plot = T) 
+
+pp.pdat <- make_pdat(pp, include_plot = F) 
+
+pp.pred <- get_predicted_vals(pp.mod, pp.pdat)
+
+plot_fitted_pred(pp.pred)# + facet_wrap(vars(compare_var), scales = "free_y")
+
+ctrl_v_orig <- get_exclosure_diff(pp.mod, pp.pdat, comparison_level = 3)
+
+plot_exclosure_diff(ctrl_v_orig)
+
+pp.origdiff <- add_exclosure_diff(pp.pred, ctrl_v_orig)
+
+plot_fitted_pred(filter(pp.origdiff, treatment != "new_exclosure"))
+
+
+ctrl_v_new <- get_exclosure_diff(pp.mod, pp.pdat)
+
+plot_exclosure_diff(ctrl_v_new)
+
+pp.newdiff <- add_exclosure_diff(pp.pred, ctrl_v_new)
+
+plot_fitted_pred(filter(pp.newdiff, treatment != "orig_exclosure"))
+```

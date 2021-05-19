@@ -1,0 +1,145 @@
+---
+title: "New plots with 81 data"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rats <- read.csv(here::here("lore", "1981_competition", "1981_data_complete.csv"), stringsAsFactors = F)
+rat_totals <- read.csv(here::here("lore", "1981_competition", "1981_data_statevars.csv"), stringsAsFactors = F)
+library(dplyr)
+library(ggplot2)
+library(gratia)
+```
+
+```{r, echo = F}
+
+rat_totals <- rat_totals %>%
+  mutate(krat_treatment = ifelse(brown_trtmnt == "dipo_present", "control", "exclosure")) %>%
+  mutate(okrat_treatment = ordered(krat_treatment))
+
+ggplot(filter(rat_totals, type != "other"), aes(period, nind, color = krat_treatment)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_vline(xintercept = 3.5) +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8)
+
+```
+```{r}
+
+
+load_mgcv()
+
+
+sg <- filter(rat_totals, type == "small_granivore")
+
+n_gam <- gam(nind ~  okrat_treatment + s(period) + s(period, by = okrat_treatment), data = sg, method = "REML", family = "poisson")
+
+n_gam_fitted <- add_fitted(sg, n_gam, value = "fitted")
+
+ggplot(n_gam_fitted, aes(period, nind, color = krat_treatment)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  geom_line(aes(period, fitted, color = krat_treatment), size = 2) +
+  scale_color_viridis_d(end = .8)
+
+fitted_ci <- function(gam_obj, ndraws = 500, df, seed = 1977) {
+  
+  sampled_vals <- fitted_samples(gam_obj, n = ndraws, newdata = df, seed = seed)
+  
+  sampled_vals <- sampled_vals %>%
+    group_by(row) %>%
+    summarize(
+      meanfit = mean(fitted),
+      lowerfit = quantile(fitted, probs = .025),
+      upperfit= quantile(fitted, probs = .975)
+    ) %>%
+    ungroup()
+  
+  df <- df %>%
+    mutate(row = dplyr::row_number()) %>%
+    left_join(sampled_vals)
+  
+  df  
+}
+
+n_gam_ci_manual <- fitted_ci(n_gam, df= sg)
+
+
+ggplot(n_gam_ci_manual, aes(period, nind, color = krat_treatment)) +
+  geom_line() +
+  geom_line(aes(period, meanfit)) +
+  geom_ribbon(aes(period, ymin = lowerfit, ymax = upperfit, fill = krat_treatment), alpha = .5) +
+  theme_bw() +
+  theme(legend.position = "top") +
+  scale_color_viridis_d(end = .8) +
+  scale_fill_viridis_d(end = .8)
+
+```
+
+The `difference_smooths` function in `gratia` doesn't work for ordered smooths. Working from Gavin's post...
+
+```{r}
+
+plot(n_gam, shade = T, pages = 1, scale = 0, seWithMean = T)
+```
+
+This may have directly given you what you want - the difference between the control and the exclosure smooths is the plot on the right. 
+
+We can apparently interpret the signifiance relatively usually? 
+
+```{r}
+summary(n_gam)
+
+```
+I.e. the exclosure is significant. 
+
+We could use a not ordered factor to estimate the parametric effect if we want an easy-to-interpret mean?
+
+```{r}
+n_gam2 <- n_gam <- gam(nind ~  krat_treatment + s(period) + s(period, by = okrat_treatment), data = sg, method = "REML", family = "poisson")
+
+summary(n_gam2)
+```
+
+Can I get the difference smooth?
+
+```{r}
+pdat <- data.frame(period = seq(min(sg$period), max(sg$period), length.out = 100),
+                   krat_treatment = sg$krat_treatment[1],
+                   okrat_treatment= sg$okrat_treatment[1])
+
+
+xp <- predict(n_gam, newdata = pdat, type = 'lpmatrix')
+
+# cols for the difference smooth
+diff_cols <- grepl("okrat_treatmentexclosure", colnames(xp))
+
+X <- xp
+# Zero out the columns from the xp matrix that were for the other smooth
+
+X[, !diff_cols] <- 0
+
+# And zero out ones that aren't smooths (i.e. the parametric cols)
+X[ ,!grepl("^s\\(", colnames(xp))] <- 0
+
+# Use matrix multiplication of the X matrix (the modified Xp matrix) with the model coefficients from m to MULTIPLY Xp by the coefficients and SUM row wise in one step
+
+dsmooth <- X %*% coef(n_gam)
+
+plot(dsmooth)
+
+plot(n_gam, shade = T, pages = 1, scale = 0, seWithMean = T)
+
+# Might be able to do this directly using `mgcv::predict.gam`
+
+diff_direct <- predict(n_gam, newdata = pdat, type = "link", se.fit = T, terms = "s(period):okrat_treatmentexclosure")
+
+plot(diff_direct$fit)
+```
+
+These methods are all giving somewhat different results and I don't like that. 

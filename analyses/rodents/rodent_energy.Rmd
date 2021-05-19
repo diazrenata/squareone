@@ -1,0 +1,207 @@
+---
+title: "Rodent energy use results"
+output:
+  github_document:
+       df_print: kable
+       toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+library(soar)
+library(ggplot2)
+library(dplyr)
+library(mgcv)
+library(gratia)
+theme_set(theme_bw())
+
+library(nlme)
+library(emmeans)
+treatl <- get_treatment_means() %>%
+  remove_switch()
+
+pb <- get_pb(treatl)
+pb_nozero <- pb %>%
+  filter(as.numeric(oera) > 1)
+energy_ratio <- get_e_ratio(treatl)
+compensation <- get_compensation(treatl)
+
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+both_scale <- scale_color_viridis_d(begin = .1, end = .8)
+cc_scale <- scale_color_viridis_d(begin = .1, end = .1)
+ee_scale <- scale_color_viridis_d(begin = .8, end =.8)
+both_fscale <- scale_fill_viridis_d(begin = .1, end = .8)
+cc_fscale <- scale_fill_viridis_d(begin = .1, end = .1)
+ee_fscale <- scale_fill_viridis_d(begin = .8, end =.8)
+
+
+```
+
+
+# Overview of compositonal shift
+
+```{r}
+
+controls_composition <- treatl %>%
+  filter(plot_type == "CC") %>%
+  select(censusdate, oera, total_e, smgran_e, pb_e) %>%
+  mutate(pb = pb_e / total_e,
+         small_granivores = smgran_e / total_e,
+         all_rodents = total_e / total_e) %>%
+  select(censusdate, oera, pb, small_granivores) %>%
+  tidyr::pivot_longer(cols = c(pb, small_granivores), names_to = "rodents", values_to = "proportion") %>% 
+  group_by(rodents) %>%
+  mutate(proportion_ma = maopts(proportion)) %>%
+  ungroup()
+
+
+ggplot(controls_composition, aes(censusdate, proportion_ma, color = rodents)) +
+  geom_line() +
+  scale_color_viridis_d(option = "cividis", begin = .2, end = .8) +
+  era_grid +
+  ylim(0, 1) +
+  ggtitle("Rodent community composition - controls") +
+  ylab("Proportion of total E")
+```
+
+
+Small granivore (gold) and PB (blue) energy use as a proportion of the total energy use, all on control plots. The remainder is kangaroo rats.
+
+1. PB is now essentially absent on controls.
+1. Small granivores now account for a greater proportion of total energy use on control plots than prior to PB's establishment, even now that PB has declined.
+
+
+# Energy variables
+
+Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS.
+
+## PB over time
+
+
+PB energy use as a proportion of treatment-level totals on controls and exclosures.
+
+```{r}
+
+
+pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_nozero)
+
+pb_glm_treat_se <- est_glm_ilink(pb_glm_treat, pb_nozero)
+
+ggplot(filter(pb_glm_treat_se), aes(censusdate, est, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = pb_prop_ma)) +
+  ylab("PB % of energy use") +
+  ggtitle("PB ratio over time") +
+  theme(legend.position = "top") +
+  era_grid + both_scale + both_fscale
+```
+
+
+Means and SE for each time period, calculated from GLM fit:
+
+```{r}
+pb_glm_era_means <- (pb_glm_treat_se %>% select(oera, est, lower, upper, oplottype) %>% distinct())
+pb_glm_era_means
+```
+
+
+Significance of contrasts comparing each time period (within each treatment), from GLM:
+
+```{r}
+
+pb_glm_era_pairs <- (as.data.frame(pairs(emmeans(pb_glm_treat, specs = ~ oera | oplottype))) %>% select(contrast, oplottype, p.value))
+pb_glm_era_pairs
+
+```
+
+
+
+## Compensation
+
+
+Compensatory gains in energy use by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$. 
+
+```{r}
+
+
+comp_mean_gls <- gls(smgran_comp ~ era,  correlation = corCAR1(form = ~ period), data = compensation)
+
+comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ era)
+
+comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
+  right_join(compensation)
+
+ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  era_grid +
+  geom_line(aes(y = smgran_comp_ma)) +
+  ggtitle("Compensation") +
+  ylab("Smgran_trt - Smgran_ctrl / Dipo_ctrl") +
+  theme(legend.position = "top") +
+  ylim(-.25, 1) +
+  ee_scale + ee_fscale
+```
+
+
+Time period means + CL, from GLS fit with autocorrelation:
+
+```{r}
+out <- (comp_mean_pred %>% select(oera, emmean, lower.CL, upper.CL) %>% distinct())
+out 
+
+```
+
+
+Significance of time period comparisons, from GLS:
+
+```{r}
+
+out <- (as.data.frame(pairs(comp_mean_gls_emmeans)) %>% mutate(p.value = round(p.value, 3)))
+out
+```
+
+## Treatment:control total E ratio
+
+Total energy use on exclosures relative to total energy use on controls.
+
+```{r}
+
+totale_mean_gls <- gls(total_e_rat ~  era,  correlation = corCAR1(form = ~ period), data = energy_ratio)
+
+totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ era)
+
+
+totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
+  right_join(energy_ratio)
+  
+ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  geom_line(aes(y = total_e_rat_ma)) +
+  ggtitle("Total energy use on exclosures relative to controls") +
+  ylab("Exclosure energy use / Control energy use") +
+  theme(legend.position = "none") +
+  ylim(0, 2) +
+  xlab("Date") +
+  era_grid + ee_scale + ee_fscale
+```
+
+
+Time period means and CL from GLS fit with autocorrelation:
+
+
+```{r}
+totale_mean_gls_ests <- (totale_mean_pred %>% select(oera, oplottype, emmean, lower.CL, upper.CL) %>% distinct())
+totale_mean_gls_ests
+```
+
+Significance of time period comparisons:
+
+```{r}
+
+totale_mean_gls_pairs <- (as.data.frame(pairs(totale_mean_gls_emmeans)) %>% select(contrast, p.value) %>%
+  mutate(p.value= round(p.value, 3)))
+totale_mean_gls_pairs
+```

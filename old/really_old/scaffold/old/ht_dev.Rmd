@@ -1,0 +1,359 @@
+---
+title: "Scaffolding analysis with plot switch data"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.width =6, fig.height =3)
+library(dplyr)
+library(ggplot2)
+```
+
+# Data
+
+This document uses the data from the plots studied in Christensen et al 2019 ProcB. We will use some of the same control plots for the actual analysis, but both sets of treatment plots will be different. (Ch uses exclosures that get turned into controls and removals that get turned into controls. We will look at long term exclosures and controls that get turned into exclosures).
+
+This gives us space to do some analytical development without wondering if we're seeing the actual effects. We have the same basic structures we will have in the actual data:
+
+- Three treatment types - controls and two flavors of manipulation
+- Changes to the manipulations occurring in 2015
+- Probably similar sitewide dynamics in terms of fluctuations in sitewide abundance, major environmental events, etc. 
+- Probably similar idiosyncracies in the data, e.g. variability between plots; autocorrelation; etc.
+
+```{r}
+
+rats <- read.csv(here::here("lore", "2020_redux", "christensen_plots.csv")) %>%
+  mutate(plot = factor(plot),
+         treatment = factor(treatment)) %>%
+  filter(!is.na(species))
+
+```
+
+```{r}
+
+rats_types_totals <- rats %>%
+  #mutate(plot = as.ordered(plot),
+ #        treatment = as.ordered(treatment)) %>%
+  select(period, treatment, type, plot, energy) %>%
+  group_by(period, treatment, type, plot) %>%
+  summarize(nind = dplyr::n(),
+            totale = sum(energy))  %>%
+  ungroup() 
+
+
+all_types <- expand.grid(period = unique(rats$period), plot = unique(rats$plot), type = unique(rats$type)) %>%
+  left_join(distinct(select(rats, plot, treatment)))
+
+rats_types_totals <- left_join(all_types, rats_types_totals)%>%
+  mutate(nind = ifelse(is.na(nind), 0, nind),
+         totale = ifelse(is.na(totale), 0, totale))
+  
+
+rats_totals <- rats %>% 
+  mutate(plot = factor(plot),
+         treatment = factor(treatment)) %>%
+  select(period, treatment, plot, energy, censusdate) %>%
+  group_by(period, treatment, plot, censusdate) %>%
+  summarize(nind = dplyr::n(),
+            totale = sum(energy)) %>%
+  ungroup() 
+
+
+all_totals <- expand.grid(period = unique(rats$period), plot = unique(rats$plot)) %>%
+  left_join(distinct(select(rats, period, censusdate))) %>%
+  left_join(distinct(select(rats, plot, treatment)))
+
+rats_totals <- left_join(all_totals, rats_totals) %>%
+  mutate(nind = ifelse(is.na(nind), 0, nind),
+         totale = ifelse(is.na(totale), 0, totale))
+
+major_changes <- c(118, 216, 356, 434) # beginning of Thibault data, Bailey's arrival, 2010 (changepoint), 2015 (treatments)
+
+```
+
+Here is the raw data (plotted as annual means per plot for visualization):
+
+```{r}
+
+rats_annual_totals <- rats_totals %>%
+  mutate(censusdate = as.Date(censusdate)) %>%
+  mutate(censusyear = as.numeric(format.Date(censusdate, "%Y"))) %>%
+  group_by(censusyear, treatment, plot) %>%
+  summarize(totale = sum(totale),
+            nind = sum(nind),
+            nsamples = length(unique(period))) %>%
+  ungroup() %>%
+  mutate(meane = totale/nsamples,
+         meanind = nind/nsamples) %>%
+  mutate(era = NA) %>%
+  mutate(era = ifelse(
+    censusyear <= 1988, "a_pre_th",
+    ifelse(censusyear <= 1996, "b_pre_ba",
+           ifelse(censusyear <= 2010, "c_pre_cpt",
+                  ifelse(censusyear <= 2015, "d_pre_switch", "e_post-switch"))))) %>%
+  mutate(oera = as.ordered(era))
+
+ggplot(filter(rats_annual_totals), aes(censusyear, meanind, color = treatment, group = plot)) +
+ geom_line() +  theme_bw() +
+  scale_color_viridis_d(end = .8)  +ggtitle("Number of individuals") +
+  theme(legend.position = "top") +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1)
+  
+
+ggplot(filter(rats_annual_totals), aes(censusyear, meane, color = treatment, group = plot)) +
+ geom_line() +  theme_bw() +
+  scale_color_viridis_d(end = .8)  +ggtitle("Energy use")+
+  theme(legend.position = "top")+
+  facet_wrap(vars(era), scales = "free_x", nrow = 1)
+
+
+
+```
+We will be working a lot with a GAM.
+
+We fit a GAM to `energy ~ treatment + s(period) + s(period, by = treatment)` with a Tweedie link. We include all treatments and all time in this GAM, because we'll use it repeatedly. Treatment is ordered.
+
+```{r}
+
+
+energy <- filter(rats_totals) %>%
+  mutate(oplot = ordered(plot),
+         otreatment = as.ordered(treatment),
+         type = "all") %>%
+  as.data.frame() %>%
+  mutate(era = NA) %>%
+  mutate(era = ifelse(
+    period <= 118, "a_pre_th",
+    ifelse(period <= 216, "b_pre_ba",
+           ifelse(period <= 356, "c_pre_cpt",
+                  ifelse(period <= 434, "d_pre_switch", "e_post-switch"))))) %>%
+  mutate(oera = as.ordered(era))
+
+
+library(mgcv)
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+#e.mod <- gam(totale ~  otreatment + s(period, k = 100) + s(period, by = otreatment, k = 100), family = "tw", data  = energy)
+e.mod <- gam(totale ~  otreatment + s(period, k = 20) + s(period, by = otreatment, k = 20), family = "tw", data  = energy)
+# This k is too low but it takes forever to render with 100
+#summary(e.mod)
+
+#gam.check(e.mod)
+
+e.pdat <- make_pdat(energy, include_plot = F, comparison_variable = "otreatment")
+
+e.pred <- get_predicted_vals(e.mod, e.pdat)  %>%
+  mutate(era = NA) %>%
+  mutate(era = ifelse(
+    period <= 118, "a_pre_th",
+    ifelse(period <= 216, "b_pre_ba",
+           ifelse(period <= 356, "c_pre_cpt",
+                  ifelse(period <= 434, "d_pre_switch", "e_post-switch"))))) %>%
+  mutate(oera = as.ordered(era))
+
+
+```
+
+Here is the fitted values from that GAM:
+
+```{r}
+
+plot_fitted_pred(filter(e.pred), comparison_variable = "otreatment") + ylab("Energy use") +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1)
+
+```
+
+
+# 1. Does the energetic compensation persist over time?
+
+## GAM
+
+For this uestion, we are interested in comparing CC to EC (for the sake of argument). In this context the GAM is useful for visualization, but, because the initial compensation effect wasn't 100%, we're not surprised that the difference in the smooths != 0 for large sections. 
+
+```{r}
+
+cc_ec <- get_exclosure_diff(e.mod, e.pdat, comparison_variable = "otreatment") %>%
+  left_join(select(e.pred, period, era))
+
+plot_exclosure_diff(filter(cc_ec)) +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1)
+
+e.newdiff <- add_exclosure_diff(e.pred, cc_ec)
+
+plot_fitted_pred(filter(e.newdiff, otreatment != "XC"), comparison_variable = "otreatment") + ylab("Energy use") +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) +
+  scale_color_viridis_d(end = .4) +
+  scale_fill_viridis_d(end = .4)
+
+```
+The smooths do indeed diverge prior to Bailey's establishment, get close and even overlap temporarily for the Thibault/Ernest papers era. Here, they diverge following, to a somewhat lesser but still appreciable degree! They converge following the switch, which is expected because the switch is ex -> control; this is documented in Ch.
+
+Possible behaviors we could see in the actual data: diverging and continuing to diverge post-treatment (we don't expect the treatment to change longterm exclosures that...stay exclosures); moving back to convergence at some point. 
+
+## Comparing eras
+
+We would like a more uantitative estimate of how the difference in energy use between controls and exclosures has changed over time. Because control and exclosure plots obviously covary over time to some degree, and we are interested in how they **compare** rather than the overall variation, we express this difference as the ratio of the mean total energy on the exclosure plots over the mean total energy on the control plots.
+
+```{r}
+
+energy_ratio <- energy %>%
+  group_by(period, treatment, type, era, oera, otreatment) %>%
+  summarize(totale = sum(totale),
+            nplots = length(unique(plot))) %>%
+  ungroup() %>%
+  mutate(meane = totale/nplots) %>%
+  tidyr::pivot_wider(id_cols = c(period, type, era, oera), names_from = treatment, values_from = meane) %>%
+  mutate(ECr = EC/ CC,
+         XCr = XC/CC) %>%
+  dplyr::select(period, era, ECr, XCr) %>%
+  tidyr::pivot_longer(cols = c(ECr, XCr), names_to = "ref", values_to = "ratio") %>%
+  group_by(period,  ref) %>%
+  mutate(mean_ratio = mean(ratio)) %>%
+  ungroup() %>%
+  mutate(ratio = ifelse(ratio == 0, 0.0000001, ratio)) %>%
+  mutate(era = as.factor(era), ref = as.factor(ref))
+
+ggplot(energy_ratio, aes(period, ratio, color = ref)) +
+  geom_line() + 
+  #geom_line(aes(period, mean_ratio)) + 
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) + 
+  theme_bw() +
+  scale_color_viridis_d(begin = .4, end = .8) +
+  geom_hline(yintercept = 1) +
+  theme(legend.position = "top") +
+  ylim(0, 2.5) # this removes a couple points that stretch out the scale and make it hard to see. DO NOT DO THIS WITH ACTUAL DATA YOU WANT TO INTERPRET.
+
+
+```
+
+RMD is currently testing this with a GAM with a Gamma link, fit as `gam(ratio ~ era * treatment)`. That is, are the means different per treatment and era. This does not address temporal autocorrelation. Nor does it capture possible plot-level variation. There may be a way to get the autocorrelation via lme.
+
+```{r}
+e_glm <- glm(ratio ~ era * ref, family = Gamma, data = energy_ratio)
+
+library(lsmeans)
+
+tt = lsmeans(e_glm, specs = ~ era | ref)
+dd = pairs((tt))
+ff = summary(dd)
+dd_regrid = pairs(regrid(tt))
+ff_regrid = summary(dd_regrid)
+e_glm_pred <- predict(e_glm, se.fit = T)
+
+ratio_pred <- energy_ratio %>%
+  mutate(linkfit = e_glm_pred$fit,
+         linkupper = e_glm_pred$se.fit + e_glm_pred$fit,
+         linklower = e_glm_pred$fit -e_glm_pred$se.fit) %>%
+  mutate(invlinkfit = 1/linkfit,
+         invlinklower = 1/linklower,
+         invlinkupper = 1/linkupper)
+
+ggplot(filter(ratio_pred), aes(period, ratio, color = ref, fill = ref)) +
+  geom_line() + 
+  geom_line(aes(period, invlinkfit)) +
+  geom_ribbon(aes(ymin = invlinklower, ymax = invlinkupper), alpha = .5) +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) + 
+  theme_bw() +
+  scale_color_viridis_d(begin = .4, end = .8) +
+    scale_fill_viridis_d(begin = .4, end = .8) +
+  geom_hline(yintercept = 1, linetype = 3) +
+  theme(legend.position = "top") +
+  ylim(0, 2.5) 
+
+
+filter(ff, contrast %in% c("c_pre_cpt - d_pre_switch", "b_pre_ba - c_pre_cpt", "c_pre_cpt - (e_post-switch)", "d_pre_switch - (e_post-switch)"), ref == "ECr")
+
+filter(ff_regrid, contrast %in% c("c_pre_cpt - d_pre_switch", "b_pre_ba - c_pre_cpt", "c_pre_cpt - (e_post-switch)", "d_pre_switch - (e_post-switch)"), ref == "ECr")
+
+
+ratio_pred %>%
+  select(era, ref, invlinkfit, invlinklower, invlinkupper) %>%
+  distinct() %>%
+  filter(ref == "ECr")
+
+
+```
+
+### lme
+
+```{r}
+library(nlme)
+
+e_nlme <- lme(totale ~ era * treatment, random = ~ 1|plot, data = energy)
+
+anova(e_nlme)
+
+
+ac_lm <- lme(ratio ~  era * ref, random = ~1|ref,data =energy_ratio, correlation = corAR1( form = ~period))
+
+no_ac_lm <- lme(ratio ~ era * ref, random = ~1|ref, data =energy_ratio)
+
+
+tt = lsmeans(ac_lm, specs = ~ era | ref)
+dd = pairs((tt))
+ff = summary(dd)
+
+tt_no_ac = lsmeans(no_ac_lm, specs = ~ era | ref)
+dd_no_ac= pairs(tt_no_ac)
+
+ff
+
+ff_no_ac<- summary(dd_no_ac)
+
+ac_lm2 <- lme(ratio ~ era * ref, random = ~1|era/ref, data = energy_ratio, correlation = corAR1(form = ~period))
+
+tt2 <- lsmeans(ac_lm2, specs = ~ ref | era)
+dd2 <- pairs(tt2)
+ff2 <- summary(dd2)
+
+
+ac_ests <- predict(ac_lm)
+
+preds_lm <- energy_ratio %>%
+  mutate(pred = ac_ests)
+
+
+ggplot(filter(preds_lm), aes(period, ratio, color = ref, fill = ref)) +
+ geom_line() + 
+  geom_line(aes(period, pred), color = "black") +
+  facet_wrap(vars(era, ref), scales = "free_x", nrow = 2) + 
+  theme_bw() +
+  scale_color_viridis_d(begin = .4, end = .8) +
+    scale_fill_viridis_d(begin = .4, end = .8) +
+  geom_hline(yintercept = 1, linetype = 3) +
+  theme(legend.position = "top") +
+  ylim(0, 2.5)
+
+
+gls_e <- gls(ratio ~ ref * era, data = energy_ratio, correlation = corAR1(form = ~period | ref))
+
+
+tt2 <- lsmeans(gls_e, specs = ~ ref | era)
+dd2 <- pairs(tt2)
+ff2 <- summary(dd2)
+
+tt3 <- lsmeans(gls_e, specs = ~ era | ref)
+dd3 <- pairs(tt3)
+ff3 <- summary(dd3)
+
+
+ac_ests <- predict(gls_e)
+
+preds_lm <- energy_ratio %>%
+  mutate(pred = ac_ests)
+
+
+ggplot(filter(preds_lm), aes(period, ratio, color = ref, fill = ref)) +
+ geom_line() + 
+  geom_line(aes(period, pred)) +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) + 
+  theme_bw() +
+  scale_color_viridis_d(begin = .4, end = .8) +
+    scale_fill_viridis_d(begin = .4, end = .8) +
+  geom_hline(yintercept = 1, linetype = 3) +
+  theme(legend.position = "top") +
+  ylim(0, 2.5)
+
+
+```

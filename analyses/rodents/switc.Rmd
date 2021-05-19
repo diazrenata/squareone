@@ -1,0 +1,102 @@
+---
+title: "hold this loosely..."
+output:
+  github_document:
+       df_print: kable
+       toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+library(soar)
+library(ggplot2)
+library(dplyr)
+library(mgcv)
+library(gratia)
+theme_set(theme_bw())
+
+library(nlme)
+library(emmeans)
+
+```
+
+
+```{r}
+
+treatl <- get_treatment_means() %>%
+  mutate(fplottype = as.factor(plot_type),
+         pb_prop = pb_e / total_e) %>%
+  group_by(oplottype) %>%
+  mutate(pb_prop_ma = maopts(pb_prop)) %>%
+  ungroup()
+
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+
+
+pb <- filter(treatl, as.numeric(oera) != 1) #%>%
+ # filter(paste0(oplottype, oera) != "CCd_post-switch") 
+
+
+just_controls <- filter(treatl, oplottype == "CC")
+
+zero_to_one <- function(val) {
+  if(val == 0) {
+    return(1)
+  }
+  return(val)
+}
+# 
+# e_ratios <- treatl %>%
+#   filter(oplottype != "CC") %>%
+#   select(period, censusdate, era, oera, plot_type, oplottype, total_e, smgran_e, tinygran_e, fplottype) %>%
+#   left_join(select(just_controls, period, total_e, smgran_e, tinygran_e) %>% group_by_all() %>% mutate_at(c("smgran_e", "tinygran_e"), .funs = zero_to_one) %>% ungroup() %>% rename(total_e_c = total_e, smgran_e_c = smgran_e, tinygran_e_c = tinygran_e)) %>%
+#   mutate(total_e_rat = total_e / total_e_c,
+#          smgran_e_rat = smgran_e / smgran_e_c,
+#          tinygran_e_rat = tinygran_e / tinygran_e_c) %>%
+#   
+#   group_by(oplottype) %>%
+#   mutate(total_e_rat_ma = maopts(total_e_rat),
+#          smgran_e_rat_ma = maopts(smgran_e_rat),
+#          tinygran_e_rat_ma = maopts(tinygran_e_rat)) %>%
+#   ungroup()
+
+e_ratios <- treatl %>%
+  filter(oplottype != "CC") %>%
+  select(period, censusdate, era, oera, plot_type, oplottype, total_e, smgran_e, tinygran_e, fplottype) %>%
+  left_join(select(just_controls, period, total_e, smgran_e, tinygran_e) %>%  rename(total_e_c = total_e, smgran_e_c = smgran_e, tinygran_e_c = tinygran_e)) %>%
+  mutate(total_e_rat = total_e / total_e_c,
+         smgran_e_rat = smgran_e / smgran_e_c,
+         tinygran_e_rat = tinygran_e / tinygran_e_c) %>%
+  mutate(total_e_lograt = log(total_e_rat)) %>%
+  group_by_all() %>%
+  mutate(lograt_interp = is.infinite(total_e_lograt),
+    total_e_lograt = ifelse(is.infinite(total_e_lograt), log((1 + total_e) / total_e_c), total_e_lograt)) %>%
+  ungroup() %>%
+  group_by(oplottype) %>%
+  mutate(total_e_rat_ma = maopts(total_e_rat),
+         total_e_lograt_ma = maopts(total_e_lograt),
+         smgran_e_rat_ma = maopts(smgran_e_rat),
+         tinygran_e_rat_ma = maopts(tinygran_e_rat)) %>%
+  ungroup()
+compensation <- treatl %>%
+  filter(oplottype != "CC") %>%
+  select(period, censusdate, era, oera, plot_type, oplottype, smgran_e, fplottype) %>%
+  left_join(select(just_controls, period, dipo_e, smgran_e) %>% rename(dipo_e_c = dipo_e, smgran_e_c = smgran_e)) %>%
+  mutate(smgran_increase = smgran_e - smgran_e_c) %>%
+  mutate(smgran_comp = smgran_increase / dipo_e_c)%>%
+  group_by(oplottype) %>%
+  mutate(smgran_comp_ma = maopts(smgran_comp)) %>%
+  ungroup()
+```
+
+```{r}
+
+ggplot(filter(compensation, as.numeric(oera) > 2), aes(censusdate, smgran_comp_ma, color = oplottype)) +
+  geom_line() +
+  era_grid
+
+ggplot(filter(treatl, as.numeric(oera) > 2), aes(censusdate, smgran_e_ma, color = oplottype)) +
+  geom_line() + 
+  era_grid
+
+```

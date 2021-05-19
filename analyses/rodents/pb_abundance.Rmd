@@ -1,0 +1,145 @@
+---
+title: "PB"
+author: Renata Diaz
+date: "`r Sys.Date()`"
+output: 
+    github_document:
+       df_print: kable
+       toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.dim =c(8, 4))
+library(soar)
+library(ggplot2)
+library(dplyr)
+
+theme_set(theme_bw())
+```
+
+```{r}
+plot_ps <- get_plot_totals(use_pre_switch = F, currency = "abundance")
+
+treat_ps <- get_treatment_means(use_pre_switch = F, currency = "abundance") 
+```
+
+```{r}
+
+ggplot(filter(plot_ps), aes(censusdate, pb_n_ma,group = plot, color = oplottype)) +
+  geom_line() +
+  facet_wrap(vars(oplottype)) +
+  ggtitle("PB - all time")
+
+ggplot(filter(plot_ps, as.numeric(oera) > 2), aes(censusdate, pb_n_ma,group = plot, color = oplottype)) +
+  geom_line() +
+  facet_wrap(vars(oplottype)) +
+  ggtitle("PB - since 2010ish")
+
+
+
+ggplot(filter(plot_ps), aes(censusdate, pb_n_ma/total_n_ma,group = plot, color = oplottype)) +
+  geom_line() +
+  facet_wrap(vars(oplottype)) +
+  ggtitle("PB as percent of plot abundance - all time") +
+  geom_line(data = filter(treat_ps), aes(censusdate, pb_n_ma/total_n_ma, color = oplottype), inherit.aes = F, size = 2)
+
+ggplot(filter(plot_ps, as.numeric(oera) > 2), aes(censusdate, pb_n_ma / total_n_ma,group = plot, color = oplottype)) +
+  geom_line() +
+  facet_wrap(vars(oplottype)) +
+  ggtitle("PB as percent of plot abundance - since 2010ish") +
+  geom_line(data = filter(treat_ps, as.numeric(oera) > 2), aes(censusdate, pb_n_ma/total_n_ma, color = oplottype), inherit.aes = F, size = 2)
+```
+
+### models
+
+```{r}
+
+library(mgcv)
+library(gratia)
+library(emmeans)
+library(lme4)
+
+plot_ps_pb <- plot_ps %>%
+  filter(as.numeric(oera) > 1) %>%
+  group_by_all() %>%
+  mutate(pb_n = ifelse(all(oplottype == "CC", as.numeric(oera) == 4), NA, pb_n)) %>%
+  ungroup() %>%
+  filter(!is.na(pb_n))#%>%
+  #filter(oplottype != "CC")
+
+abund_int_gam <- gam(pb_n ~ oplottype * oera + s(fplot, bs = "re"), data = plot_ps_pb, family = poisson)
+
+abund_int_gam_fitted <- plot_ps_pb %>%
+  add_fitted(abund_int_gam, exclude = "s(fplot)")
+
+ggplot(abund_int_gam_fitted, aes(censusdate, .value, color = oplottype)) +
+  geom_line() #+
+  #geom_line(data = treat_ps, aes(y = pb_n)) 
+
+plot(regrid(emmeans(abund_int_gam, specs = ~ oera | oplottype)))
+
+pairs((emmeans(abund_int_gam, specs = ~ oera | oplottype)))
+
+abund_int_gam_fitted %>%
+  select(oplottype, oera, .value) %>%
+  mutate(.value = round(.value, digits = 2)) %>%
+  distinct()
+
+treat_ps %>%
+  group_by(oplottype, oera) %>%
+  summarize(mean_pb_n = mean(pb_n)) %>%
+  ungroup()
+
+
+pois_glm <- glm(pb_n ~ oera * oplottype, family = poisson, data= plot_ps_pb)
+
+summary(pois_glm)
+
+ilink <- pois_glm$family$linkinv
+
+pois_glm_se <- predict(pois_glm, type = "link", se.fit = T, newdata = plot_ps_pb) %>%
+  as.data.frame() %>%
+  mutate(est = ilink(fit),
+         lower = ilink(fit - 2*se.fit),
+         upper = ilink(fit + 2*se.fit),
+         period = plot_ps_pb$period,
+         oplottype = plot_ps_pb$oplottype,
+         actual = plot_ps_pb$pb_n)
+
+
+ggplot(filter(pois_glm_se, !is.na(actual)), aes(period, est, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3)
+
+ggplot(filter(pois_glm_se, !is.na(actual)), aes(period, est, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  facet_wrap(vars(oplottype))
+
+
+
+pairs(emmeans(pois_glm, specs = ~ oera | oplottype))
+
+pois_glm_se <- pois_glm_se %>%
+  right_join(select(plot_ps_pb, oera, oplottype, period))
+
+
+pois_glm_se %>%
+  select(oera, oplottype, est, lower, upper) %>%
+  distinct()
+
+```
+
+
+This was to explore how many **individuals** of PB there are in the different time periods. 
+
+- PB has always been less abundant on controls than on treatment plots. (Although it has always been more abundant on the CE controls than on the CC controls).
+- Since 2010 it is essentially absent on control plots.
+- Absolute abundance on treatment plots declined from around ~3-4 individuals per plot to ~.5-1 individuals per plot. 
+
+
+Note that there have also been fluctuations in total abundance of all species over time. I generally think that that compositional change is addressed by the energy analyses more appropriately (for the purposes of this project at the moment) than it would be by repeating that exercise with number of individuals here.  
+
+In fitting GAMs and GLMs here, I'm using Poisson link. These plots and results come from, removing a) all data prior to 1996, because they're all 0s and b) control data after 2015, because they're all 0s. Leaving them in blows up the CI for the controls. I tried a quasipoisson link and that didn't fix it. I got the same qualitative results just excluding controls wholesale.
+
+You might be able to fit a GLMM with a random effect for plot. I don't know that it will change the outcome that much; the models here are mostly to estimate the ballpark means, and none of the effects we are interested in here are ambiguous. 

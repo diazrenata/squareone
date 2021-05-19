@@ -1,0 +1,53 @@
+---
+title: "PB"
+author: Renata Diaz
+date: "`r Sys.Date()`"
+output: 
+    github_document:
+       df_print: kable
+       toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.dim =c(8, 4))
+library(soar)
+library(ggplot2)
+library(dplyr)
+
+theme_set(theme_bw())
+```
+
+```{r}
+
+treat_ps <- get_treatment_means(use_pre_switch = F) 
+```
+
+```{r}
+
+sgs_cs <- treat_ps %>% 
+  select(censusdate, period, oplottype, plot_type, oera, era, pb_e_ma, tinygran_e_ma, total_e_ma) %>%
+  tidyr::pivot_longer(c('pb_e_ma', 'tinygran_e_ma', 'total_e_ma'), names_to ="rod", values_to = "ma")
+
+ggplot(filter(sgs_cs, as.numeric(oera) > 2), aes(censusdate, ma, color = rod)) +
+  geom_line() +
+  facet_wrap(vars(oplottype))
+
+
+ggplot(filter(treat_ps, as.numeric(oera) > 2, oplottype %in% c("EE", "CE")), aes(censusdate, tinygran_e_ma / smgran_e_ma, color = oplottype)) +
+  geom_line() 
+
+
+
+smgran_comp <- treat_ps %>%
+  mutate(pb_of_sg = pb_e / smgran_e,
+         tg_of_sg = tinygran_e / smgran_e) %>%
+  group_by(oplottype) %>%
+  mutate(pb_of_sg_ma = maopts(pb_of_sg),
+         tg_of_sg_ma = maopts(tg_of_sg)) %>%
+  ungroup()
+
+
+ggplot(filter(smgran_comp, oplottype %in% c("CE", "EE")), aes(censusdate,tg_of_sg_ma, color = oplottype)) +
+  geom_line() #  facet_wrap(vars(oplottype))
+
+```

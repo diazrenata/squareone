@@ -1,0 +1,249 @@
+Replicating GAMS from 2019 paper
+================
+
+Using the functions and scripts exactly as Erica wrote them.
+
+``` r
+library(dplyr)
+```
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
+
+``` r
+library(mgcv)
+```
+
+    ## Loading required package: nlme
+
+    ## 
+    ## Attaching package: 'nlme'
+
+    ## The following object is masked from 'package:dplyr':
+    ## 
+    ##     collapse
+
+    ## This is mgcv 1.8-33. For overview type 'help("mgcv-package")'.
+
+``` r
+library(ggplot2)
+library(cowplot)
+
+source(here::here("lore", "2019_switch", "FinalAnalysis", 'analysis_functions.R'))
+theme_set(theme_bw())
+#cbPalette <- c( "#e19c02","#999999", "#56B4E9", "#0072B2", "#D55E00", "#F0E442", "#009E73", "#CC79A7")
+cbbPalette <- c("#000000", "#009E73", "#e79f00", "#9ad0f3", "#0072B2", "#D55E00", 
+                "#CC79A7", "#F0E442")
+
+
+# ==========================================================================================
+# Number of dipodomys
+dipo <- read.csv(here::here("lore", "2019_switch", "Data", "Dipo_counts.csv"))
+dipo$censusdate <-as.Date(dipo$censusdate)
+
+# create variables needed for GAM
+dipo <- dplyr::mutate(dipo,
+                 oTreatment = ordered(treatment, levels = c('CC','EC','XC')),
+                 oPlot      = ordered(plot),
+                 plot       = factor(plot))
+
+# GAM model --- includes plot-specific smooths
+dipo.gam <- gam(n ~ oPlot + oTreatment + s(numericdate, k = 20) +
+                  s(numericdate, by = oTreatment, k = 15) +
+                  s(numericdate, by = oPlot),
+                data = dipo, method = 'REML', family = poisson, select = TRUE, control = gam.control(nthreads = 4))
+
+# Look at the treatment effect smooths on count scale. 
+# terms to exclude; must be named exactly as printed in `summary(model)` output
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', c(5,6,7,11,13,14,17,18,24)))
+treatPred.dipo <- predict_treat_effect(dipo, np = 500, MODEL=dipo.gam, exVars.d)
+
+# plot GAM fit and data
+d.plt <- plot_gam_prediction(treatPred.dipo, dipo, Palette=cbbPalette[c(6,1,4)], ylab='Count')
+d.plt
+```
+
+![](replication_christensenfxns_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+
+``` r
+#ggsave('Figures/dipo-treatment-effects.png', d.plt,width=6,height=2.5)
+
+# Compute pairwise treatment diffs if we leave *in* the parametric Treatment terms
+d1 <- osmooth_diff(dipo.gam, treatPred.dipo, "numericdate", "CC", "EC", var = "oTreatment", removePara = FALSE)
+d2 <- osmooth_diff(dipo.gam, treatPred.dipo, "numericdate", "CC", "XC", var = "oTreatment", removePara = FALSE)
+diffs.dipo <- rbind(d1, d2)
+
+## difference of smooths
+diffPlt <- plot_smooth_diff(diffs.dipo, Palette=cbbPalette[c(1,4)])
+diffPlt
+```
+
+![](replication_christensenfxns_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->
+
+``` r
+#ggsave('dipo-difference.png', diffPlt,width=6,height=2.5)
+
+## Cowplot grid
+dipo_plot = plot_grid(d.plt, diffPlt, labels = "AUTO", ncol = 1, align = 'v')
+dipo_plot
+```
+
+![](replication_christensenfxns_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->
+
+``` r
+#ggsave('Figures/dipo-gam-plots.pdf', dipo_plot, width=4, height = 4.2, dpi=300)
+#ggsave('Figures/dipo-gam-plots.tiff', dipo_plot, width=4, height = 4.2, dpi=300)
+# =========================================================================================
+# number of small granivores
+
+smgran <- read.csv(here::here("lore", "2019_switch", "Data", "SmallGranivores.csv"))
+smgran$censusdate <- as.Date(smgran$censusdate)
+
+smgran <- mutate(smgran,
+                 oTreatment = ordered(treatment, levels = c('CC','EC','XC')),
+                 oPlot      = ordered(plot),
+                 plot       = factor(plot))
+
+# GAM model - plot and treatment smooths
+smgran.gam <- gam(n ~ oPlot + oTreatment + s(numericdate, k = 20) +
+                    s(numericdate, by = oTreatment, k = 15) +
+                    s(numericdate, by = oPlot),
+                  data = smgran, method = 'REML', family = poisson, select = TRUE, control = gam.control(nthreads = 4))
+
+# plot treatment effects
+# terms to exclude; must be named exactly as printed in `summary(model)` output
+exVars.sg <- c('oPlot', paste0('s(numericdate):oPlot', c(5,6,7,11,13,14,17,18,24)))
+treatPred.sg <- predict_treat_effect(smgran, np = 500, MODEL=smgran.gam, exVars.sg)
+
+sg.plt <- plot_gam_prediction(treatPred.sg, smgran, Palette=cbbPalette[c(6,1,4)], ylab='Count')
+sg.plt
+```
+
+![](replication_christensenfxns_files/figure-gfm/unnamed-chunk-1-4.png)<!-- -->
+
+``` r
+#ggsave('smallgran-treatment-effects.png', sg.plt,width=6,height=2.5)
+
+# difference of smooths
+d1 <- osmooth_diff(smgran.gam, treatPred.sg, "numericdate", "CC", "EC", var = "oTreatment", removePara = FALSE)
+d2 <- osmooth_diff(smgran.gam, treatPred.sg, "numericdate", "CC", "XC", var = "oTreatment", removePara = FALSE)
+diffs.sg <- rbind(d1,d2)
+sg.diffPlt <- plot_smooth_diff(diffs.sg,Palette=cbbPalette[c(1,4)])
+sg.diffPlt
+```
+
+![](replication_christensenfxns_files/figure-gfm/unnamed-chunk-1-5.png)<!-- -->
+
+``` r
+#ggsave('smallgran-difference.png', sg.diffPlt,width=6,height=2.5)
+
+## Cowplot grid
+sg_plot = plot_grid(sg.plt, sg.diffPlt, labels = "AUTO", ncol = 1, align = 'v')
+sg_plot
+```
+
+![](replication_christensenfxns_files/figure-gfm/unnamed-chunk-1-6.png)<!-- -->
+
+``` r
+#ggsave('Figures/smallgran-gam-plots.pdf', sg_plot, width=4, height = 4.2, dpi=300)
+#ggsave('Figures/smallgran-gam-plots.tiff', sg_plot, width=4, height = 4.2, dpi=300)
+
+# ========================================================================================
+# Total rodent energy
+energy <- read.csv(here::here("lore", "2019_switch", "Data", "TotalCommunityEnergy.csv"))
+energy$censusdate <- as.Date(energy$censusdate)
+
+energy <- mutate(energy,
+                 oTreatment = ordered(treatment, levels = c('CC','EC','XC')),
+                 oPlot      = ordered(plot),
+                 plot       = factor(plot))
+
+# GAM model -- includes plot smooths
+energy.gam <- gam(n ~ oPlot + oTreatment + s(numericdate, k = 20) +
+                    s(numericdate, by = oTreatment, k = 15) +
+                    s(numericdate, by = oPlot),
+                  data = energy, method = 'REML', family = tw, select = TRUE)
+
+# plot treatment effects (exclude plot smooths)
+exVars.energy <- c('oPlot', paste0('s(numericdate):oPlot', c(5,6,7,11,13,14,17,18,24)))
+treatPred.energy <- predict_treat_effect(energy, np = 500, MODEL=energy.gam, exVars.energy)
+
+energy.plt <- plot_gam_prediction(treatPred.energy, energy, Palette = cbbPalette[c(6,1,4)], ylab='Metabolic Flux \n(kJ)')
+energy.plt
+```
+
+![](replication_christensenfxns_files/figure-gfm/unnamed-chunk-1-7.png)<!-- -->
+
+``` r
+#ggsave('energy-treatment-effects.png', energy.plt,width=6,height=2.5)
+
+# difference of smooths
+d1 <- osmooth_diff(energy.gam, treatPred.energy, "numericdate", "CC", "EC", var = "oTreatment", removePara = FALSE)
+d2 <- osmooth_diff(energy.gam, treatPred.energy, "numericdate", "CC", "XC", var = "oTreatment", removePara = FALSE)
+diffs.energy <- rbind(d1,d2)
+energy.diffPlt <- plot_smooth_diff(diffs.energy,Palette=cbbPalette[c(1,4)])
+energy.diffPlt
+```
+
+![](replication_christensenfxns_files/figure-gfm/unnamed-chunk-1-8.png)<!-- -->
+
+``` r
+#ggsave('energy-difference.png', energy.diffPlt,width=6,height=2.5)
+
+## Cowplot grid
+energy_plot = plot_grid(energy.plt, energy.diffPlt, labels = "AUTO", ncol = 1, align = 'v')
+energy_plot
+```
+
+![](replication_christensenfxns_files/figure-gfm/unnamed-chunk-1-9.png)<!-- -->
+
+``` r
+#ggsave('Figures/energy-gam-plots.pdf', energy_plot, width=4, height = 4.2, dpi=300)
+#ggsave('Figures/energy-gam-plots.tiff', energy_plot, width=4, height = 4.2, dpi=300)
+# # ==========================================================================================
+# # Species richness
+# sprich <- read.csv('Data/SpeciesRichness.csv')
+# sprich$censusdate <- as.Date(sprich$censusdate)
+# 
+# sprich <- mutate(sprich,
+#                  oTreatment = ordered(treatment, levels = c('CC','EC','XC')),
+#                  oPlot      = ordered(plot),
+#                  plot       = factor(plot))
+# 
+# # model 1 --- this has an intercept for plot but plots follow respective treatment smooth
+# sprich.gam <- gam(n ~ oTreatment + s(numericdate, k = 20) +
+#                     s(numericdate, by = oTreatment, k = 15) +
+#                     s(plot, bs = "re"),
+#                   data = sprich, method = 'REML', family = poisson, select = TRUE, control = gam.control(nthreads = 4))
+# 
+# # plot treatment effects
+# # terms to exclude
+# exVars.rich <- 's(plot)'
+# treatPred.rich <- predict_treat_effect(sprich, np = 500, MODEL=sprich.gam, exVars.rich)
+# 
+# rich.plt <- plot_gam_prediction(treatPred.rich, sprich, Palette = cbPalette[1:3], ylab='# species')
+# rich.plt
+# #ggsave('richness-treatment-effects.png', rich.plt,width=6,height=2.5)
+# 
+# # difference of smooths
+# d1 <- osmooth_diff(sprich.gam, treatPred.rich, "numericdate", "CC", "EC", var = "oTreatment", removePara = FALSE)
+# d2 <- osmooth_diff(sprich.gam, treatPred.rich, "numericdate", "CC", "XC", var = "oTreatment", removePara = FALSE)
+# diffs.rich <- rbind(d1,d2)
+# rich.diffPlt <- plot_smooth_diff(diffs.rich,Palette=cbPalette[2:3])
+# rich.diffPlt
+# #ggsave('richness-difference.png', rich.diffPlt,width=6,height=2.5)
+# 
+# ## Cowplot grid
+# rich_plot = plot_grid(rich.plt, rich.diffPlt, labels = "AUTO", ncol = 1, align = 'v')
+# rich_plot
+# #ggsave('Figures/sprich-gam-plots.png', rich_plot, width=7, height = 5)
+# 
+```

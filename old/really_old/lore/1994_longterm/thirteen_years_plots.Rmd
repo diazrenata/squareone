@@ -1,0 +1,79 @@
+---
+title: "Plots from Heske, Brown, and Mistry 1994"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rats <- read.csv(here::here("lore", "1994_longterm", "1994_data_complete.csv"), stringsAsFactors = F)
+rat_totals_1977 <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars_1977.csv"), stringsAsFactors = F)
+rat_totals_1988 <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars_1988.csv"), stringsAsFactors = F)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r, echo = F}
+
+
+ggplot(filter(rat_totals_1977, type != "other", period > 2), aes(period, nind, color = trtmnt_1977)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8)
+
+
+rats_1977_thrmo_avg <- rat_totals_1977 %>%
+ # filter(period > 2) %>%
+  mutate(three_month_section = floor((period) / 3) + 1) %>%
+  group_by(three_month_section, type, trtmnt_1977) %>%
+  summarize(nind = mean(nind),
+            mean_date = mean(as.Date(censusdate))) %>%
+  ungroup()
+
+ggplot(filter(rats_1977_thrmo_avg, type != "other", three_month_section < 52), aes(mean_date, nind, color = trtmnt_1977)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8)
+
+```
+
+```{r, echo = F}
+
+
+ggplot(filter(rat_totals_1988, type != "other", period > 2), aes(period, nind, color = trtmnt_1988)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8) +
+  geom_vline(xintercept = 118)
+
+
+rats_1988_thrmo_avg <- rat_totals_1988 %>%
+ # filter(period > 2) %>%
+  mutate(three_month_section = floor((period) / 3) + 1) %>%
+  group_by(three_month_section, type, trtmnt_1988) %>%
+  summarize(nind = mean(nind),
+            mean_date = mean(as.Date(censusdate))) %>%
+  ungroup()
+
+ggplot(filter(rats_1988_thrmo_avg, type != "other", three_month_section < 52), aes(mean_date, nind, color = trtmnt_1988)) +
+  geom_line() +
+  geom_point()+
+  theme_bw() +
+  facet_wrap(vars(type), ncol = 1, scales = "free_y") +
+  geom_hline(yintercept = 0) +
+  scale_colour_viridis_d(end = .8) +
+  geom_vline(xintercept = as.Date("1988-01-01"))
+
+```
+
+The 1994 paper uses repeated measures ANOVA to test things, and is v interested in direct and indirect effects. I'm not tracking all their comparisons at the moment. 
+

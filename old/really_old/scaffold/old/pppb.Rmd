@@ -1,0 +1,203 @@
+---
+title: "pp, pb"
+output: github_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.width =6, fig.height =3)
+library(dplyr)
+library(ggplot2)
+```
+
+# Data
+
+```{r}
+
+rats <- read.csv(here::here("lore", "2020_redux", "christensen_plots.csv")) %>%
+  mutate(plot = factor(plot),
+         treatment = factor(treatment)) %>%
+  filter(!is.na(species))
+
+```
+
+```{r}
+
+rats_totale<- rats %>%
+  group_by(censusdate, period, treatment) %>%
+  summarise(totale = sum(energy, na.rm = T)) %>%
+  ungroup()
+
+rats_nplots <- rats %>%
+  select(plot, treatment) %>%
+  distinct() %>%
+  group_by(treatment) %>%
+  summarize(nplots = length(unique(plot))) %>%
+  ungroup()
+
+rats_e_sp <- rats %>%
+  filter(type == "small_granivore") %>%
+  mutate(sp_cat = ifelse(species %in% c("PP", "PB"), species, "OSG")) %>%
+  group_by(censusdate, period, treatment, sp_cat) %>%
+  summarize(spe = sum(energy, na.rm = T)) %>%
+  ungroup() 
+
+
+rats_all_e_sp <- expand.grid(period = unique(rats$period), sp_cat = c("PP", "PB", "OSG"), treatment = unique(rats$treatment)) %>%
+  left_join(distinct(select(rats, period, censusdate))) %>%
+  left_join(rats_nplots)
+
+
+rats_e_sp1 <- left_join(rats_all_e_sp, rats_e_sp) %>%
+  left_join(rats_totale) %>%
+  group_by_all() %>%
+  mutate(spe = ifelse(is.na(spe), 0, spe),
+         totale = ifelse(is.na(totale), 0, totale))  %>%
+  ungroup() %>%
+  mutate(prop_totale = spe/totale) %>%
+  mutate(prop_totale = ifelse(is.nan(prop_totale), 0, prop_totale)) %>%
+  mutate(mean_spe = (spe/nplots),
+         mean_totale = (totale/nplots))
+```
+
+```{r}
+
+ggplot(rats_e_sp1, aes(period, prop_totale, color = sp_cat)) + 
+  geom_line() +
+  facet_wrap(vars(treatment, sp_cat)) +
+  theme_bw()
+
+```
+
+This is a mess. Trying to get ratio of (totale of PP on exclosure) to (totale on control) for PP, PB and exclosure, removal, and ratio of (totale on exclosure to totale on control). Then the ratio of species compensation to total compensation. Not sure. Trying to partition species contributions.
+
+```{r}
+
+totale_ctrl <- select(rats_e_sp1, period, treatment, censusdate, mean_totale) %>%
+  filter(treatment == "CC") %>%
+  select(-treatment) %>%
+  rename(ctrl_mean_e = mean_totale) %>%
+  distinct()
+
+treatment_ratios <- select(rats_e_sp1, period, treatment, censusdate, mean_totale) %>%
+  filter(treatment != "CC") %>%
+  distinct() %>%
+  left_join(totale_ctrl) %>%
+  mutate(eratio = mean_totale / ctrl_mean_e)
+
+species_ratios <- select(rats_e_sp1, period, treatment, sp_cat, mean_spe, mean_totale) %>%
+  distinct() %>%
+  filter(treatment != "CC") %>%
+  left_join(totale_ctrl) %>%
+  mutate(ctrl_ratio = mean_spe / ctrl_mean_e,
+         trt_ratio = mean_spe / mean_totale,
+         trt_to_ctrl = mean_totale/ctrl_mean_e) %>%
+  mutate(trt_ratio = ifelse(mean_totale == 0, 0, trt_ratio),
+         trt_to_ctrl = ifelse(ctrl_mean_e == 0, 0, trt_to_ctrl),
+         ctrl_ratio = ifelse(ctrl_mean_e == 0, 0, ctrl_ratio)) %>%
+  mutate(trt_ratio = ifelse(trt_ratio == 0, 0.00000001, trt_ratio),
+         ctrl_ratio = ifelse(ctrl_ratio == 0, 0.00000001, ctrl_ratio)) %>%
+  as.data.frame() %>%
+  mutate(era = NA) %>%
+  mutate(era = ifelse(
+    period <= 118, "a_pre_th",
+    ifelse(period <= 216, "b_pre_ba",
+           ifelse(period <= 356, "c_pre_cpt",
+                  ifelse(period <= 434, "d_pre_switch", "e_post-switch"))))) %>%
+  mutate(oera = as.ordered(era)) %>%
+  group_by(treatment, era) %>%
+  mutate(era_mean_trt_to_ctrl = mean(trt_to_ctrl)) %>%
+  ungroup()
+
+ggplot(filter(species_ratios, treatment == "EC"), aes(period, ctrl_ratio, color = sp_cat)) +
+  geom_line() +
+  theme_bw() +
+  geom_line(aes(period, trt_to_ctrl, group =sp_cat), color = "black") +
+  facet_wrap(vars(era), nrow = 1, scales = "free_x")
+
+
+
+ggplot(filter(species_ratios, treatment == "EC"), aes(period, trt_ratio, color = species)) +
+  geom_line() +
+  theme_bw() +
+  facet_wrap(vars(era), nrow = 1, scales = "free_x")
+
+
+pp_glm <- glm(data = filter(species_ratios, species == "PP"),formula =  ctrl_ratio ~ era * treatment, family = Gamma)
+
+
+
+library(lsmeans)
+
+tt = lsmeans(pp_glm, specs = ~ era | treatment)
+dd = pairs((tt))
+ff = summary(dd)
+dd_regrid = pairs(regrid(tt))
+ff_regrid = summary(dd_regrid)
+pp_glm_pred <- predict(pp_glm, se.fit = T)
+
+ratio_pred <- species_ratios %>%
+  filter(species == "PP")  %>%
+  mutate(linkfit = pp_glm_pred$fit,
+         linkupper = pp_glm_pred$se.fit + pp_glm_pred$fit,
+         linklower = pp_glm_pred$fit -pp_glm_pred$se.fit) %>%
+  mutate(invlinkfit = 1/linkfit,
+         invlinklower = 1/linklower,
+         invlinkupper = 1/linkupper)
+
+
+ggplot(filter(ratio_pred), aes(period, ctrl_ratio, color = treatment, fill = treatment)) +
+  geom_line() + 
+  geom_line(aes(period, invlinkfit)) +
+  geom_ribbon(aes(ymin = invlinklower, ymax = invlinkupper), alpha = .5) +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) + 
+  theme_bw() +
+  scale_color_viridis_d(begin = .4, end = .8) +
+    scale_fill_viridis_d(begin = .4, end = .8) +
+  geom_hline(yintercept = 1, linetype = 3) +
+  theme(legend.position = "top") +
+  ylim(0, 2.5) +
+  geom_line(aes(period, era_mean_trt_to_ctrl), color = "black") +
+  ggtitle("PP")
+
+
+pb_glm <- glm(data = filter(species_ratios, species == "PB"),formula =  ctrl_ratio ~ era * treatment, family = Gamma)
+
+
+
+library(lsmeans)
+
+tt = lsmeans(pb_glm, specs = ~ era | treatment)
+dd = pairs((tt))
+ff = summary(dd)
+dd_regrid = pairs(regrid(tt))
+ff_regrid = summary(dd_regrid)
+pb_glm_pred <- predict(pb_glm, se.fit = T)
+
+ratio_pred <- species_ratios %>%
+  filter(species == "PB")  %>%
+  mutate(linkfit = pb_glm_pred$fit,
+         linkupper = pb_glm_pred$se.fit + pb_glm_pred$fit,
+         linklower = pb_glm_pred$fit -pb_glm_pred$se.fit) %>%
+  mutate(invlinkfit = 1/linkfit,
+         invlinklower = 1/linklower,
+         invlinkupper = 1/linkupper)
+
+
+ggplot(filter(ratio_pred), aes(period, ctrl_ratio, color = treatment, fill = treatment)) +
+  geom_line() + 
+  geom_line(aes(period, invlinkfit)) +
+  geom_ribbon(aes(ymin = invlinklower, ymax = invlinkupper), alpha = .5) +
+  facet_wrap(vars(era), scales = "free_x", nrow = 1) + 
+  theme_bw() +
+  scale_color_viridis_d(begin = .4, end = .8) +
+    scale_fill_viridis_d(begin = .4, end = .8) +
+  geom_hline(yintercept = 1, linetype = 3) +
+  theme(legend.position = "top") +
+  ylim(0, 2.5)  +
+  geom_line(aes(period, era_mean_trt_to_ctrl), color = "black") +
+  ggtitle("PB")
+```
+
+I think this means there was a decline in PB, **offset somewhat by PP in a way that did not occur in b.**, but **not sufficient to offset the loss of PB**.

@@ -1,0 +1,196 @@
+---
+title: "LDATS on annual plants"
+output: 
+    github_document:
+       df_print: kable
+       toc: true
+---
+```{r setup, include=FALSE}
+library(dplyr)
+library(soar)
+library(ggplot2)
+library(cvlt)
+library(LDATS)
+
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+
+theme_set(theme_bw())
+
+all_evals_list <- list()
+
+seasons <- c("summer", "winter")
+trts <- c("CC", "EE")
+
+for(season in seasons) {
+  
+  for(trt in trts) {
+    
+    
+all_evals_new <- read.csv(here::here("analyses", "plants", "ldats_evals", paste0("all_evals_f_hasty_soar_plants_", season, "_", trt, "_cv.csv")))
+
+all_evals_new <- all_evals_new %>%
+  mutate(season = season,
+         trt = trt)
+
+all_evals_list[[length(all_evals_list) + 1]] <- all_evals_new
+    
+  }
+}
+
+
+pick_best_model <- function(all_evals_df) {
+  
+
+ae <- all_evals_df %>% group_by(k, seed, cpts, nfolds, season, trt) %>% summarize(mean_ll = mean(sum_loglik), se_ll = sd(sum_loglik) / sqrt(nfolds)) %>% ungroup() %>% distinct() %>%
+  mutate(seed = as.factor(seed)) %>%
+  ungroup()
+
+best_ll <- max(ae$mean_ll)
+
+best_ae <- filter(ae, mean_ll == best_ll)
+
+best_se <- best_ae$se_ll[1]
+
+best_cutoff <- best_ll - best_se
+
+ae_cutoff <- ae %>%
+  filter(mean_ll > best_cutoff)
+
+ae_mincpts <- min(ae_cutoff$cpts)
+
+ae_cpt_cutoff <- filter(ae_cutoff, cpts == ae_mincpts)
+
+ae_mink <- min(ae_cpt_cutoff$k)
+
+ae_k_cutoff <- filter(ae_cpt_cutoff, k == ae_mink)
+
+ae_best_ll <- max(ae_k_cutoff$mean_ll)
+
+ae_best <- filter(ae_k_cutoff, mean_ll == ae_best_ll)
+
+return(ae_best)
+
+}
+
+
+best_models <- lapply(all_evals_list, pick_best_model)
+
+best_models <- dplyr::bind_rows(best_models)
+
+```
+
+## Best models
+
+These are run with only 10 LDA seeds, so it's very possible different results will come out when it's run with more seeds.
+
+`nfolds` corresponds to nyears. There are slightly different numbers of years because LDATS requires removing years that are all 0s, and some treatment/year combos have all 0s.
+
+For summer, it finds 0 changepoints. For winter, it finds 1 changepoint. This is consistent between treatments. 
+
+```{r}
+best_models
+```
+
+## Winter
+
+### Exclosures
+
+```{r}
+
+winter_ee <- soar::get_plants_annual_ldats(plot_type = "EE")
+
+winter_ee_best_lda <- LDA_set_user_seeds(winter_ee$abundance, topics = 2, seed = 2)
+winter_ee_best_ts <- TS_on_LDA(winter_ee_best_lda[[1]], as.data.frame(winter_ee$covariates), formulas = ~1, nchangepoints = 1, timename = "year", control = TS_control(nit = 1000))
+
+plot(winter_ee_best_lda)
+plot(winter_ee_best_ts[[1]])
+
+winter_ee_beta <- winter_ee_best_lda[[1]]@beta %>%
+  exp()
+colnames(winter_ee_beta) <- colnames(winter_ee$abundance)
+winter_ee_beta <- winter_ee_beta %>%
+  as.data.frame() %>%
+  mutate(topic = row.names(.))%>%
+  tidyr::pivot_longer(-topic, names_to = "species", values_to = "proportion")
+
+winter_ee_beta <- winter_ee_beta %>%
+  group_by(topic) %>%
+  arrange(desc(proportion)) %>%
+  mutate(topic_rank = row_number()) %>%
+  ungroup() 
+
+winter_ee_beta %>%
+  filter(topic_rank <= 5) %>%
+  arrange((topic), (topic_rank))
+
+
+```
+
+### Controls
+
+```{r}
+
+
+winter_cc <- soar::get_plants_annual_ldats(plot_type = "CC") 
+
+winter_cc_best_lda <- LDA_set_user_seeds(winter_cc$abundance, topics = 2, seed = 2)
+winter_cc_best_ts <- TS_on_LDA(winter_cc_best_lda[[1]], as.data.frame(winter_cc$covariates), formulas = ~1, nchangepoints = 1, timename = "year", control = TS_control(nit = 1000))
+
+plot(winter_cc_best_lda)
+plot(winter_cc_best_ts[[1]])
+
+winter_cc_beta <- winter_cc_best_lda[[1]]@beta %>%
+  exp()
+colnames(winter_cc_beta) <- colnames(winter_cc$abundance)
+winter_cc_beta <- winter_cc_beta %>%
+  as.data.frame() %>%
+  mutate(topic = row.names(.))%>%
+  tidyr::pivot_longer(-topic, names_to = "species", values_to = "proportion")
+
+winter_cc_beta <- winter_cc_beta %>%
+  group_by(topic) %>%
+  arrange(desc(proportion)) %>%
+  mutate(topic_rank = row_number()) %>%
+  ungroup() 
+
+winter_cc_beta %>%
+  filter(topic_rank <= 5) %>%
+  arrange((topic), (topic_rank))
+
+
+
+```
+
+## Summer
+
+The summer models are just fitting means.
+
+### Exclosures
+
+```{r}
+
+summer_ee <- soar::get_plants_annual_ldats(plot_type = "EE", census_season = "summer")
+summer_ee_best_lda <- LDA_set_user_seeds(summer_ee$abundance, topics = 2, seed = 4)
+summer_ee_best_ts <- TS_on_LDA(summer_ee_best_lda[[1]], as.data.frame(summer_ee$covariates), formulas = ~1, nchangepoints = 0, timename = "year", control = TS_control(nit = 100))
+
+plot(summer_ee_best_lda)
+plot(summer_ee_best_ts[[1]])
+
+```
+
+
+### Controls
+
+```{r}
+
+
+summer_cc <- soar::get_plants_annual_ldats(plot_type = "CC", census_season = "summer")
+summer_cc_best_lda <- LDA_set_user_seeds(summer_cc$abundance, topics = 2, seed = 4)
+summer_cc_best_ts <- TS_on_LDA(summer_cc_best_lda[[1]], as.data.frame(summer_cc$covariates), formulas = ~1, nchangepoints = 0, timename = "year", control = TS_control(nit = 100))
+
+plot(summer_cc_best_lda)
+plot(summer_cc_best_ts[[1]], selection = "mode")
+
+```
+
+```

@@ -1,0 +1,17 @@
+---
+title: "Preswitch state of system"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Stuff we want to know about the state of the system prior to the treatment change in 2015....
+
+
+* Do the control plots that will become exclosures match the control plots that will stay the same?
+* How do the long term exclosures compare to controls?
+* What roles do PB, PP, DM, and DO appear to be playing on the controls vs. exclosures?
+    * Including nind but also especially E and M
+    

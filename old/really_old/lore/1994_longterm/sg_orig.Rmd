@@ -1,0 +1,83 @@
+---
+title: "Small granivores originals"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rats <- read.csv(here::here("lore", "1994_longterm", "1994_data_complete.csv"), stringsAsFactors = F)
+rat_totals_1977 <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars_1977.csv"), stringsAsFactors = F)
+rat_totals_1988 <- read.csv(here::here("lore", "1994_longterm", "1994_data_statevars_1988.csv"), stringsAsFactors = F)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r}
+
+rat_totals <- rat_totals_1977 %>%
+  rename(trtmnt = trtmnt_1977) %>%
+  mutate(time_period = "seventies") %>%
+  bind_rows(mutate(rename(rat_totals_1988, trtmnt = trtmnt_1988), time_period = "eighties"))
+```
+
+## 1. Did the small granivore response on the **original** exclosure plots hold up over time?
+
+Comparing original exclosures to original controls.
+
+This is the same analysis as for the 1981 paper, but with additional data.
+
+I have split the timeseries for all plots into 2 sections. The first is 1977-85. The second is 85-91. This is chosen so the second chunk consists of 3 years pre treatment and 3 years post. It might make sense to have a shorter pre-treatment section in the second chunk.
+
+```{r}
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+sg_orig <- filter(rat_totals, type == "small_granivore", censusdate  < as.Date("1985-01-01"), time_period == "seventies") %>%
+  mutate(trtmnt = as.ordered(trtmnt))
+
+ggplot(sg_orig, aes(as.Date(censusdate), nind, color = trtmnt)) +
+  geom_line(size = 2) +
+  theme_bw() +
+  scale_color_viridis_d(end = .8) + 
+  ggtitle("Section 1, 1977-1985") +
+  theme(legend.position = "top")
+
+library(mgcv)
+
+sg.gam <- gam(nind ~ trtmnt + s(period, k = 25) + s(period, by = trtmnt, k  = 25), data = sg_orig, family = poisson, method = "REML")
+
+summary(sg.gam)
+
+gam.check(sg.gam)
+
+sg.pdat <- make_pdat(sg_orig, comparison_variable = "trtmnt")
+sg.pred <- get_predicted_vals(sg.gam, sg.pdat)
+
+sg.diff <- get_exclosure_diff(sg.gam, sg.pdat,comparison_variable = "trtmnt")
+
+print(plot_exclosure_diff(sg.diff) +
+        geom_vline(xintercept = 35))
+
+sg.pred <- add_exclosure_diff(sg.pred, sg.diff)
+
+print(plot_link_pred(sg.pred, comparison_variable = "trtmnt") +
+        geom_vline(xintercept = 35))
+
+print(plot_fitted_pred(sg.pred, comparison_variable = "trtmnt") +
+        geom_vline(xintercept = 35))
+
+min(sg.diff$period[ which(!sg.diff$diff_overlaps_zero)])
+```
+
+(vertical line is where the 1981 data stops.)
+
+Yep.
+
+Some notes.
+
+- Note `k=25` for the GAM; this is to get the k-index over 1. 
+- The *timing* of the response is remarkably consistent (still being placed at 12-13).
+- The *magnitude* of the response fluctuates over time but often far exceeds what was seen in the first 35 periods. 
+- Still not sure about including plot as an effect.
+
+

@@ -1,0 +1,124 @@
+---
+title: "GAM"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      fig.dim = c(7, 3))
+library(dplyr)
+library(ggplot2)
+library(mgcv)
+theme_set(theme_bw())
+source(here::here("scaffold", "R", "data.R"))
+source(here::here("lore", "2019_switch", "FinalAnalysis", "analysis_functions.R"))
+```
+
+
+```{r}
+
+load(here::here("te_gams.RData"))
+
+get_smooth_diffs <- function(MODEL, dat) {
+  
+  cc_ce <- osmooth_diff(MODEL, dat, "numericdate", "CC", "CE", "oTreatment")
+  cc_ee <- osmooth_diff(MODEL, dat, "numericdate", "CC", "EE", "oTreatment")
+  
+  diffs <- bind_rows(cc_ce, cc_ee) %>%
+    mutate(diff_overlaps_zero = (upper * lower) < 0) %>%
+    mutate(compare_trt = substr(pair, 4, 5)) 
+  
+  dat <- dat %>%
+    mutate(compare_trt = as.character(oTreatment)) %>%
+    left_join(diffs)
+    
+  return(dat)
+  }
+
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', unique(plot_totals$oPlot)),
+              names(coefficients(te.gam.randomplot)[ which(grepl("oPlot", names(coefficients(te.gam.randomplot))))]))
+
+te.randomplot.pred <- predict_treat_effect3(plot_totals, 500, te.gam.randomplot, exVars = exVars.d)
+
+ggplot(te.randomplot.pred, aes(censusdate, Fitted, group = oPlot,color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+te_fitted <- gratia::add_fitted(plot_totals, te.gam.randomplot) 
+
+ggplot(te_fitted, aes(numericdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+
+
+te_diffs <- get_smooth_diffs(te.gam.randomplot, te.randomplot.pred)
+
+ggplot(te_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+```
+
+
+# smgran
+
+```{r}
+
+load(here::here("se_gams.RData"))
+
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', unique(plot_totals$oPlot)),
+              names(coefficients(se.gam.randomplot)[ which(grepl("oPlot", names(coefficients(se.gam.randomplot))))]))
+se.randomplot.pred <- predict_treat_effect3(plot_totals, 500, se.gam.randomplot, exVars = exVars.d)
+
+ggplot(se.randomplot.pred, aes(censusdate, Fitted, group = oPlot,color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+sge_fitted <- gratia::add_fitted(plot_totals, se.gam.randomplot) 
+
+ggplot(sge_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+sge_diffs <- get_smooth_diffs(se.gam.randomplot, se.randomplot.pred)
+
+ggplot(sge_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+```
+
+
+# tinygran    
+
+```{r}
+
+load(here::here("tge_gams.RData"))
+
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', unique(plot_totals$oPlot)),
+              names(coefficients(tge.gam.randomplot)[ which(grepl("oPlot", names(coefficients(tge.gam.randomplot))))]))
+tge.randomplot.pred <- predict_treat_effect2(plot_totals, 500, tge.gam.randomplot, exVars = exVars.d)
+
+ggplot(tge.randomplot.pred, aes(censusdate, Fitted, color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+# 
+# tge.randomplot.plot.pred <- predict_treat_effect4(plot_totals, 500, tge.gam.randomplot, exVars = exVars.d)
+# 
+# 
+# ggplot(tge.randomplot.plot.pred, aes(censusdate, Fitted, group = oPlot, color = oTreatment, fill = oTreatment)) +
+#   geom_line() +
+#   geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .2)
+
+tge_fitted <- gratia::add_fitted(plot_totals,tge.gam.randomplot) 
+
+ggplot(tge_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+
+tge_diffs <- get_smooth_diffs(tge.gam.randomplot, tge.randomplot.pred)
+
+ggplot(tge_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+```

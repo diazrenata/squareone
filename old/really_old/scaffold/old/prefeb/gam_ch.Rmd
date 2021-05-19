@@ -1,0 +1,373 @@
+---
+title: "GAM"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      fig.dim = c(7, 3))
+library(dplyr)
+library(ggplot2)
+library(mgcv)
+theme_set(theme_bw())
+source(here::here("scaffold", "R", "data.R"))
+source(here::here("lore", "2019_switch", "FinalAnalysis", "analysis_functions.R"))
+
+
+get_smooth_diffs <- function(MODEL, dat) {
+
+  cc_ce <- osmooth_diff(MODEL, dat, "numericdate", "CC", "CE", "oTreatment")
+  cc_ee <- osmooth_diff(MODEL, dat, "numericdate", "CC", "EE", "oTreatment")
+
+  diffs <- bind_rows(cc_ce, cc_ee) %>%
+    mutate(diff_overlaps_zero = (upper * lower) < 0) %>%
+    mutate(compare_trt = substr(pair, 4, 5))
+
+  dat <- dat %>%
+    mutate(compare_trt = as.character(oTreatment)) %>%
+    left_join(diffs)
+
+  return(dat)
+  }
+```
+
+
+<!-- ```{r} -->
+
+<!-- load(here::here("te_gams.RData")) -->
+
+<!-- te_AICs <- lapply(list(te.gam, te.gam.noplot, te.gam.randomplot), FUN = AIC)  -->
+
+<!-- te_AICs -->
+
+<!-- exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', unique(plot_totals$oPlot)), -->
+<!--               names(coefficients(te.gam)[ which(grepl("oPlot", names(coefficients(te.gam))))])) -->
+
+<!-- te_pred <- predict_treat_effect3(plot_totals, 500, te.gam, exVars = exVars.d) -->
+
+
+<!-- ggplot(te_pred, aes(censusdate, Fitted, color = oTreatment, fill = oTreatment)) + -->
+<!--   geom_line() + -->
+<!--   geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5) -->
+
+<!-- te_fitted <- gratia::add_fitted(plot_totals, te.gam)  -->
+
+<!-- ggplot(te_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) + -->
+<!--   geom_line() -->
+
+
+<!-- get_smooth_diffs <- function(MODEL, dat) { -->
+
+<!--   cc_ce <- osmooth_diff(MODEL, dat, "numericdate", "CC", "CE", "oTreatment") -->
+<!--   cc_ee <- osmooth_diff(MODEL, dat, "numericdate", "CC", "EE", "oTreatment") -->
+
+<!--   diffs <- bind_rows(cc_ce, cc_ee) %>% -->
+<!--     mutate(diff_overlaps_zero = (upper * lower) < 0) %>% -->
+<!--     mutate(compare_trt = substr(pair, 4, 5)) -->
+
+<!--   dat <- dat %>% -->
+<!--     mutate(compare_trt = as.character(oTreatment)) %>% -->
+<!--     left_join(diffs) -->
+
+<!--   return(dat) -->
+<!--   } -->
+
+<!-- te_diffs <- get_smooth_diffs(te.gam, te_pred) -->
+
+<!-- ggplot(te_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) + -->
+<!--   geom_line() + -->
+<!--   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) + -->
+<!--   geom_hline(yintercept = 0) -->
+
+
+<!-- te.noplot.pred <- predict_treat_effect3(plot_totals, 500, te.gam.noplot, exVars = exVars.d) -->
+
+<!-- ggplot(te.noplot.pred, aes(censusdate, Fitted, group = oPlot,color = oTreatment, fill = oTreatment)) + -->
+<!--   geom_line() + -->
+<!--   geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5) -->
+
+
+<!-- te_fitted <- gratia::add_fitted(plot_totals, te.gam.noplot)  -->
+
+<!-- ggplot(te_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) + -->
+<!--   geom_line() -->
+
+<!-- te_diffs <- get_smooth_diffs(te.gam.noplot, te.noplot.pred) -->
+
+<!-- ggplot(te_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) + -->
+<!--   geom_line() + -->
+<!--   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) + -->
+<!--   geom_hline(yintercept = 0) -->
+
+<!-- te.randomplot.pred <- predict_treat_effect3(plot_totals, 500, te.gam.randomplot, exVars = exVars.d) -->
+
+<!-- ggplot(te.randomplot.pred, aes(censusdate, Fitted, group = oPlot,color = oTreatment, fill = oTreatment)) + -->
+<!--   geom_line() + -->
+<!--   geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5) -->
+
+<!-- te_fitted <- gratia::add_fitted(plot_totals, te.gam.randomplot)  -->
+
+<!-- ggplot(te_fitted, aes(numericdate, .value, color = oTreatment, group = oPlot)) + -->
+<!--   geom_line() -->
+
+
+<!-- te_diffs <- get_smooth_diffs(te.gam.randomplot, te.randomplot.pred) -->
+
+<!-- ggplot(te_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) + -->
+<!--   geom_line() + -->
+<!--   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) + -->
+<!--   geom_hline(yintercept = 0) -->
+
+<!-- ``` -->
+
+
+# smgran
+
+```{r}
+
+load(here::here("se_gams.RData"))
+
+sge_AICs <- lapply(list(se.gam, se.gam.noplot, se.gam.randomplot), FUN = AIC) 
+
+sge_AICs
+
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', unique(plot_totals$oPlot)),
+              names(coefficients(se.gam)[ which(grepl("oPlot", names(coefficients(se.gam))))]))
+
+sge_pred <- predict_treat_effect2(plot_totals, 500, se.gam, exVars = exVars.d)
+
+sge_pred2 <- predict_treat_effect2(plot_totals, 500, se.gam, NULL)
+
+all.equal(sge_pred, sge_pred2)
+
+ggplot(sge_pred, aes(censusdate, Fitted, color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+
+sge_fitted <- gratia::add_fitted(plot_totals, se.gam) 
+
+ggplot(sge_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+
+sge_diffs <- get_smooth_diffs(se.gam, sge_pred)
+
+ggplot(sge_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', unique(plot_totals$oPlot)),
+              names(coefficients(se.gam.noplot)[ which(grepl("oPlot", names(coefficients(se.gam.noplot))))]))
+
+se.noplot.pred <- predict_treat_effect3(plot_totals, 500, se.gam.noplot, exVars = exVars.d)
+
+ggplot(se.noplot.pred, aes(censusdate, Fitted, group = oPlot,color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+sge_fitted <- gratia::add_fitted(plot_totals, se.gam.noplot) 
+
+ggplot(sge_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+sge_diffs <- get_smooth_diffs(se.gam.noplot, se.noplot.pred)
+
+ggplot(sge_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', unique(plot_totals$oPlot)),
+              names(coefficients(se.gam.randomplot)[ which(grepl("oPlot", names(coefficients(se.gam.randomplot))))]))
+
+se.randomplot.pred <- predict_treat_effect2(plot_totals, 500, se.gam.randomplot, exVars = exVars.d)
+
+ggplot(se.randomplot.pred, aes(censusdate, Fitted, group = oPlot,color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+sge_fitted <- gratia::add_fitted(plot_totals, se.gam.randomplot) 
+
+ggplot(sge_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+sge_diffs <- get_smooth_diffs(se.gam.randomplot, se.randomplot.pred)
+
+ggplot(sge_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+```
+
+
+# tinygran    
+
+```{r}
+
+load(here::here("tge_gams.RData"))
+
+tge_AICs <- lapply(list(tge.gam, tge.gam.noplot, tge.gam.randomplot), FUN = AIC) 
+
+tge_AICs
+
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', unique(plot_totals$oPlot)),
+              names(coefficients(tge.gam)[ which(grepl("oPlot", names(coefficients(tge.gam))))]))
+
+tge_pred <- predict_treat_effect3(plot_totals, 500, tge.gam, exVars = exVars.d)
+
+ggplot(tge_pred, aes(censusdate, Fitted, color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+
+tge_fitted <- gratia::add_fitted(plot_totals,tge.gam) 
+
+ggplot(tge_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+
+tge_diffs <- get_smooth_diffs(tge.gam, tge_pred)
+
+ggplot(tge_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+tge.noplot.pred <- predict_treat_effect3(plot_totals, 500, tge.gam.noplot, exVars = exVars.d)
+
+ggplot(tge.noplot.pred, aes(censusdate, Fitted, group = oPlot,color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+
+tge_fitted <- gratia::add_fitted(plot_totals,tge.gam.noplot) 
+
+ggplot(tge_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+
+tge_diffs <- get_smooth_diffs(tge.gam.noplot, tge.noplot.pred)
+
+ggplot(tge_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+
+
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', unique(plot_totals$oPlot)),
+              names(coefficients(tge.gam.randomplot)[ which(grepl("oPlot", names(coefficients(tge.gam.randomplot))))]))
+
+
+tge.randomplot.pred <- predict_treat_effect3(plot_totals, 500, tge.gam.randomplot, exVars = exVars.d)
+
+ggplot(tge.randomplot.pred, aes(censusdate, Fitted, color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+tge.randomplot.plot.pred <- predict_treat_effect4(plot_totals, 500, tge.gam.randomplot, exVars = exVars.d)
+
+
+ggplot(tge.randomplot.plot.pred, aes(censusdate, Fitted, group = oPlot, color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .2)
+
+tge_fitted <- gratia::add_fitted(plot_totals,tge.gam.randomplot) 
+
+ggplot(tge_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+
+tge_diffs <- get_smooth_diffs(tge.gam.randomplot, tge.randomplot.pred)
+
+ggplot(tge_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+```
+
+
+# pb    
+
+```{r}
+
+load(here::here("pbe_gams.RData"))
+
+ggplot(pb_totals, aes(censusdate, pb_e, group = oPlot, color = oTreatment)) +
+  geom_line() +
+  facet_grid(cols  = vars(era), scales = "free_x", space = "free")
+
+ggplot(filter(pb_totals, era == "d_post-switch"), aes(censusdate, pb_e, group = oPlot, color = oTreatment)) +
+  geom_line() +
+  facet_grid(cols  = vars(era), scales = "free_x", space = "free")
+
+
+pbe_AICs <- lapply(list(pbe.gam, pbe.gam.noplot, pbe.gam.randomplot), FUN = AIC) 
+
+pbe_AICs
+
+exVars.d <- c('oPlot', paste0('s(numericdate):oPlot', unique(pb_totals$oPlot)),
+              names(coefficients(pbe.gam)[ which(grepl("oPlot", names(coefficients(pbe.gam))))]))
+
+pbe_pred <- predict_treat_effect3(pb_totals, 500, pbe.gam, exVars = exVars.d)
+
+ggplot(pbe_pred, aes(censusdate, Fitted, color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+
+pbe_fitted <- gratia::add_fitted(pb_totals,pbe.gam) 
+
+ggplot(pbe_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+
+pbe_diffs <- get_smooth_diffs(pbe.gam, pbe_pred)
+
+ggplot(pbe_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+pbe.noplot.pred <- predict_treat_effect3(pb_totals, 500, pbe.gam.noplot, exVars = exVars.d)
+
+ggplot(pbe.noplot.pred, aes(censusdate, Fitted, group = oPlot,color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+
+pbe_fitted <- gratia::add_fitted(pb_totals,pbe.gam.noplot) 
+
+ggplot(pbe_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+
+pbe_diffs <- get_smooth_diffs(pbe.gam.noplot, pbe.noplot.pred)
+
+ggplot(pbe_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+pbe.randomplot.pred <- predict_treat_effect3(pb_totals, 500, pbe.gam.randomplot, exVars = exVars.d)
+
+ggplot(pbe.randomplot.pred, aes(censusdate, Fitted, color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .5)
+
+pbe.randomplot.plot.pred <- predict_treat_effect4(pb_totals, 500, pbe.gam.randomplot, exVars = exVars.d)
+
+
+ggplot(pbe.randomplot.plot.pred, aes(censusdate, Fitted, group = oPlot, color = oTreatment, fill = oTreatment)) +
+  geom_line() +
+  geom_ribbon(aes(ymin= Lower, ymax = Upper), alpha= .2)
+
+pbe_fitted <- gratia::add_fitted(pb_totals,pbe.gam.randomplot) 
+
+ggplot(pbe_fitted, aes(censusdate, .value, color = oTreatment, group = oPlot)) +
+  geom_line()
+
+pbe_diffs <- get_smooth_diffs(pbe.gam.randomplot, pbe.randomplot.pred)
+
+ggplot(pbe_diffs, aes(censusdate, color = oTreatment, fill = oTreatment, y = diff)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5) +
+  geom_hline(yintercept = 0)
+
+```

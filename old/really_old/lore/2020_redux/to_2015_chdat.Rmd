@@ -1,0 +1,292 @@
+---
+title: "to 2015"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r}
+
+rats <- read.csv(here::here("lore", "2020_redux", "christensen_plots.csv"))
+
+```
+
+```{r}
+
+rats_types_totals <- rats %>%
+  mutate(plot = factor(plot),
+         treatment = factor(treatment)) %>%
+  #mutate(plot = as.ordered(plot),
+ #        treatment = as.ordered(treatment)) %>%
+  select(period, treatment, type, plot, energy) %>%
+  group_by(period, treatment, type, plot) %>%
+  summarize(nind = dplyr::n(),
+            totale = sum(energy))  %>%
+  ungroup() 
+
+rats_totals <- rats %>% 
+  mutate(plot = factor(plot),
+         treatment = factor(treatment)) %>%
+  select(period, treatment, plot, energy) %>%
+  group_by(period, treatment, plot) %>%
+  summarize(nind = dplyr::n(),
+            totale = sum(energy)) %>%
+  ungroup() 
+
+```
+
+```{r}
+ggplot(filter(rats_totals), aes(period, nind, color = treatment, group = plot)) +
+ geom_smooth(method = "gam", se = F, size = 2) +  theme_bw() +
+  scale_color_viridis_d(end = .8) 
+ggplot(filter(rats_totals), aes(period, totale, color = treatment, group = plot)) +
+ geom_smooth(method = "gam", se = F, size = 2) +  theme_bw() +
+  scale_color_viridis_d(end = .8) 
+
+```
+
+```{r}
+
+energy <- filter(rats_totals) %>%
+  mutate(oplot = ordered(plot),
+         treatment = as.ordered(treatment),
+         type = "all") %>%
+  as.data.frame()
+
+
+library(mgcv)
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+n.mod <- gam(totale ~  treatment + s(period, k = 100) + s(period, by = treatment, k = 100), family = "tw", data  = energy)
+
+summary(n.mod)
+
+gam.check(n.mod)
+
+n.pdat <- make_pdat(energy, include_plot = F)
+
+n.pred <- get_predicted_vals(n.mod, n.pdat)
+
+```
+
+Here we have a GAM - fit without plot, because when I included plot I got super-wrong estimates (like infinity rats for orig_exclosure????)
+
+This GAM is trash according to gam.check.
+
+```{r}
+
+plot_fitted_pred(n.pred)# + facet_wrap(vars(compare_var), scales = "free_y")
+
+```
+
+
+```{r}
+
+cc_xc <- get_exclosure_diff(n.mod, n.pdat, comparison_level = 3)
+
+plot_exclosure_diff(cc_xc)
+
+n.origdiff <- add_exclosure_diff(n.pred, cc_xc)
+
+plot_fitted_pred(filter(n.origdiff, treatment != "EC"))
+
+```
+
+
+
+```{r}
+
+cc_ec <- get_exclosure_diff(n.mod, n.pdat)
+
+plot_exclosure_diff(cc_ec)
+
+n.newdiff <- add_exclosure_diff(n.pred, cc_ec)
+
+plot_fitted_pred(filter(n.newdiff, treatment != "XC")) +
+  geom_vline(xintercept = c(118, 216, 381, 434))
+
+```
+
+```{r}
+library(gratia)
+n.sim.data <- filter(n.pdat, treatment != "XC") %>%
+  mutate(rn = dplyr::row_number())
+set.seed(1977)
+n.sims <- simulate(n.mod, nsim = 500, newdata = n.sim.data) %>%
+  as.data.frame() %>%
+    mutate(rn = dplyr::row_number()) %>%
+  tidyr::pivot_longer(-rn, names_to = "sim", values_to = "pred") %>%
+  mutate(sim = as.integer(substr(sim, 2, nchar(sim)))) %>%
+  right_join(n.sim.data) %>%
+  tidyr::pivot_wider(id_cols = c(sim, period, type), names_from = treatment, values_from = pred) %>%
+  mutate(ratio = EC / CC) %>%
+  filter(!is.infinite(ratio), !is.na(ratio)) %>%
+  group_by(period, type) %>%
+  summarize(ratio_mean = mean(ratio),
+            ratio_lower = quantile(ratio, probs = 0.025),
+            ratio_upper = quantile(ratio, probs = 0.975),
+            mean_EC= mean(EC),
+            mean_CC = mean(CC)) %>%
+  ungroup() %>%
+  mutate(ratio_of_means = mean_EC/ mean_CC)
+
+nd.wide <- n.newdiff %>%
+  select(period, treatment, invlink_fit, diff_overlaps_zero) %>%
+  tidyr::pivot_wider(id_cols = c(period, diff_overlaps_zero), names_from= treatment, values_from = invlink_fit) %>%
+  mutate(ratio = EC / CC)
+
+
+ggplot(n.sims, aes(period, ratio_mean)) +
+  geom_line() +
+  ylim(0, 1.5) +
+  geom_line(aes(period, ratio_of_means), color = "green") +
+  geom_line(data = nd.wide, aes(period, ratio), color = "pink")
+
+ggplot(nd.wide, aes(period, ratio)) +
+  geom_line()
+
+```
+
+```{r}
+
+th_per1 <- filter(rats_totals, period >= 118, period < 216) %>%
+  group_by(period, treatment) %>%
+    summarize(totale = sum(totale, na.rm = T)) %>%ungroup()%>%
+  mutate(era= "th1")
+
+th_per2 <- filter(rats_totals, period >= 216, period < 356)%>%
+  group_by(period, treatment) %>%  summarize(totale = sum(totale, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(era = "th2")
+ 
+since_th <- filter(rats_totals, period >= 356, period < 434) %>%
+    group_by(period, treatment) %>%  summarize(totale = sum(totale, na.rm = T)) %>%ungroup() %>%
+  mutate(era = "now")
+
+ggplot(th_per1, aes(period, totale, color = treatment)) +
+  geom_line()
+
+ggplot(th_per2, aes(period, totale, color = treatment)) +
+  geom_line()
+
+
+ggplot(since_th, aes(period, totale, color = treatment)) +
+  geom_line()
+
+alltime <- bind_rows(th_per1, th_per2, since_th)
+
+alltime_wide <- alltime %>%
+  tidyr::pivot_wider(id_cols = c(period, era), names_from = treatment, values_from = totale)
+
+ttest1 <- t.test(filter(alltime_wide, era == "th1")$CC, filter(alltime_wide, era == "th1")$EC)
+
+ttest1
+
+ttest2 <- t.test(filter(alltime_wide, era == "th2")$CC, filter(alltime_wide, era == "th2")$EC)
+
+ttest2
+
+ttest3 <- t.test(filter(alltime_wide, era == "now")$CC, filter(alltime_wide, era == "now")$EC)
+ttest3
+
+ggplot(alltime_wide, aes(period, EC / CC)) +
+  geom_line() +
+    geom_line(data = nd.wide, aes(period, ratio), color = "pink")
+
+```
+```{r}
+
+full_ts <- rats_totals %>%
+  group_by(period, treatment) %>%
+    summarize(totale = sum(totale, na.rm = T)) %>%
+  ungroup() %>%
+  tidyr::pivot_wider(id_cols = c(period), names_from = treatment, values_from = totale) %>%
+  mutate(ratio = EC / CC) %>%
+  mutate(rn = dplyr::row_number())
+
+ratio_gam <- gam(ratio ~ s(period, k = 100), data = full_ts, method = "REML")
+
+
+ratio.sims <- simulate(ratio_gam, nsim = 500, newdata = select(full_ts, period)) %>%
+  as.data.frame() %>%
+    mutate(rn = dplyr::row_number()) %>%
+  tidyr::pivot_longer(-rn, names_to = "sim", values_to = "pred") %>%
+  mutate(sim = as.integer(substr(sim, 2, nchar(sim)))) %>%
+  right_join(select(full_ts, period, rn)) %>%
+  group_by(period) %>%
+  summarize(pred_mean = mean(pred),
+            pred_lower = quantile(pred, probs = 0.025),
+            pred_upper = quantile(pred, probs = 0.975)) %>%
+  ungroup() 
+
+pred_vals <- add_fitted(data = full_ts, model = ratio_gam)
+
+ggplot(pred_vals, aes(period, ratio)) +
+  geom_line() +
+  geom_line(aes(period, .value), color  = "blue") +
+geom_line(data = nd.wide, aes(period, ratio), color = "pink")
+
+ggplot(ratio.sims, aes(period, pred_mean)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = pred_lower, ymax = pred_upper), alpha = .5) +
+  #geom_line(data = nd.wide, aes(period, ratio), color = "pink") +
+  geom_vline(xintercept = c(118, 216, 356, 434))
+
+ratio_ci <- confint(ratio_gam, parm = "period", type = "simultaneous")
+
+ggplot(ratio_ci, aes(period, est)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .5)
+# confint.gam does not work for gamma
+```
+
+
+```{r}
+
+full_ts_sneaky <- full_ts %>%
+  select(period, CC, EC)  %>%
+  mutate( EC = EC / CC) %>%
+  mutate(CC = CC/CC) %>%
+  tidyr::pivot_longer(-period, names_to = "treatment", values_to = "val") %>%
+  mutate(treatment = ordered(treatment))
+
+full_ts_r <- filter(full_ts_sneaky) %>%
+  mutate(
+         treatment = as.ordered(treatment),
+         type = "all") %>%
+  as.data.frame()
+
+
+library(mgcv)
+source(here::here("lore", "1994_longterm", "gams_fxns_generalized.R"))
+
+r.mod <- gam(val ~  treatment + s(period, k = 20) + s(period, by = treatment, k = 20), family = "Gamma", data  = full_ts_r)
+
+summary(r.mod)
+
+gam.check(r.mod)
+
+r.pdat <- make_pdat(full_ts_r, include_plot = F)
+
+r.pred <- get_predicted_vals(r.mod, r.pdat)
+plot_fitted_pred(r.pred)
+
+
+cc_ec <- get_exclosure_diff(r.mod, r.pdat)
+
+plot_exclosure_diff(cc_ec)
+
+n.newdiff <- add_exclosure_diff(r.pred, cc_ec)
+
+plot_fitted_pred(filter(n.newdiff, treatment != "XC")) +
+  geom_vline(xintercept = c(118, 216, 381, 434)) +
+  geom_line(data = mutate(filter(full_ts_sneaky, treatment == "EC"), compare_var = "NA"), aes(period, val))
+
+```
+
+you want the simultanoues interval which I don't think this is; but; this is an option.
