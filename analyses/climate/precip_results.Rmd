@@ -1,6 +1,9 @@
 ---
-title: "ndvi anomaly"
-output: github_document
+title: "Other climate variables"
+output: 
+    github_document:
+       df_print: kable
+       toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -9,6 +12,25 @@ library(dplyr)
 library(ggplot2)
 library(soar)
 theme_set(theme_bw())
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+
+water_scale <- scale_color_viridis_d(option = "turbo", begin = .1, end = .8, direction = -1)
+
+temp_fscale <- scale_fill_viridis_d(option = "turbo", begin = .1, end = .8, direction = 1)
+temp_scale <- scale_color_viridis_d(option = "turbo", begin = .1, end = .8, direction =1)
+water_fscale <- scale_fill_viridis_d(option = "turbo", begin = .1, end = .8, direction = -1)
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+
+era_break_dates <- as.Date(
+  c(
+    "1996-01-01",
+    "2010-01-01"
+  ),
+  format = "%Y-%m-%d"
+)
+
+era_breaks <- geom_vline(xintercept = era_break_dates, linetype = 2)
+
 ```
 
 ```{r}
@@ -19,74 +41,73 @@ weather <- weather %>%
     dplyr::mutate(date = format(lubridate::parse_date_time(paste(month, year, sep=" "),
                                                            orders = c("m/Y")), "%m-%Y")) %>%
     dplyr::mutate(date = as.Date(paste("01",date,sep="-"), format="%d-%m-%Y"))  %>%
-  mutate(numdate = as.numeric(date))
+  mutate(numdate = as.numeric(date)) %>%
+  mutate(oera = as.ordered(ifelse(year < 1996, "a", ifelse(year < 2010, "b", "c"))))
 
-
-weather_full <- expand.grid(year = c(min(weather$year) : max(weather$year)),
-  month = c(1:12)
-) %>%
-  left_join(mutate(weather, month = as.numeric(month), year = as.numeric(year))) %>%
-  mutate(datestr = paste0(year, "-01-", month)) %>%
-  mutate(newdate = as.Date(datestr, format = "%Y-%d-%m")) %>%
-  arrange(newdate)
 ```
 
 
-## precip
+## Summary
 
-### Total precip
+Precipitation and min temp seem to have had a low/high period since 2010, respectively. The number of days > 35 C have increased since the early 2000s. Mean and min temps have may have weakly increased, but it's iffy. 
+
+None of these shifts is as pronounced as the shift towards lower precip and higher temps seen from the late 1980s - early 1990s. 
+
+I think the drought index captures this story more succintly. 
+
+## Precipitation
+
+### Precip anomaly
+
+All of the anomalies come from `portalr::weather()`. Major hat tip to Glenda for writing that function and putting me on this approach to plotting anomalies (see also the aesthetic for NDVI, drought.)
+
+Monthly precip / PRISM 30-year normal.
 
 ```{r}
-precip_ts <- ts(weather_full$precipitation, start = weather_full$newdate[1], frequency = 12)
 
-precip_ts_interp <- imputeTS::na_interpolation(precip_ts)
-
-precip_decomp <- decompose(precip_ts_interp, type = "additive")
-
-plot(precip_decomp)
-
-precip_full <- weather_full %>%
-  mutate(no_seasonal = as.numeric(precip_decomp$trend) + as.numeric(precip_decomp$random),
-         trend= as.numeric(precip_decomp$trend))
-
-ggplot(precip_full, aes(newdate, no_seasonal)) +
-  geom_line(alpha = .3)  +
-  geom_line(aes(y=trend))
-
-precip_gam <- mgcv::gam(trend ~ s(as.numeric(newdate)), data = precip_full)
-
-precip_full <- precip_full %>%
-  gratia::add_fitted(precip_gam)
-ggplot(precip_full, aes(newdate, no_seasonal)) +
-  geom_line(alpha = .1)  +
-  geom_line(aes(y=trend), alpha = .5) +
-  geom_line(aes(y = .value)) +
-  geom_vline(xintercept = as.Date("1996-01-01", format = "%Y-%m-%d"), linetype = 4) +  
-  geom_vline(xintercept = as.Date("2010-01-01", format = "%Y-%m-%d"), linetype = 4)
+ggplot(weather, aes(date, anomaly_ppt - 1, color = anomaly_ppt > 1)) +
+  geom_col() +
+  era_breaks +
+  water_scale +
+  theme(legend.position = "none")  +
+  ylab("Precip anomaly \nProportion of long term mean - 1") +
+  ggtitle("Precip anomaly", subtitle = "Proportion of PRISM 30 year normal")
 
 ```
 
 ### Summer precip
 
+Calculated as the total precipitation from April-September each year, visualized as the proportion of the long term mean.
+
+There is a notable drop approaching 2020, but note that 2005-2015 is not extraordinary compared to the 1990s-2000s.
+
 ```{r}
 
-summer_precip <- weather_full %>%
+summer_precip <- weather %>%
   filter(month %in% c(4:9)) %>%
   group_by(year) %>%
   summarize(s_precip = sum(precipitation)) %>%
   ungroup() 
 
-ggplot(summer_precip, aes(year, s_precip)) + geom_line()
+summer_mean_precip <- mean(summer_precip$s_precip)
+
+summer_precip <- summer_precip %>%
+  mutate(from_ltmean = s_precip / summer_mean_precip)
+
+ggplot(summer_precip, aes(year, from_ltmean, fill = from_ltmean > 1)) + geom_col(aes(y = from_ltmean - 1)) + water_fscale + geom_vline(xintercept = c(1996, 2010), linetype = 3) + theme(legend.position = "none") + ylab("Summer precipitation \nProportion of long term mean - 1 ") + ggtitle("Summer precip", subtitle = "Proportion of long term mean")
 
 
 ```
 
 ### Winter precip
 
+
+Calculated as the total precipitation from October-March the following year, visualized as the proportion of the long term mean.
+
 ```{r}
 
 
-winter_precip <- weather_full %>%
+winter_precip <- weather %>%
   filter(month %in% c(1:3, 10:12)) %>%
   mutate(water_year = ifelse(month > 5, year + 1, year)) %>%
   group_by(water_year) %>%
@@ -94,173 +115,103 @@ winter_precip <- weather_full %>%
   ungroup() %>%
   filter(water_year < 2020)
 
-ggplot(winter_precip, aes(water_year, w_precip)) + geom_line()
+winter_mean_precip <- mean(winter_precip$w_precip)
+
+winter_precip <- winter_precip %>%
+  mutate(from_ltmean = w_precip / winter_mean_precip)
+
+ggplot(winter_precip, aes(water_year, from_ltmean, fill = from_ltmean > 1)) + geom_col(aes(y = from_ltmean - 1)) + water_fscale + geom_vline(xintercept = c(1996, 2010), linetype = 3) + theme(legend.position = "none") + ylab("winter precipitation \nProportion of long term mean - 1 ") + ggtitle("Winter precip", subtitle = "Proportion of long term mean")
 
 
 ```
 
-<!-- ### Warm precip -->
-
-<!-- ```{r} -->
-<!-- warm_precip_ts <- ts(weather_full$warm_precip, start = weather_full$newdate[1], frequency = 12) -->
-
-<!-- warm_precip_ts_interp <- imputeTS::na_interpolation(warm_precip_ts) -->
-
-<!-- warm_precip_decomp <- decompose(warm_precip_ts_interp, type = "additive") -->
-
-<!-- plot(warm_precip_decomp) -->
-
-<!-- warm_precip_full <- weather_full %>% -->
-<!--   mutate(no_seasonal = as.numeric(warm_precip_decomp$trend) + as.numeric(warm_precip_decomp$random), -->
-<!--          trend= as.numeric(warm_precip_decomp$trend)) -->
-
-<!-- ggplot(warm_precip_full, aes(newdate, no_seasonal)) + -->
-<!--   geom_line(alpha = .3)  + -->
-<!--   geom_line(aes(y=trend)) -->
-
-<!-- warm_precip_gam <- mgcv::gam(trend ~ s(as.numeric(newdate)), data = warm_precip_full) -->
-
-<!-- warm_precip_full <- warm_precip_full %>% -->
-<!--   gratia::add_fitted(warm_precip_gam) -->
-<!-- ggplot(warm_precip_full, aes(newdate, no_seasonal)) + -->
-<!--   geom_line(alpha = .1)  + -->
-<!--   geom_line(aes(y=trend), alpha = .5) + -->
-<!--   geom_line(aes(y = .value)) + -->
-<!--   geom_vline(xintercept = as.Date("1996-01-01", format = "%Y-%m-%d"), linetype = 4) +   -->
-<!--   geom_vline(xintercept = as.Date("2010-01-01", format = "%Y-%m-%d"), linetype = 4) -->
-
-<!-- ``` -->
-<!-- ### cool precip -->
-
-<!-- ```{r} -->
-<!-- cool_precip_ts <- ts(weather_full$cool_precip, start = weather_full$newdate[1], frequency = 12) -->
-
-<!-- cool_precip_ts_interp <- imputeTS::na_interpolation(cool_precip_ts) -->
-
-<!-- cool_precip_decomp <- decompose(cool_precip_ts_interp, type = "additive") -->
-
-<!-- plot(cool_precip_decomp) -->
-
-<!-- cool_precip_full <- weather_full %>% -->
-<!--   mutate(no_seasonal = as.numeric(cool_precip_decomp$trend) + as.numeric(cool_precip_decomp$random), -->
-<!--          trend= as.numeric(cool_precip_decomp$trend)) -->
-
-<!-- ggplot(cool_precip_full, aes(newdate, no_seasonal)) + -->
-<!--   geom_line(alpha = .3)  + -->
-<!--   geom_line(aes(y=trend)) -->
-
-<!-- cool_precip_gam <- mgcv::gam(trend ~ s(as.numeric(newdate)), data = cool_precip_full) -->
-
-<!-- cool_precip_full <- cool_precip_full %>% -->
-<!--   gratia::add_fitted(cool_precip_gam) -->
-<!-- ggplot(cool_precip_full, aes(newdate, no_seasonal)) + -->
-<!--   geom_line(alpha = .1)  + -->
-<!--   geom_line(aes(y=trend), alpha = .5) + -->
-<!--   geom_line(aes(y = .value)) + -->
-<!--   geom_vline(xintercept = as.Date("1996-01-01", format = "%Y-%m-%d"), linetype = 4) +   -->
-<!--   geom_vline(xintercept = as.Date("2010-01-01", format = "%Y-%m-%d"), linetype = 4) -->
-
-<!-- ``` -->
-
-## Temp
+## Temperature
 
 ### Mean temp
 
+Based on PRISM 30-year normal.
+
 ```{r}
-meantemp_ts <- ts(weather_full$meantemp, start = weather_full$newdate[1], frequency = 12)
 
-meantemp_ts_interp <- imputeTS::na_interpolation(meantemp_ts)
+ggplot(weather, aes(date, anomaly_meant, color = anomaly_meant > 0)) +
+  geom_col() +
+  era_breaks +
+  temp_scale +
+  theme(legend.position = "none")  +
+  ylab("Mean temperature anomaly") +
+  ggtitle("Mean temperature anomaly", subtitle = "Difference from PRISM 30 year normal")
 
-meantemp_decomp <- decompose(meantemp_ts_interp, type = "additive")
+```
 
-plot(meantemp_decomp)
+### Max temp
 
-meantemp_full <- weather_full %>%
-  mutate(no_seasonal = as.numeric(meantemp_decomp$trend) + as.numeric(meantemp_decomp$random),
-         trend= as.numeric(meantemp_decomp$trend))
+```{r}
 
-ggplot(meantemp_full, aes(newdate, no_seasonal)) +
-  geom_line(alpha = .3)  +
-  geom_line(aes(y=trend))
+ggplot(weather, aes(date, anomaly_maxt, color = anomaly_maxt > 0)) +
+  geom_col() +
+  era_breaks +
+  temp_scale +
+  theme(legend.position = "none")  +
+  ylab("Max temperature anomaly") +
+  ggtitle("Max temperature anomaly", subtitle = "Difference from PRISM 30 year normal")
 
-meantemp_gam <- mgcv::gam(trend ~ s(as.numeric(newdate)), data = meantemp_full)
+```
 
-meantemp_full <- meantemp_full %>%
-  gratia::add_fitted(meantemp_gam)
-ggplot(meantemp_full, aes(newdate, no_seasonal)) +
-  geom_line(alpha = .1)  +
-  geom_line(aes(y=trend), alpha = .5) +
-  geom_line(aes(y = .value)) +
-  geom_vline(xintercept = as.Date("1996-01-01", format = "%Y-%m-%d"), linetype = 4) +  
-  geom_vline(xintercept = as.Date("2010-01-01", format = "%Y-%m-%d"), linetype = 4)
+### Min temp
+
+```{r}
+
+
+ggplot(weather, aes(date, anomaly_mint, color = anomaly_mint > 0)) +
+  geom_col() +
+  era_breaks +
+  temp_scale +
+  theme(legend.position = "none")  +
+  ylab("Min temperature anomaly") +
+  ggtitle("Min temperature anomaly", subtitle = "Difference from PRISM 30 year normal")
 
 ```
 
 
-### max temp
+### Days above 35 C
+
+The number of days each year when the max temp exceeded 35C. 
 
 ```{r}
-maxtemp_ts <- ts(weather_full$maxtemp, start = weather_full$newdate[1], frequency = 12)
 
-maxtemp_ts_interp <- imputeTS::na_interpolation(maxtemp_ts)
+hot_days <- portalr::weather(level = "daily", fill = T)
 
-maxtemp_decomp <- decompose(maxtemp_ts_interp, type = "additive")
+hot_days <- hot_days %>%
+  group_by_all() %>%
+  mutate(is_hot = maxtemp > 35) %>%
+  ungroup() %>%
+  group_by(year) %>%
+  summarize(nhot = sum(is_hot, na.rm = T),
+            meanhot = mean(is_hot, na.rm = T),
+            ndays = sum(!is.na(is_hot))) %>%
+  ungroup()
 
-plot(maxtemp_decomp)
+hot_days <- hot_days %>%
+  filter(year < 2020)
 
-maxtemp_full <- weather_full %>%
-  mutate(no_seasonal = as.numeric(maxtemp_decomp$trend) + as.numeric(maxtemp_decomp$random),
-         trend= as.numeric(maxtemp_decomp$trend))
+hot_days_lt <- mean(hot_days$nhot, na.rm =T)
 
-ggplot(maxtemp_full, aes(newdate, no_seasonal)) +
-  geom_line(alpha = .3)  +
-  geom_line(aes(y=trend))
+hot_days <- hot_days %>%
+  group_by_all() %>%
+  mutate(from_lt = nhot - hot_days_lt) %>%
+  ungroup()
 
-maxtemp_gam <- mgcv::gam(trend ~ s(as.numeric(newdate)), data = maxtemp_full)
-
-maxtemp_full <- maxtemp_full %>%
-  gratia::add_fitted(maxtemp_gam)
-ggplot(maxtemp_full, aes(newdate, no_seasonal)) +
-  geom_line(alpha = .1)  +
-  geom_line(aes(y=trend), alpha = .5) +
-  geom_line(aes(y = .value)) +
-  geom_vline(xintercept = as.Date("1996-01-01", format = "%Y-%m-%d"), linetype = 4) +  
-  geom_vline(xintercept = as.Date("2010-01-01", format = "%Y-%m-%d"), linetype = 4)
+ggplot(hot_days, aes(year, from_lt, fill = from_lt > 0)) +
+  geom_col() +
+  temp_fscale +
+  geom_vline(xintercept = c(1996, 2010), linetype = 3) +
+  theme(legend.position = "none") +
+  ggtitle("Days above 35 C", subtitle = "Difference from long term mean") +
+  ylab("Difference from long-term mean")
 
 ```
 
 
-### min temp
-
-```{r}
-mintemp_ts <- ts(weather_full$mintemp, start = weather_full$newdate[1], frequency = 12)
-
-mintemp_ts_interp <- imputeTS::na_interpolation(mintemp_ts)
-
-mintemp_decomp <- decompose(mintemp_ts_interp, type = "additive")
-
-plot(mintemp_decomp)
-
-mintemp_full <- weather_full %>%
-  mutate(no_seasonal = as.numeric(mintemp_decomp$trend) + as.numeric(mintemp_decomp$random),
-         trend= as.numeric(mintemp_decomp$trend))
-
-ggplot(mintemp_full, aes(newdate, no_seasonal)) +
-  geom_line(alpha = .3)  +
-  geom_line(aes(y=trend))
-
-mintemp_gam <- mgcv::gam(trend ~ s(as.numeric(newdate)), data = mintemp_full)
-
-mintemp_full <- mintemp_full %>%
-  gratia::add_fitted(mintemp_gam)
-ggplot(mintemp_full, aes(newdate, no_seasonal)) +
-  geom_line(alpha = .1)  +
-  geom_line(aes(y=trend), alpha = .5) +
-  geom_line(aes(y = .value)) +
-  geom_vline(xintercept = as.Date("1996-01-01", format = "%Y-%m-%d"), linetype = 4) +  
-  geom_vline(xintercept = as.Date("2010-01-01", format = "%Y-%m-%d"), linetype = 4)
-
-```
 
 
 
