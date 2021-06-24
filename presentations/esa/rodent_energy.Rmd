@@ -86,7 +86,9 @@ ggplot(filter(era_means, as.numeric(oera) == 2), aes(oplottype, e, fill = rodent
        
 ggplot(filter(era_means, as.numeric(oera) == 3), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
        
-       
+```
+
+```{r, fig.dim = c(12,4)}
 ggplot(era_means, aes(oplottype, e, fill = rodents)) + geom_col() + facet_wrap(vars(oera))
 
 ```

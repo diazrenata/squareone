@@ -20,10 +20,12 @@ total energy use, all on control plots. The remainder is kangaroo rats.
 
     ## `summarise()` has grouped output by 'oplottype'. You can override using the `.groups` argument.
 
-![](rodent_energy_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->![](rodent_energy_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->![](rodent_energy_files/figure-gfm/unnamed-chunk-2-3.png)<!-- -->![](rodent_energy_files/figure-gfm/unnamed-chunk-2-4.png)<!-- -->
-
-# HYPOTHETICALS
+![](rodent_energy_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->![](rodent_energy_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->![](rodent_energy_files/figure-gfm/unnamed-chunk-2-3.png)<!-- -->
 
 ![](rodent_energy_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
+# HYPOTHETICALS
+
 ![](rodent_energy_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+![](rodent_energy_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
