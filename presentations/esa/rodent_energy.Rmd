@@ -1,0 +1,121 @@
+---
+title: "Rodent energy use results"
+output:
+  github_document:
+       df_print: kable
+       toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(4,4))
+library(soar)
+library(ggplot2)
+library(dplyr)
+library(mgcv)
+library(gratia)
+theme_set(theme_bw())
+
+library(nlme)
+library(emmeans)
+treatl <- get_treatment_means() %>%
+  remove_switch()
+
+pb <- get_pb(treatl)
+pb_nozero <- pb %>%
+  filter(as.numeric(oera) > 1)
+energy_ratio <- get_e_ratio(treatl)
+compensation <- get_compensation(treatl)
+
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+both_scale <- scale_color_viridis_d(begin = .1, end = .8)
+cc_scale <- scale_color_viridis_d(begin = .1, end = .1)
+ee_scale <- scale_color_viridis_d(begin = .8, end =.8)
+both_fscale <- scale_fill_viridis_d(begin = .1, end = .8)
+cc_fscale <- scale_fill_viridis_d(begin = .1, end = .1)
+ee_fscale <- scale_fill_viridis_d(begin = .8, end =.8)
+
+
+```
+
+
+# Overview of compositonal shift
+
+```{r, fig.dim  = c(6,3)}
+
+controls_composition <- treatl %>%
+  filter(plot_type == "CC") %>%
+  select(censusdate, oera, total_e, smgran_e, pb_e) %>%
+  mutate(pb = pb_e / total_e,
+         small_granivores = smgran_e / total_e,
+         all_rodents = total_e / total_e) %>%
+  select(censusdate, oera, pb, small_granivores) %>%
+  tidyr::pivot_longer(cols = c(pb, small_granivores), names_to = "rodents", values_to = "proportion") %>% 
+  group_by(rodents) %>%
+  mutate(proportion_ma = maopts(proportion)) %>%
+  ungroup()
+
+
+ggplot(controls_composition, aes(censusdate, proportion_ma, color = rodents)) +
+  geom_line() +
+  scale_color_viridis_d(option = "cividis", begin = .2, end = .8) +
+  era_grid +
+  ylim(0, 1) +
+  ggtitle("Rodent community composition - controls") +
+  ylab("Proportion of total E")
+```
+
+
+Small granivore (gold) and PB (blue) energy use as a proportion of the total energy use, all on control plots. The remainder is kangaroo rats.
+
+1. PB is now essentially absent on controls.
+1. Small granivores now account for a greater proportion of total energy use on control plots than prior to PB's establishment, even now that PB has declined.
+
+```{r}
+
+era_means <- treatl %>%
+  group_by(oplottype, oera) %>%
+  summarize(pb_e = mean(pb_e),
+            dipo_e = mean(dipo_e),
+            tinygran_e = mean(tinygran_e)) %>%
+  ungroup() %>%
+  tidyr::pivot_longer(cols = c("pb_e", "dipo_e", "tinygran_e"), names_to = "rodents", values_to = "e")
+
+ggplot(filter(era_means, as.numeric(oera) == 1), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
+
+ggplot(filter(era_means, as.numeric(oera) == 2), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
+       
+ggplot(filter(era_means, as.numeric(oera) == 3), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
+       
+       
+ggplot(era_means, aes(oplottype, e, fill = rodents)) + geom_col() + facet_wrap(vars(oera))
+
+```
+
+# HYPOTHETICALS
+
+```{r}
+
+fake_3 <- filter(era_means, as.numeric(oera) == 3)
+
+fake_3$e[6] <- era_means$e[13] + era_means$e[15]
+fake_3$e[4] <- 0
+
+
+ggplot(filter(fake_3, as.numeric(oera) == 3), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
+
+
+```
+
+
+```{r}
+
+fake_3 <- filter(era_means, as.numeric(oera) == 3)
+
+fake_3$e[6] <- fake_3$e[3]
+fake_3$e[4] <- 0
+
+
+ggplot(filter(fake_3, as.numeric(oera) == 3), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
+
+
+```
