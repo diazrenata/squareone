@@ -40,7 +40,7 @@ ee_fscale <- scale_fill_viridis_d(begin = .8, end =.8)
 
 # Overview of compositonal shift
 
-```{r, fig.dim  = c(6,3)}
+```{r, fig.dim  = c(4.5,3)}
 
 controls_composition <- treatl %>%
   filter(plot_type == "CC") %>%
@@ -48,20 +48,22 @@ controls_composition <- treatl %>%
   mutate(pb = pb_e / total_e,
          small_granivores = smgran_e / total_e,
          all_rodents = total_e / total_e) %>%
-  select(censusdate, oera, pb, small_granivores) %>%
-  tidyr::pivot_longer(cols = c(pb, small_granivores), names_to = "rodents", values_to = "proportion") %>% 
+  select(censusdate, oera, pb, small_granivores, all_rodents) %>%
+  tidyr::pivot_longer(cols = c(pb, small_granivores, all_rodents), names_to = "rodents", values_to = "proportion") %>% 
   group_by(rodents) %>%
   mutate(proportion_ma = maopts(proportion)) %>%
-  ungroup()
+  ungroup() %>%
+  mutate(Rodents = ifelse(rodents == "pb", "C. baileyi", ifelse(rodents == "small_granivores",  "All small granivores (non-kangaroo rats)", "All rodents")))
 
 
-ggplot(controls_composition, aes(censusdate, proportion_ma, color = rodents)) +
+ggplot(filter(controls_composition, rodents != "all_rodents"), aes(censusdate, proportion_ma, color = Rodents)) +
   geom_line() +
-  scale_color_viridis_d(option = "cividis", begin = .2, end = .8) +
-  era_grid +
+  scale_color_viridis_d(option = "turbo", begin = .2, end = .8) +
   ylim(0, 1) +
   ggtitle("Rodent community composition - controls") +
-  ylab("Proportion of total E")
+  ylab("Proportion of total energy use") + xlab("Date") +
+  theme(legend.position = "bottom") +
+  geom_hline(yintercept = 1)
 ```
 
 
@@ -69,6 +71,12 @@ Small granivore (gold) and PB (blue) energy use as a proportion of the total ene
 
 1. PB is now essentially absent on controls.
 1. Small granivores now account for a greater proportion of total energy use on control plots than prior to PB's establishment, even now that PB has declined.
+
+
+```{r}
+
+
+```
 
 ```{r}
 
