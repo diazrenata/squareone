@@ -40,7 +40,7 @@ ee_fscale <- scale_fill_viridis_d(begin = .8, end =.8)
 
 # Overview of compositonal shift
 
-```{r, fig.dim  = c(4.5,3)}
+```{r, fig.dim  = c(5,3)}
 
 controls_composition <- treatl %>%
   filter(plot_type == "CC") %>%
@@ -64,6 +64,27 @@ ggplot(filter(controls_composition, rodents != "all_rodents"), aes(censusdate, p
   ylab("Proportion of total energy use") + xlab("Date") +
   theme(legend.position = "bottom") +
   geom_hline(yintercept = 1)
+
+
+ggplot(filter(controls_composition, rodents  == "pb"), aes(censusdate, proportion_ma)) +
+  geom_line() +
+  scale_color_viridis_d(option = "turbo", begin = .2, end = .8) +
+  ylim(0, 1) +
+  ggtitle("C. baileyi share of energy use on control plots") +
+  ylab("Proportion of total energy use") + xlab("Date") +
+  theme(legend.position = "bottom") +
+  geom_hline(yintercept = 1)
+
+
+ggplot(filter(controls_composition, rodents  == "small_granivores"), aes(censusdate, proportion_ma)) +
+  geom_line() +
+  scale_color_viridis_d(option = "turbo", begin = .2, end = .8) +
+  ylim(0, 1) +
+  ggtitle("Small granivore share of energy use on control plots") +
+  ylab("Proportion of total energy use") + xlab("Date") +
+  theme(legend.position = "bottom") +
+  geom_hline(yintercept = 1)
+
 ```
 
 
@@ -88,16 +109,18 @@ era_means <- treatl %>%
   ungroup() %>%
   tidyr::pivot_longer(cols = c("pb_e", "dipo_e", "tinygran_e"), names_to = "rodents", values_to = "e")
 
-ggplot(filter(era_means, as.numeric(oera) == 1), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
+ggplot(filter(era_means, as.numeric(oera) == 1), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")+ scale_fill_viridis_d() + ylab("Energy use") + xlab("Treatment") + theme(axis.text.x = element_blank())
 
-ggplot(filter(era_means, as.numeric(oera) == 2), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
+ggplot(filter(era_means, as.numeric(oera) == 2), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")+ scale_fill_viridis_d() + ylab("Energy use") + xlab("Treatment") + theme(axis.text.x = element_blank())
+
        
-ggplot(filter(era_means, as.numeric(oera) == 3), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
+ggplot(filter(era_means, as.numeric(oera) == 3), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")+ scale_fill_viridis_d() + ylab("Energy use") + xlab("Treatment") + theme(axis.text.x = element_blank())
+
        
 ```
 
 ```{r, fig.dim = c(12,4)}
-ggplot(era_means, aes(oplottype, e, fill = rodents)) + geom_col() + facet_wrap(vars(oera))
+ggplot(era_means, aes(oplottype, e, fill = rodents)) + geom_col() + facet_wrap(vars(oera))+ scale_fill_viridis_d()
 
 ```
 
@@ -111,7 +134,8 @@ fake_3$e[6] <- era_means$e[13] + era_means$e[15]
 fake_3$e[4] <- 0
 
 
-ggplot(filter(fake_3, as.numeric(oera) == 3), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
+ggplot(filter(fake_3, as.numeric(oera) == 3), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")+ scale_fill_viridis_d() + ylab("Energy use") + xlab("Treatment") + theme(axis.text.x = element_blank())
+
 
 
 ```
@@ -125,7 +149,23 @@ fake_3$e[6] <- fake_3$e[3]
 fake_3$e[4] <- 0
 
 
-ggplot(filter(fake_3, as.numeric(oera) == 3), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")
+ggplot(filter(fake_3, as.numeric(oera) == 3), aes(oplottype, e, fill = rodents)) + geom_col() + theme(legend.position = "none")+ scale_fill_viridis_d() + ylab("Energy use") + xlab("Treatment") + theme(axis.text.x = element_blank())
+
+
+
+```
+
+
+```{r}
+legend_dat <- fake_3 %>%
+  select(rodents) %>% 
+  distinct() %>%
+  mutate(Rodents  = c("C. baileyi","Kangaroo rats", "Other small granivores")) %>%
+  mutate(Rodents = as.ordered(Rodents))
+
+levels(legend_dat$Rodents) <- c("Kangaroo rats", "C. baileyi", "Other small granivores")
+
+ggplot(legend_dat, aes(Rodents, 1, fill = Rodents)) + geom_col() + scale_fill_viridis_d() + theme(legend.direction = "horizontal")
 
 
 ```

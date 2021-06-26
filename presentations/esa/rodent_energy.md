@@ -6,7 +6,7 @@ Rodent energy use results
 
 # Overview of compositonal shift
 
-![](rodent_energy_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+![](rodent_energy_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->![](rodent_energy_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->![](rodent_energy_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->
 
 Small granivore (gold) and PB (blue) energy use as a proportion of the
 total energy use, all on control plots. The remainder is kangaroo rats.
@@ -29,3 +29,5 @@ total energy use, all on control plots. The remainder is kangaroo rats.
 ![](rodent_energy_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ![](rodent_energy_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+![](rodent_energy_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
