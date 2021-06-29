@@ -117,6 +117,53 @@ pb_glm_era_pairs
 
 
 
+## Smgran over time
+
+
+Smgran energy use as a proportion of treatment-level totals on controls and exclosures.
+
+```{r}
+
+smgran_dat <- treatl %>%
+  mutate(smgran_prop = smgran_e / total_e) %>%
+  group_by(oplottype) %>%
+  mutate(smgran_prop_ma = maopts(smgran_prop)) %>%
+  ungroup() 
+
+smgran_glm_treat <- glm(smgran_prop ~ oera * oplottype, family = quasibinomial(), data= smgran_dat)
+
+smgran_glm_treat_se <- est_glm_ilink(smgran_glm_treat, rename(smgran_dat, pb_prop_ma = smgran_prop_ma))
+
+ggplot(filter(smgran_glm_treat_se), aes(censusdate, est, color = oplottype, fill = oplottype)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = pb_prop_ma)) +
+  ylab("smgran % of energy use") +
+  ggtitle("smgran ratio over time") +
+  theme(legend.position = "top") +
+  era_grid + both_scale + both_fscale
+```
+
+
+Means and SE for each time period, calculated from GLM fit:
+
+```{r}
+smgran_glm_era_means <- (smgran_glm_treat_se %>% select(oera, oplottype, est, lower, upper) %>% distinct())
+smgran_glm_era_means
+```
+
+
+Significance of contrasts comparing each time period (within each treatment), from GLM:
+
+```{r}
+
+smgran_glm_era_pairs <- (as.data.frame(pairs(emmeans(smgran_glm_treat, specs = ~ oera | oplottype))) %>% select(contrast, oplottype, p.value))
+smgran_glm_era_pairs
+
+```
+
+
+
 ## Compensation
 
 
