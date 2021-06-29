@@ -29,7 +29,8 @@ ndvi_dat <- ndvi_dat %>%
   mutate(ndvi_difference = ndvi - ndvi_norm,
          ndvi_prop = ndvi / ndvi_norm) %>%
   mutate(numdate = as.numeric(date)) %>%
-  mutate(oera = ifelse(year < 1996, "a", ifelse(year < 2010, "b", "c")))
+  mutate(oera = ifelse(year < 1996, "a", ifelse(year < 2010, "b", "c")))  %>%
+  filter(year > 1988)
 
 
 ```

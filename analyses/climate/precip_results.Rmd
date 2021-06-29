@@ -42,7 +42,8 @@ weather <- weather %>%
                                                            orders = c("m/Y")), "%m-%Y")) %>%
     dplyr::mutate(date = as.Date(paste("01",date,sep="-"), format="%d-%m-%Y"))  %>%
   mutate(numdate = as.numeric(date)) %>%
-  mutate(oera = as.ordered(ifelse(year < 1996, "a", ifelse(year < 2010, "b", "c"))))
+  mutate(oera = as.ordered(ifelse(year < 1996, "a", ifelse(year < 2010, "b", "c")))) %>%
+  filter(year > 1988)
 
 ```
 
@@ -189,7 +190,8 @@ hot_days <- hot_days %>%
   summarize(nhot = sum(is_hot, na.rm = T),
             meanhot = mean(is_hot, na.rm = T),
             ndays = sum(!is.na(is_hot))) %>%
-  ungroup()
+  ungroup() %>%
+  filter(year > 1988)
 
 hot_days <- hot_days %>%
   filter(year < 2020)
