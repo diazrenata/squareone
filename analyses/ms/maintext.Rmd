@@ -1,0 +1,182 @@
+---
+title: "MS figs"
+output:
+  github_document:
+       df_print: kable
+       toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+library(soar)
+library(ggplot2)
+library(dplyr)
+library(mgcv)
+library(gratia)
+theme_set(theme_bw())
+
+library(nlme)
+library(emmeans)
+treatl <- get_treatment_means() %>%
+  remove_switch()
+both_scale <- scale_color_viridis_d(begin = .1, end = .8)
+cc_scale <- scale_color_viridis_d(begin = .1, end = .1)
+ee_scale <- scale_color_viridis_d(begin = .8, end =.8)
+both_fscale <- scale_fill_viridis_d(begin = .1, end = .8)
+cc_fscale <- scale_fill_viridis_d(begin = .1, end = .1)
+ee_fscale <- scale_fill_viridis_d(begin = .8, end =.8)
+
+pb <- get_pb(treatl)
+pb_nozero <- pb %>%
+  filter(as.numeric(oera) > 1)
+energy_ratio <- get_e_ratio(treatl)
+compensation <- get_compensation(treatl)
+
+era_df <- data.frame(event_name = c("C. baileyi establishment", "Reorganization event"), 
+                     event_period = c(232, 380),
+                     no_name = c("", "")) %>%
+  left_join(select(compensation, period, censusdate), by = c("event_period" = "period")) %>%
+  rename(event_date = censusdate)
+
+
+spei <- read.csv(here::here("analyses", "climate", "spei.csv"))
+
+droughts <- select(spei, year, month, spei12, spei18)
+
+censusdates_for_droughts <- select(compensation, censusdate)  %>%
+  mutate(month = format.Date(censusdate, "%m"),
+         year = format.Date(censusdate, "%Y")) %>%
+  mutate(month = as.integer(month), year = as.integer(year) + 1) %>%
+  left_join(droughts)
+
+```
+
+
+# 1. Compensation and total energy use
+
+
+Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS.
+
+**Compensation** refers to compensatory gains in energy use by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$. **Total energy** refers to the overall loss in energy use caused by kangaroo rat removal.
+
+```{r}
+
+
+comp_mean_gls <- gls(smgran_comp ~ era,  correlation = corCAR1(form = ~ period), data = compensation)
+
+comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ era)
+
+comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
+  right_join(compensation)
+
+comp_plot <- ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  geom_line(aes(y = smgran_comp_ma)) +
+  ggtitle("Energetic compensation for kangaroo rat removal") +
+  ylab("(Smgran_trt - Smgran_ctrl) / Dipo_ctrl") +
+  ylim(-.05, 1) +
+  geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = -.05, yend = 1), linetype = 3)+
+  xlab("") +
+  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name)) +
+  theme(axis.title.y = element_text(size = 8))
+
+comp_plot
+```
+
+
+```{r}
+
+totale_mean_gls <- gls(total_e_rat ~  era,  correlation = corCAR1(form = ~ period), data = energy_ratio)
+
+totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ era)
+
+
+totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
+  right_join(energy_ratio)
+  
+totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
+  geom_line(aes(y = total_e_rat_ma)) +
+  ggtitle("Total energy use on exclosures relative to controls") +
+  ylab("Exclosure / control energy use") +
+  theme(legend.position = "none") +
+  ylim(-0, 1.2) +
+  xlab("Date")  +
+  geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1.2), linetype = 3) +
+  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name))+
+  theme(axis.title.y = element_text(size = 8))
+
+totale_plot
+
+```
+
+```{r, fig.dim = c(6,4)}
+
+gridExtra::grid.arrange(grobs = list(comp_plot, totale_plot), ncol = 1)
+
+```
+
+# 2. Rodent community composition
+
+
+
+```{r}
+
+
+pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_nozero)
+
+pb_glm_treat_se <- est_glm_ilink(pb_glm_treat, pb_nozero) %>%
+  full_join(select(pb, period, oplottype, pb_prop_ma, censusdate)) %>%
+  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
+         Rodents = "C. baileyi") %>%
+  rename(rod_prop_ma = pb_prop_ma)
+
+
+smgran_dat <- treatl %>%
+  mutate(smgran_prop = smgran_e / total_e) %>%
+  group_by(oplottype) %>%
+  mutate(smgran_prop_ma = maopts(smgran_prop)) %>%
+  ungroup() 
+
+smgran_glm_treat <- glm(smgran_prop ~ oera * oplottype, family = quasibinomial(), data= smgran_dat)
+
+smgran_glm_treat_se <- est_glm_ilink(smgran_glm_treat, smgran_dat) %>%
+  left_join(select(smgran_dat, period, oplottype, smgran_prop_ma)) %>%
+  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
+         Rodents = "All small granivores\n(non-Dipodomys)") %>%
+  rename(rod_prop_ma = smgran_prop_ma)
+
+both_treat_se <- bind_rows(pb_glm_treat_se, smgran_glm_treat_se)
+
+cplot <- ggplot(filter(both_treat_se, oplottype == "CC"), aes(censusdate, est, color = Rodents, fill = Rodents)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = rod_prop_ma)) +
+  ylab("Proportion of total community energy use") +
+  ggtitle("Controls") +
+  theme(legend.position = c(.15, .6)) + both_scale + both_fscale   +
+  geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
+  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name)) + xlab("") +
+  theme(axis.title.y = element_text(size = 8), legend.title = element_blank(), legend.text = element_text(size =8))+ theme(axis.title.x = element_blank(), axis.title.y = element_blank(), title = element_text(size = 10), legend.background = element_rect(fill = NULL))
+
+eplot <-  ggplot(filter(both_treat_se, oplottype == "EE"), aes(censusdate, est, color = Rodents, fill = Rodents)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = rod_prop_ma)) +
+  ylab("Proportion of total community energy use") +
+  ggtitle("Kangaroo rat exclosures") +
+  theme(legend.position = "none") + both_scale + both_fscale   +
+  geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
+  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) + xlab("Date") +
+  theme(axis.title.y = element_text(size = 8)) +theme(axis.title.x = element_blank(), axis.title.y = element_blank(), title = element_text(size = 10))
+
+
+```
+
+```{r, fig.dim = c(6,4)}
+library(grid)
+gridExtra::grid.arrange(grobs = list(cplot, eplot), ncol = 1, top = textGrob("Rodent community composition"), bottom = textGrob("Date"), left = textGrob("Proportion of total community energy use", rot = 90))
+
+```
