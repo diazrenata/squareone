@@ -85,7 +85,8 @@ PB energy use as a proportion of treatment-level totals on controls and exclosur
 
 pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_nozero)
 
-pb_glm_treat_se <- est_glm_ilink(pb_glm_treat, pb_nozero)
+pb_glm_treat_se <- est_glm_ilink(pb_glm_treat, pb_nozero) %>%
+  left_join(select(pb_nozero, period, oplottype, pb_prop_ma))
 
 ggplot(filter(pb_glm_treat_se), aes(censusdate, est, color = oplottype, fill = oplottype)) +
   geom_line() +
@@ -132,12 +133,13 @@ smgran_dat <- treatl %>%
 
 smgran_glm_treat <- glm(smgran_prop ~ oera * oplottype, family = quasibinomial(), data= smgran_dat)
 
-smgran_glm_treat_se <- est_glm_ilink(smgran_glm_treat, rename(smgran_dat, pb_prop_ma = smgran_prop_ma))
+smgran_glm_treat_se <- est_glm_ilink(smgran_glm_treat, smgran_dat) %>%
+  left_join(select(smgran_dat, period, oplottype, smgran_prop_ma))
 
 ggplot(filter(smgran_glm_treat_se), aes(censusdate, est, color = oplottype, fill = oplottype)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
-  geom_line(aes(y = pb_prop_ma)) +
+  geom_line(aes(y = smgran_prop_ma)) +
   ylab("smgran % of energy use") +
   ggtitle("smgran ratio over time") +
   theme(legend.position = "top") +

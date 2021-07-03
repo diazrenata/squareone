@@ -54,6 +54,15 @@ censused but no individuals were found (of any species).
 
 `prop_abund ~ treatment + era, family = quasibinomial`
 
+<div class="kable-table">
+
+| Resid. Df | Resid. Dev |  Df |    Deviance | Pr(\>Chi) |
+| --------: | ---------: | --: | ----------: | --------: |
+|        49 |    9.53541 |  NA |          NA |        NA |
+|        51 |    9.78910 | \-2 | \-0.2536895 | 0.4853155 |
+
+</div>
+
     ## Joining, by = c("oera", "oplottype")
 
 ![](erodium_results_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
@@ -62,26 +71,26 @@ censused but no individuals were found (of any species).
 
 | oera | oplottype |       est |     lower |     upper |
 | :--- | :-------- | --------: | --------: | --------: |
-| a    | CC        | 0.0183824 | 0.0048080 | 0.0676758 |
-| a    | EE        | 0.0467621 | 0.0133983 | 0.1505308 |
-| b    | EE        | 0.5904758 | 0.4680586 | 0.7026198 |
-| b    | CC        | 0.3550116 | 0.2457459 | 0.4818250 |
-| c    | CC        | 0.0782894 | 0.0364074 | 0.1603344 |
-| c    | EE        | 0.1820075 | 0.0986260 | 0.3115194 |
+| a    | CC        | 0.0149772 | 0.0042249 | 0.0516743 |
+| a    | EE        | 0.0445932 | 0.0140037 | 0.1329894 |
+| b    | CC        | 0.3629483 | 0.2590846 | 0.4813964 |
+| b    | EE        | 0.6362187 | 0.5177554 | 0.7401845 |
+| c    | CC        | 0.0707817 | 0.0340022 | 0.1415165 |
+| c    | EE        | 0.1895152 | 0.1079129 | 0.3112916 |
 
 </div>
 
     ## oplottype = CC:
     ##  contrast estimate    SE  df z.ratio p.value
-    ##  a - b       -3.38 0.666 Inf -5.074  <.0001 
-    ##  a - c       -1.51 0.719 Inf -2.101  0.0895 
-    ##  b - c        1.87 0.392 Inf  4.768  <.0001 
+    ##  a - b       -3.62 0.624 Inf -5.805  <.0001 
+    ##  a - c       -1.61 0.670 Inf -2.407  0.0425 
+    ##  b - c        2.01 0.371 Inf  5.419  <.0001 
     ## 
     ## oplottype = EE:
     ##  contrast estimate    SE  df z.ratio p.value
-    ##  a - b       -3.38 0.666 Inf -5.074  <.0001 
-    ##  a - c       -1.51 0.719 Inf -2.101  0.0895 
-    ##  b - c        1.87 0.392 Inf  4.768  <.0001 
+    ##  a - b       -3.62 0.624 Inf -5.805  <.0001 
+    ##  a - c       -1.61 0.670 Inf -2.407  0.0425 
+    ##  b - c        2.01 0.371 Inf  5.419  <.0001 
     ## 
     ## Results are given on the log odds ratio (not the response) scale. 
     ## P value adjustment: tukey method for comparing a family of 3 estimates

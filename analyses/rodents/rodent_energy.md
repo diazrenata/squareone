@@ -4,6 +4,7 @@ Rodent energy use results
   - [Overview of compositonal shift](#overview-of-compositonal-shift)
   - [Energy variables](#energy-variables)
       - [PB over time](#pb-over-time)
+      - [Smgran over time](#smgran-over-time)
       - [Compensation](#compensation)
       - [Treatment:control total E
         ratio](#treatmentcontrol-total-e-ratio)
@@ -25,65 +26,12 @@ total energy use, all on control plots. The remainder is kangaroo rats.
 Lines are 6-month moving averages. Horizontal lines + ribbons are means
 and SE or CL from GLM or GLS.
 
-<!-- Shown are 6-month moving averages. -->
-
-<!-- ## PB -->
-
-<!-- ```{r} -->
-
-<!-- ggplot(pb, aes(censusdate, pb_prop_ma, color = oplottype)) + -->
-
-<!--   geom_line() + -->
-
-<!--   ggtitle("PB % of energy use, from treatment means") + -->
-
-<!--   era_grid + both_scale + -->
-
-<!--   ylim(0,1) -->
-
-<!-- ``` -->
-
-<!--  -->
-
-<!-- ## Compensation -->
-
-<!-- ```{r} -->
-
-<!-- ggplot(compensation, aes(censusdate, smgran_comp_ma, color = oplottype)) + -->
-
-<!--   geom_line() + -->
-
-<!--   ggtitle("Small granivore compensation, from treatment means") + -->
-
-<!--   era_grid + ee_scale -->
-
-<!-- ``` -->
-
-<!-- Compensatory gains in energy use by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$.  -->
-
-<!-- ## Total energy ratio -->
-
-<!-- ```{r} -->
-
-<!-- ggplot(energy_ratio, aes(censusdate, (total_e_rat_ma), color = oplottype)) + -->
-
-<!--   geom_line() + -->
-
-<!--   ggtitle("Total E ratio") + -->
-
-<!--   era_grid + ee_scale -->
-
-<!-- ``` -->
-
-<!-- Total energy use on exclosures relative to total energy use on controls. -->
-
-<!-- # Time period means -->
-
 ## PB over time
 
 PB energy use as a proportion of treatment-level totals on controls and
 exclosures.
 
+    ## Joining, by = c("period", "oplottype")
     ## Joining, by = c("period", "oplottype")
 
 ![](rodent_energy_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
@@ -92,12 +40,12 @@ Means and SE for each time period, calculated from GLM fit:
 
 <div class="kable-table">
 
-| oera         |       est |     lower |     upper | oplottype |
-| :----------- | --------: | --------: | --------: | :-------- |
-| b\_pre\_cpt  | 0.1046083 | 0.0858916 | 0.1268378 | CC        |
-| b\_pre\_cpt  | 0.6541999 | 0.6218458 | 0.6851873 | EE        |
-| c\_post\_cpt | 0.0027984 | 0.0006169 | 0.0125967 | CC        |
-| c\_post\_cpt | 0.2512829 | 0.2180367 | 0.2877330 | EE        |
+| oera             |       est |     lower |     upper | oplottype |
+| :--------------- | --------: | --------: | --------: | :-------- |
+| b\_pre\_drought  | 0.1172888 | 0.0997539 | 0.1374355 | CC        |
+| b\_pre\_drought  | 0.7248069 | 0.6979585 | 0.7501232 | EE        |
+| c\_post\_drought | 0.0027984 | 0.0008023 | 0.0097130 | CC        |
+| c\_post\_drought | 0.2512829 | 0.2235731 | 0.2811833 | EE        |
 
 </div>
 
@@ -106,10 +54,51 @@ treatment), from GLM:
 
 <div class="kable-table">
 
-| contrast                   | oplottype | p.value |
-| :------------------------- | :-------- | ------: |
-| b\_pre\_cpt - c\_post\_cpt | CC        | 1.1e-06 |
-| b\_pre\_cpt - c\_post\_cpt | EE        | 0.0e+00 |
+| contrast                           | oplottype | p.value |
+| :--------------------------------- | :-------- | ------: |
+| b\_pre\_drought - c\_post\_drought | CC        |       0 |
+| b\_pre\_drought - c\_post\_drought | EE        |       0 |
+
+</div>
+
+## Smgran over time
+
+Smgran energy use as a proportion of treatment-level totals on controls
+and exclosures.
+
+    ## Joining, by = c("period", "oplottype")
+    ## Joining, by = c("period", "oplottype")
+
+![](rodent_energy_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+Means and SE for each time period, calculated from GLM fit:
+
+<div class="kable-table">
+
+| oera             | oplottype |       est |     lower |     upper |
+| :--------------- | :-------- | --------: | --------: | --------: |
+| a\_pre\_pb       | CC        | 0.0816472 | 0.0621807 | 0.1065157 |
+| a\_pre\_pb       | EE        | 0.9111217 | 0.8854559 | 0.9314816 |
+| b\_pre\_drought  | CC        | 0.2839099 | 0.2510033 | 0.3192915 |
+| b\_pre\_drought  | EE        | 0.9425976 | 0.9222044 | 0.9578890 |
+| c\_post\_drought | CC        | 0.2964165 | 0.2587994 | 0.3370151 |
+| c\_post\_drought | EE        | 0.9232823 | 0.8969641 | 0.9433030 |
+
+</div>
+
+Significance of contrasts comparing each time period (within each
+treatment), from GLM:
+
+<div class="kable-table">
+
+| contrast                           | oplottype |   p.value |
+| :--------------------------------- | :-------- | --------: |
+| a\_pre\_pb - b\_pre\_drought       | CC        | 0.0000000 |
+| a\_pre\_pb - c\_post\_drought      | CC        | 0.0000000 |
+| b\_pre\_drought - c\_post\_drought | CC        | 0.8798965 |
+| a\_pre\_pb - b\_pre\_drought       | EE        | 0.0736226 |
+| a\_pre\_pb - c\_post\_drought      | EE        | 0.7356211 |
+| b\_pre\_drought - c\_post\_drought | EE        | 0.3660145 |
 
 </div>
 
@@ -121,17 +110,17 @@ relative to controls. Calculated as
 
     ## Joining, by = "era"
 
-![](rodent_energy_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](rodent_energy_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 Time period means + CL, from GLS fit with autocorrelation:
 
 <div class="kable-table">
 
-| oera         |    emmean |  lower.CL |  upper.CL |
-| :----------- | --------: | --------: | --------: |
-| a\_pre\_ba   | 0.1665799 | 0.0616221 | 0.2715377 |
-| b\_pre\_cpt  | 0.5263685 | 0.4438879 | 0.6088492 |
-| c\_post\_cpt | 0.2180135 | 0.1189564 | 0.3170707 |
+| oera             |    emmean |  lower.CL |  upper.CL |
+| :--------------- | --------: | --------: | --------: |
+| a\_pre\_pb       | 0.1887873 | 0.0916487 | 0.2859260 |
+| b\_pre\_drought  | 0.5484112 | 0.4619628 | 0.6348595 |
+| c\_post\_drought | 0.2184241 | 0.1197802 | 0.3170680 |
 
 </div>
 
@@ -139,11 +128,11 @@ Significance of time period comparisons, from GLS:
 
 <div class="kable-table">
 
-| contrast                   |    estimate |        SE |       df |     t.ratio | p.value |
-| :------------------------- | ----------: | --------: | -------: | ----------: | ------: |
-| a\_pre\_ba - b\_pre\_cpt   | \-0.3597886 | 0.0661258 | 60.25424 | \-5.4409683 |   0.000 |
-| a\_pre\_ba - c\_post\_cpt  | \-0.0514336 | 0.0720904 | 58.16400 | \-0.7134595 |   0.757 |
-| b\_pre\_cpt - c\_post\_cpt |   0.3083550 | 0.0639210 | 62.15427 |   4.8239995 |   0.000 |
+| contrast                           |    estimate |        SE |       df |     t.ratio | p.value |
+| :--------------------------------- | ----------: | --------: | -------: | ----------: | ------: |
+| a\_pre\_pb - b\_pre\_drought       | \-0.3596238 | 0.0644233 | 60.44042 | \-5.5822045 |   0.000 |
+| a\_pre\_pb - c\_post\_drought      | \-0.0296368 | 0.0691495 | 57.97849 | \-0.4285901 |   0.904 |
+| b\_pre\_drought - c\_post\_drought |   0.3299870 | 0.0650229 | 62.66119 |   5.0749352 |   0.000 |
 
 </div>
 
@@ -153,17 +142,17 @@ Total energy use on exclosures relative to total energy use on controls.
 
     ## Joining, by = "era"
 
-![](rodent_energy_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](rodent_energy_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 Time period means and CL from GLS fit with autocorrelation:
 
 <div class="kable-table">
 
-| oera         | oplottype |    emmean |  lower.CL |  upper.CL |
-| :----------- | :-------- | --------: | --------: | --------: |
-| a\_pre\_ba   | EE        | 0.2511218 | 0.1573675 | 0.3448761 |
-| b\_pre\_cpt  | EE        | 0.6731253 | 0.5997847 | 0.7464658 |
-| c\_post\_cpt | EE        | 0.4619384 | 0.3738506 | 0.5500263 |
+| oera             | oplottype |    emmean |  lower.CL |  upper.CL |
+| :--------------- | :-------- | --------: | --------: | --------: |
+| a\_pre\_pb       | EE        | 0.2955610 | 0.2019781 | 0.3891438 |
+| b\_pre\_drought  | EE        | 0.6836903 | 0.6012729 | 0.7661077 |
+| c\_post\_drought | EE        | 0.4621793 | 0.3678648 | 0.5564937 |
 
 </div>
 
@@ -171,10 +160,10 @@ Significance of time period comparisons:
 
 <div class="kable-table">
 
-| contrast                   | p.value |
-| :------------------------- | ------: |
-| a\_pre\_ba - b\_pre\_cpt   |   0.000 |
-| a\_pre\_ba - c\_post\_cpt  |   0.005 |
-| b\_pre\_cpt - c\_post\_cpt |   0.001 |
+| contrast                           | p.value |
+| :--------------------------------- | ------: |
+| a\_pre\_pb - b\_pre\_drought       |   0.000 |
+| a\_pre\_pb - c\_post\_drought      |   0.040 |
+| b\_pre\_drought - c\_post\_drought |   0.002 |
 
 </div>

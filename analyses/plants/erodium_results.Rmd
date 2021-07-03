@@ -30,7 +30,7 @@ ee_fscale <- scale_fill_viridis_d(begin = .8, end =.8)
 erodium_treatments <- get_erodium_treatment()
 
 erodium_treatments <- erodium_treatments %>%
-  mutate(era = ifelse(year < 1996, "a", ifelse(year < 2010, "b", "c"))) %>%
+  mutate(era = ifelse(year <= 1996, "a", ifelse(year < 2010, "b", "c"))) %>%
   mutate(oera = as.ordered(era)) %>%
   mutate(erod_total_abundance_std = 5 * (erod_total_abundance / total_plots)) %>%
 rename(plot_type = combined_trt)  %>%
@@ -72,7 +72,7 @@ prop_glm <- glm(erod_treatment_prop_abundance ~ oplottype * oera, data = erodium
 
 prop_glm_noint <-  glm(erod_treatment_prop_abundance ~ oplottype + oera, data = erodium_treatments_noz, family = quasibinomial())
 # 
-# (anova(prop_glm, prop_glm_noint, test = "Chisq"))
+ (anova(prop_glm, prop_glm_noint, test = "Chisq"))
 # 
 
 
