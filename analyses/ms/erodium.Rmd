@@ -1,0 +1,87 @@
+---
+title: "Erodium"
+output: 
+    github_document:
+       df_print: kable
+       toc: true
+---
+```{r setup}
+library(dplyr)
+library(soar)
+library(ggplot2)
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+
+theme_set(theme_bw())
+
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+both_scale <- scale_color_viridis_d(begin = .1, end = .8)
+both_fscale <- scale_fill_viridis_d(begin = .1, end = .8)
+
+era_df <- make_era_df() %>%
+  mutate(year = format.Date(event_date, "%Y")) %>%
+  mutate(year = as.integer(year))
+
+```
+
+
+```{r}
+
+erodium_treatments <- get_erodium_treatment()
+
+erodium_treatments <- erodium_treatments %>%
+  mutate(era = ifelse(year <= 1997, "a_pre_pb", ifelse(year < 2010, "b_pre_reorg", "c_post_reorg"))) %>%
+  rename(plot_type = combined_trt)  %>%
+  mutate(oplottype= as.ordered(plot_type),
+         oera = as.ordered(era)) %>%
+  left_join(era_df) %>%
+  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"))
+
+```
+
+# Treatment levels
+
+Gaps are for censuses in 1996, 2000, 2006, and 2011 where plots were censused but no individuals were found (of any species).
+
+```{r}
+
+erodium_treatments_noz <- filter(erodium_treatments, total_total_abundance > 0)
+
+```
+
+
+The interaction between plottype and era is not significant, so dropping it:
+
+```{r}
+
+prop_glm <- glm(erod_treatment_prop_abundance ~ oplottype * oera, data = erodium_treatments_noz, family = quasibinomial())
+
+prop_glm_noint <-  glm(erod_treatment_prop_abundance ~ oplottype + oera, data = erodium_treatments_noz, family = quasibinomial())
+
+(anova(prop_glm, prop_glm_noint, test = "Chisq"))
+
+```
+
+
+```{r, fig.dim = c(6,3)}
+erod_predict <- soar::est_glm_ilink(prop_glm, mutate(distinct(select(erodium_treatments_noz, oplottype, year, oera)), period = year, censusdate = year))%>%
+  left_join(select(erodium_treatments_noz, year, oplottype, oera, erod_treatment_prop_abundance, event_name, Treatment) %>% distinct() %>% mutate(period = year)) %>%
+  bind_rows(filter(era_df, year > 2000)) 
+
+ggplot(filter(erod_predict, !is.na(Treatment)), aes(year,erod_treatment_prop_abundance, color = Treatment, fill =  Treatment)) +
+  geom_line() +both_scale + both_fscale +  ggtitle("E. ciculatum proportional abundance", subtitle = "Treatment-level totals") + ylab("Proportion of total abundance") + xlab("Year") +  scale_x_continuous(sec.axis = dup_axis(name = NULL, breaks = unique(filter(erod_predict, !is.na(event_name))$year), labels = unique(filter(erod_predict, !is.na(event_name))$event_name))) +  geom_segment(data = era_df, aes(x = year, xend = year, y = 0, yend = 1), linetype = 3, inherit.aes = F)  + ylim(0,1) + theme(legend.position = c(.15, .7), legend.background = element_blank(), legend.title = element_blank()) + geom_line(aes(y= est)) + geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .3)
+
+
+```
+
+```{r}
+glm_emmeans <- emmeans::regrid(emmeans::emmeans(prop_glm_noint, specs = ~ oera | oplottype))
+
+glm_ests <- as.data.frame(glm_emmeans)
+
+glm_ests
+
+glm_contrasts <- as.data.frame(pairs(glm_emmeans))
+
+glm_contrasts
+
+```

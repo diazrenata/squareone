@@ -19,12 +19,9 @@ library(nlme)
 library(emmeans)
 treatl <- get_treatment_means() %>%
   remove_switch()
-both_scale <- scale_color_viridis_d(begin = .1, end = .8)
-cc_scale <- scale_color_viridis_d(begin = .1, end = .1)
-ee_scale <- scale_color_viridis_d(begin = .8, end =.8)
-both_fscale <- scale_fill_viridis_d(begin = .1, end = .8)
-cc_fscale <- scale_fill_viridis_d(begin = .1, end = .1)
-ee_fscale <- scale_fill_viridis_d(begin = .8, end =.8)
+both_scale <- scale_color_viridis_d(option = "cividis", begin = .1, end = .8)
+both_fscale <- scale_fill_viridis_d(option = "cividis", begin = .1, end = .8)
+
 
 pb <- get_pb(treatl)
 pb_nozero <- pb %>%
@@ -32,27 +29,14 @@ pb_nozero <- pb %>%
 energy_ratio <- get_e_ratio(treatl)
 compensation <- get_compensation(treatl)
 
-era_df <- data.frame(event_name = c("C. baileyi establishment", "Reorganization event"), 
-                     event_period = c(232, 380),
-                     no_name = c("", "")) %>%
-  left_join(select(compensation, period, censusdate), by = c("event_period" = "period")) %>%
-  rename(event_date = censusdate)
+era_df <- make_era_df()
 
-
-spei <- read.csv(here::here("analyses", "climate", "spei.csv"))
-
-droughts <- select(spei, year, month, spei12, spei18)
-
-censusdates_for_droughts <- select(compensation, censusdate)  %>%
-  mutate(month = format.Date(censusdate, "%m"),
-         year = format.Date(censusdate, "%Y")) %>%
-  mutate(month = as.integer(month), year = as.integer(year) + 1) %>%
-  left_join(droughts)
 
 ```
 
+# Figures
 
-# 1. Compensation and total energy use
+## 1. Compensation and total energy use
 
 
 Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS.
@@ -81,7 +65,7 @@ comp_plot <- ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(ce
   scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name)) +
   theme(axis.title.y = element_text(size = 8))
 
-comp_plot
+#comp_plot
 ```
 
 
@@ -108,7 +92,7 @@ totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), ae
   scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name))+
   theme(axis.title.y = element_text(size = 8))
 
-totale_plot
+#totale_plot
 
 ```
 
@@ -118,7 +102,7 @@ gridExtra::grid.arrange(grobs = list(comp_plot, totale_plot), ncol = 1)
 
 ```
 
-# 2. Rodent community composition
+## 2. Rodent community composition
 
 
 
@@ -178,5 +162,142 @@ eplot <-  ggplot(filter(both_treat_se, oplottype == "EE"), aes(censusdate, est, 
 ```{r, fig.dim = c(6,4)}
 library(grid)
 gridExtra::grid.arrange(grobs = list(cplot, eplot), ncol = 1, top = textGrob("Rodent community composition"), bottom = textGrob("Date"), left = textGrob("Proportion of total community energy use", rot = 90))
+
+```
+
+# Model results
+
+## 1. Compensation & total energy use
+
+### Compensation
+
+```{r}
+
+summary(comp_mean_gls)
+```
+
+
+Estimates: 
+
+```{r}
+
+compensation_estimates <- as.data.frame(comp_mean_gls_emmeans)
+compensation_estimates
+
+```
+
+Contrasts:
+
+```{r}
+compensation_contrasts <- as.data.frame(pairs(comp_mean_gls_emmeans))
+compensation_contrasts
+
+```
+
+### Total energy use
+
+
+```{r}
+
+summary(totale_mean_gls)
+```
+
+
+Estimates: 
+
+```{r}
+
+totale_estimates <- as.data.frame(totale_mean_gls_emmeans)
+totale_estimates
+
+```
+
+Contrasts:
+
+```{r}
+totale_contrasts <- as.data.frame(pairs(totale_mean_gls_emmeans))
+totale_contrasts
+
+```
+
+## 2. Community composition
+
+### All small granivores
+
+
+```{r}
+
+summary(smgran_glm_treat)
+```
+
+
+Estimates: 
+
+Estimates from `emmeans` differ numerically (very slightly) from estimates obtained via `predict()` and back transformation. Below are estimates from `emmeans`, because those are what are used for contrasts.
+
+```{r}
+
+
+smgran_emmeans <- regrid(emmeans(smgran_glm_treat, specs = ~ oera | oplottype))
+
+smgran_estimates <- as.data.frame(smgran_emmeans)
+
+smgran_estimates
+
+```
+
+Estimates from `predict`:
+
+```{r}
+
+select(smgran_glm_treat_se, oplottype, oera, est, lower, upper) %>% distinct()
+
+```
+
+
+Contrasts:
+
+```{r}
+smgran_contrasts <- as.data.frame(pairs(smgran_emmeans))
+smgran_contrasts
+
+```
+
+
+### C. baileyi
+
+
+```{r}
+
+summary(pb_glm_treat)
+```
+
+
+Estimates: 
+
+```{r}
+
+pb_emmeans <- regrid(emmeans(pb_glm_treat, specs = ~ oera | oplottype))
+
+pb_estimates <- as.data.frame(pb_emmeans)
+
+pb_estimates
+
+```
+
+
+Estimates from `predict`:
+
+```{r}
+
+select(pb_glm_treat_se, oplottype, oera, est, lower, upper) %>% distinct()
+
+```
+
+Contrasts:
+
+```{r}
+pb_contrasts <- as.data.frame(pairs(pb_emmeans))
+pb_contrasts
 
 ```
