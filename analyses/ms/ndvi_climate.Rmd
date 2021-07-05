@@ -1,0 +1,258 @@
+---
+title: "NDVI and other climate variables"
+output: word_document
+  # github_document:
+  #      df_print: kable
+  #      toc: true
+  
+---
+
+```{r setup, include=FALSE}
+library(portalr)
+library(dplyr)
+library(ggplot2)
+library(soar)
+theme_set(theme_bw())
+
+knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 2.5))
+
+era_df <- make_era_df() %>%
+  mutate(year = as.numeric(format.Date(event_date, "%Y")))
+
+water_scale <- scale_color_viridis_d(option = "turbo", begin = .1, end = .8, direction = -1)
+
+temp_fscale <- scale_fill_viridis_d(option = "turbo", begin = .1, end = .8, direction = 1)
+temp_scale <- scale_color_viridis_d(option = "turbo", begin = .1, end = .8, direction =1)
+water_fscale <- scale_fill_viridis_d(option = "turbo", begin = .1, end = .8, direction = -1)
+ndvi_scale <-   scale_color_viridis_d(option = "mako", end = .8) 
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+
+era_labs <- scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name)) 
+era_lines <-   geom_vline(xintercept = era_df$event_date, linetype = 3)
+
+
+era_labs_year <- scale_x_continuous(sec.axis = dup_axis(name = NULL, breaks = era_df$year, labels = era_df$event_name)) 
+era_lines_year <-   geom_vline(xintercept = era_df$year, linetype = 3)
+```
+
+# NDVI
+
+```{r}
+
+ndvi_dat <- ndvi()
+
+
+ndvi_dat <- ndvi_dat %>%
+  mutate(month = format.Date(date, "%m"),
+         year = format.Date(date, "%Y")) %>%
+  filter(date > as.Date("1988-01-01"), date < as.Date("2020-02-01")) %>%
+  group_by(month) %>%
+  mutate(ndvi_norm = mean(ndvi)) %>%
+  ungroup() %>%
+  mutate(ndvi_difference = ndvi - ndvi_norm,
+         ndvi_prop = ndvi / ndvi_norm) %>%
+  mutate(numdate = as.numeric(date)) 
+
+```
+
+```{r}
+
+ggplot(ndvi_dat, aes(date, ndvi_difference, color = ndvi_difference > 0)) +
+  geom_col() +
+  ndvi_scale +
+  era_labs+ 
+  era_lines+
+  theme(legend.position = "none") +
+  xlab("Date") +
+  ylab("Difference from long-term mean") +
+  ggtitle("NDVI anomaly")
+
+```
+
+Monthly NDVI (mean NDVI from Landsat 5, 7, and 8) difference from long-term mean for each month from January 1988-January 2020.
+
+# Precipitation
+
+```{r}
+
+
+weather <- portalr::weather(level = "monthly", fill = T)
+
+weather <- weather %>%
+    dplyr::mutate(date = format(lubridate::parse_date_time(paste(month, year, sep=" "),
+                                                           orders = c("m/Y")), "%m-%Y")) %>%
+    dplyr::mutate(date = as.Date(paste("01",date,sep="-"), format="%d-%m-%Y"))  %>%
+  mutate(numdate = as.numeric(date)) %>%
+  filter(date > as.Date("1989-01-01"), date < as.Date("2020-02-01"))
+
+```
+
+## Total precipitation
+
+```{r}
+add1 <- function(lab) {
+  return(as.numeric(lab) + 1)
+}
+
+ggplot(weather, aes(date, anomaly_ppt - 1, color = anomaly_ppt > 1)) +
+  geom_col() +
+  era_lines+ 
+  era_labs+
+  water_scale +
+  theme(legend.position = "none")  +
+  scale_y_continuous(labels = add1) +
+  ylab("Proportion of 30-year normal\n") +
+  ggtitle("Total precipitation anomaly")
+
+```
+
+Monthly precipitation anomaly as a proportion of the 30-year PRISM normal. 
+
+
+## Summer precipitation
+
+```{r}
+
+summer_precip <- weather %>%
+  filter(month %in% c(4:9)) %>%
+  group_by(year) %>%
+  summarize(s_precip = sum(precipitation)) %>%
+  ungroup() 
+
+summer_mean_precip <- mean(summer_precip$s_precip)
+
+summer_precip <- summer_precip %>%
+  mutate(from_ltmean = s_precip / summer_mean_precip)
+
+ggplot(summer_precip, aes(year, from_ltmean, fill = from_ltmean > 1)) +
+  geom_col(aes(y = from_ltmean - 1)) +
+  water_fscale + 
+era_lines_year + era_labs_year +   theme(legend.position = "none") + ylab("Proportion of long term mean\n") + 
+  ggtitle("Summer (April-September) precipitation anomaly") + scale_y_continuous(labels = add1) +
+  xlab("Year")
+
+```
+
+Summer precipitation (total precipitation from April-September per year) as a proportion of the long-term mean.
+
+## Winter precipitation
+
+```{r}
+
+winter_precip <- weather %>%
+  filter(month %in% c(1:3, 10:12)) %>%
+  mutate(water_year = ifelse(month > 5, year + 1, year)) %>%
+  group_by(water_year) %>%
+  summarize(w_precip = sum(precipitation)) %>%
+  ungroup() %>%
+  filter(water_year < 2020)
+
+winter_mean_precip <- mean(winter_precip$w_precip)
+
+winter_precip <- winter_precip %>%
+  mutate(from_ltmean = w_precip / winter_mean_precip) %>%
+  rename(year = water_year)
+
+ggplot(winter_precip, aes(year, from_ltmean, fill = from_ltmean > 1)) +
+  geom_col(aes(y = from_ltmean - 1)) +
+  water_fscale + 
+era_lines_year + era_labs_year +   theme(legend.position = "none") + ylab("Proportion of long term mean\n") + 
+  ggtitle("Winter (October-March) precipitation anomaly") + scale_y_continuous(labels = add1) +
+  xlab("Year")
+
+```
+
+Winter precipitation (total precipitation from October-March the following year) as a proportion of the long-term mean.
+
+# Temperature
+
+## Mean temperature
+
+```{r}
+
+ggplot(weather, aes(date, anomaly_meant, color = anomaly_meant > 0)) +
+  geom_col() +
+  era_lines + era_labs +
+  temp_scale +
+  theme(legend.position = "none")  +
+  ylab("Difference from 30-yr normal\n(degrees C)") +
+  ggtitle("Mean temperature anomaly") +
+  xlab("Date")
+
+```
+
+Mean temperature anomaly as difference from the 30-year PRISM normal.
+
+## Days above 35 C
+
+
+```{r}
+
+hot_days <- portalr::weather(level = "daily", fill = T)
+
+hot_days <- hot_days %>%
+  group_by_all() %>%
+  mutate(is_hot = maxtemp > 35) %>%
+  ungroup() %>%
+  group_by(year) %>%
+  summarize(nhot = sum(is_hot, na.rm = T),
+            meanhot = mean(is_hot, na.rm = T),
+            ndays = sum(!is.na(is_hot))) %>%
+  ungroup() %>%
+  filter(year >= 1989, year < 2020)
+
+hot_days_lt <- mean(hot_days$nhot, na.rm =T)
+
+hot_days <- hot_days %>%
+  group_by_all() %>%
+  mutate(from_lt = nhot - hot_days_lt) %>%
+  ungroup()
+
+ggplot(hot_days, aes(year, from_lt, fill = from_lt > 0)) +
+  geom_col() +
+  temp_fscale +
+  era_lines_year +
+  era_labs_year + 
+  theme(legend.position = "none") +
+  ggtitle("Days above 35 C anomaly") +
+  ylab("Difference from long-term mean\n(number of days)") +
+  xlab("Year")
+```
+
+Number of days per calendar year when maximum temperature > 35C; anomaly calculated as difference from long term mean.
+
+## Min temperature
+
+```{r}
+
+ggplot(weather, aes(date, anomaly_mint, color = anomaly_mint > 0)) +
+  geom_col() +
+  era_lines + era_labs +
+  temp_scale +
+  theme(legend.position = "none")  +
+  ylab("Difference from 30-yr normal\n(degrees C)") +
+  ggtitle("Minimum temperature anomaly") +
+  xlab("Date")
+
+```
+
+Min temperature anomaly as difference from the 30-year PRISM normal.
+
+
+## Max temperature
+
+```{r}
+
+ggplot(weather, aes(date, anomaly_maxt, color = anomaly_maxt > 0)) +
+  geom_col() +
+  era_lines + era_labs +
+  temp_scale +
+  theme(legend.position = "none")  +
+  ylab("Difference from 30-yr normal\n(degrees C)") +
+  ggtitle("Maximum temperature anomaly") +
+  xlab("Date")
+
+```
+
+Max temperature anomaly as difference from the 30-year PRISM normal.
+

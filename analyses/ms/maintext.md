@@ -33,6 +33,11 @@ removal.
 
 ![](maintext_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
+    ## TableGrob (2 x 1) "arrange": 2 grobs
+    ##   z     cells    name           grob
+    ## 1 1 (1-1,1-1) arrange gtable[layout]
+    ## 2 2 (2-2,1-1) arrange gtable[layout]
+
 ## 2\. Rodent community composition
 
     ## Joining, by = c("period", "oplottype")
@@ -47,6 +52,14 @@ removal.
     ## Warning: Removed 114 row(s) containing missing values (geom_path).
 
 ![](maintext_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+    ## TableGrob (4 x 2) "arrange": 5 grobs
+    ##   z     cells    name                grob
+    ## 1 1 (2-2,2-2) arrange      gtable[layout]
+    ## 2 2 (3-3,2-2) arrange      gtable[layout]
+    ## 3 3 (1-1,2-2) arrange text[GRID.text.240]
+    ## 4 4 (4-4,2-2) arrange text[GRID.text.241]
+    ## 5 5 (1-4,1-1) arrange text[GRID.text.242]
 
 # Model results
 
@@ -313,3 +326,5 @@ Contrasts:
 | b\_pre\_reorg - c\_post\_reorg | EE        | 0.4735241 | 0.0194398 | Inf | 24.35843 |       0 |
 
 </div>
+
+![](maintext_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->

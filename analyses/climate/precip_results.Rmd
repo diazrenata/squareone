@@ -29,8 +29,6 @@ era_break_dates <- as.Date(
   format = "%Y-%m-%d"
 )
 
-era_breaks <- geom_vline(xintercept = era_break_dates, linetype = 2)
-
 ```
 
 ```{r}

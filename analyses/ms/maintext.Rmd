@@ -98,8 +98,9 @@ totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), ae
 
 ```{r, fig.dim = c(6,4)}
 
-gridExtra::grid.arrange(grobs = list(comp_plot, totale_plot), ncol = 1)
+g1 <- gridExtra::grid.arrange(grobs = list(comp_plot, totale_plot), ncol = 1)
 
+g1
 ```
 
 ## 2. Rodent community composition
@@ -143,7 +144,7 @@ cplot <- ggplot(filter(both_treat_se, oplottype == "CC"), aes(censusdate, est, c
   theme(legend.position = c(.15, .6)) + both_scale + both_fscale   +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
   scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name)) + xlab("") +
-  theme(axis.title.y = element_text(size = 8), legend.title = element_blank(), legend.text = element_text(size =8))+ theme(axis.title.x = element_blank(), axis.title.y = element_blank(), title = element_text(size = 10), legend.background = element_rect(fill = NULL))
+  theme(axis.title.y = element_text(size = 8), legend.title = element_blank(), legend.text = element_text(size =8))+ theme(axis.title.x = element_blank(), axis.title.y = element_blank(), title = element_text(size = 10), legend.background = element_blank(), legend.direction = "vertical")
 
 eplot <-  ggplot(filter(both_treat_se, oplottype == "EE"), aes(censusdate, est, color = Rodents, fill = Rodents)) +
   geom_line() +
@@ -161,7 +162,9 @@ eplot <-  ggplot(filter(both_treat_se, oplottype == "EE"), aes(censusdate, est, 
 
 ```{r, fig.dim = c(6,4)}
 library(grid)
-gridExtra::grid.arrange(grobs = list(cplot, eplot), ncol = 1, top = textGrob("Rodent community composition"), bottom = textGrob("Date"), left = textGrob("Proportion of total community energy use", rot = 90))
+g2 <- gridExtra::grid.arrange(grobs = list(cplot, eplot), ncol = 1, top = textGrob("Rodent community composition"), bottom = textGrob("Date"), left = textGrob("Proportion of total community energy use", rot = 90))
+
+g2
 
 ```
 
@@ -299,5 +302,11 @@ Contrasts:
 ```{r}
 pb_contrasts <- as.data.frame(pairs(pb_emmeans))
 pb_contrasts
+
+```
+
+```{r, fig.dim = c(6,8)}
+
+gridExtra::grid.arrange(grobs = list(g1, g2))
 
 ```

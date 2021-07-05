@@ -2,6 +2,7 @@ Erodium
 ================
 
   - [Treatment levels](#treatment-levels)
+      - [spei](#spei)
 
 ``` r
 library(dplyr)
@@ -26,8 +27,8 @@ knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
 theme_set(theme_bw())
 
 era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
-both_scale <- scale_color_viridis_d(begin = .1, end = .8)
-both_fscale <- scale_fill_viridis_d(begin = .1, end = .8)
+both_scale <- scale_color_viridis_d(begin = .1, end = .7)
+both_fscale <- scale_fill_viridis_d(begin = .1, end = .7)
 
 era_df <- make_era_df() %>%
   mutate(year = format.Date(event_date, "%Y")) %>%
@@ -68,6 +69,9 @@ it:
 
     ## Joining, by = c("period", "oplottype", "oera")
 
+    ## Scale for 'y' is already present. Adding another scale for 'y', which will
+    ## replace the existing scale.
+
 ![](erodium_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 <div class="kable-table">
@@ -95,3 +99,31 @@ it:
 | b\_pre\_reorg - c\_post\_reorg | EE        |   0.4822711 | 0.0667785 | Inf |    7.221956 | 0.0000000 |
 
 </div>
+
+## spei
+
+    ## Loading required package: lmomco
+
+    ## Loading required package: parallel
+
+    ## # Package SPEI (1.7) loaded [try SPEINews()].
+
+    ## Joining, by = c("year", "month")
+
+    ## Registered S3 method overwritten by 'quantmod':
+    ##   method            from
+    ##   as.zoo.data.frame zoo
+
+    ## Joining, by = "year"
+
+    ## Warning: Removed 22 rows containing missing values (position_stack).
+
+    ## Warning: Removed 1 rows containing missing values (geom_col).
+
+![](erodium_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+    ## Warning: Removed 22 rows containing missing values (position_stack).
+
+    ## Warning: Removed 1 rows containing missing values (geom_col).
+
+![](erodium_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
