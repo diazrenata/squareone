@@ -31,7 +31,7 @@ removal.
 
     ## Joining, by = "era"
 
-![](maintext_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](rodents_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
     ## TableGrob (2 x 1) "arrange": 2 grobs
     ##   z     cells    name           grob
@@ -51,7 +51,7 @@ removal.
     
     ## Warning: Removed 114 row(s) containing missing values (geom_path).
 
-![](maintext_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](rodents_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
     ## TableGrob (4 x 2) "arrange": 5 grobs
     ##   z     cells    name                grob
@@ -327,4 +327,4 @@ Contrasts:
 
 </div>
 
-![](maintext_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](rodents_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->

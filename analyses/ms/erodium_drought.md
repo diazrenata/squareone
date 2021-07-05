@@ -1,4 +1,4 @@
-Erodium
+Erodium and SPEI
 ================
 
   - [Treatment levels](#treatment-levels)
@@ -72,7 +72,7 @@ it:
     ## Scale for 'y' is already present. Adding another scale for 'y', which will
     ## replace the existing scale.
 
-![](erodium_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](erodium_drought_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 <div class="kable-table">
 
@@ -120,10 +120,10 @@ it:
 
     ## Warning: Removed 1 rows containing missing values (geom_col).
 
-![](erodium_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](erodium_drought_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
     ## Warning: Removed 22 rows containing missing values (position_stack).
 
     ## Warning: Removed 1 rows containing missing values (geom_col).
 
-![](erodium_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](erodium_drought_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->

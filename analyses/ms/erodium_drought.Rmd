@@ -1,9 +1,9 @@
 ---
-title: "Erodium"
-output: 
-    github_document:
-       df_print: kable
-       toc: true
+title: "Erodium and SPEI"
+output: word_document
+    # github_document:
+    #    df_print: kable
+    #    toc: true
 ---
 ```{r setup}
 library(dplyr)
