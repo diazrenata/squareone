@@ -48,6 +48,18 @@ Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE o
 
 comp_mean_gls <- gls(smgran_comp ~ era,  correlation = corCAR1(form = ~ period), data = compensation)
 
+
+# from https://stats.stackexchange.com/questions/13859/finding-overall-p-value-for-gls-model 
+comp_int_gls <- gls(smgran_comp ~ 1, correlation = corCAR1(form = ~period, value = 0.5141927, fixed = TRUE), data = compensation)
+
+comp_mean_gls_ml <- update(comp_mean_gls, . ~ ., method = "ML")
+
+comp_int_gls_ml <- update(comp_int_gls, . ~ ., method = "ML")
+
+anova(comp_mean_gls_ml, comp_int_gls_ml)
+
+pchisq(38.10586, 2, lower.tail = F)
+
 comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ era)
 
 comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
@@ -72,6 +84,18 @@ comp_plot <- ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(ce
 ```{r}
 
 totale_mean_gls <- gls(total_e_rat ~  era,  correlation = corCAR1(form = ~ period), data = energy_ratio)
+
+
+
+totale_int_gls <- gls(total_e_rat ~ 1, correlation = corCAR1(form = ~period, value = 0.6318768, fixed = TRUE), data = energy_ratio)
+
+totale_mean_gls_ml <- update(totale_mean_gls, . ~ ., method = "ML")
+
+totale_int_gls_ml <- update(totale_int_gls, . ~ ., method = "ML")
+
+anova(totale_mean_gls_ml, totale_int_gls_ml)
+
+pchisq(40.28898, 2, lower.tail = F)
 
 totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ era)
 
