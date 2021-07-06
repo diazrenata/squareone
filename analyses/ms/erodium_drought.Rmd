@@ -1,9 +1,9 @@
 ---
 title: "Erodium and SPEI"
-output: word_document
-    # github_document:
-    #    df_print: kable
-    #    toc: true
+output: 
+    github_document:
+       df_print: kable
+       toc: true
 ---
 ```{r setup}
 library(dplyr)
@@ -13,13 +13,23 @@ knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
 
 theme_set(theme_bw())
 
-era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
-both_scale <- scale_color_viridis_d(begin = .1, end = .7)
-both_fscale <- scale_fill_viridis_d(begin = .1, end = .7)
-
 era_df <- make_era_df() %>%
   mutate(year = format.Date(event_date, "%Y")) %>%
   mutate(year = as.integer(year))
+
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+
+era_labs <- scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name)) 
+era_lines <-   geom_vline(xintercept = era_df$event_date, linetype = 3)
+
+
+era_labs_year <- scale_x_continuous(sec.axis = dup_axis(name = NULL, breaks = era_df$year, labels = era_df$event_name)) 
+era_lines_year <-   geom_vline(xintercept = era_df$year, linetype = 3)
+both_scale <- scale_color_viridis_d(begin = .1, end = .7)
+both_fscale <- scale_fill_viridis_d(begin = .1, end = .7)
+
+treatl <- get_treatment_means() %>% 
+  remove_switch()
 
 ```
 
@@ -74,8 +84,8 @@ erod_plot <- ggplot(filter(erod_predict, !is.na(Treatment)), aes(year,erod_treat
   both_fscale +  
   ggtitle("E. ciculatum proportional abundance") +
   ylab("Proportional abundance") + 
-  xlab("") +  
-  scale_x_continuous(sec.axis = dup_axis(name = NULL, breaks = unique(filter(erod_predict, !is.na(event_name))$year), labels = unique(filter(erod_predict, !is.na(event_name))$event_name)), limits = c(1988, 2020.25)) +  
+  xlab("Date") +  
+  scale_x_continuous(sec.axis = dup_axis(name = NULL, breaks = unique(filter(erod_predict, !is.na(event_name))$year), labels = unique(filter(erod_predict, !is.na(event_name))$no_name)), limits = c(1988, 2020.25)) +  
   geom_segment(data = era_df, aes(x = year, xend = year, y = 0, yend = 1), linetype = 3, inherit.aes = F)  + 
   ylim(0,1) + theme(legend.position = c(.15, .7), legend.background = element_blank(), legend.title = element_blank()) + 
   geom_line(aes(y= est)) + 
@@ -156,8 +166,8 @@ spei_plot <- ggplot(weather_full_drought, aes(newdate, spei12, color = dry, fill
   scale_fill_viridis_d(option = "turbo", begin = .1, end = .8) +
   theme(legend.position = "none") +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = -2.2, yend = 2.2), linetype = 3, inherit.aes = F) +
-  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name), limits = c(as.Date("1988-01-01"), as.Date("2020-01-01"))) +
-  xlab("Date") +
+  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name), limits = c(as.Date("1988-01-01"), as.Date("2020-01-01"))) +
+  xlab("") +
   ylab("12-month SPEI index") +
   geom_hline(yintercept = 1, color = "blue", alpha = .3) +
   geom_hline(yintercept = -1, color ="red", alpha = .3) +
@@ -167,9 +177,29 @@ spei_plot <- ggplot(weather_full_drought, aes(newdate, spei12, color = dry, fill
 spei_plot
 ```
 
+```{r, fig.dim = c(6,6)}
+
+
+treatl <- treatl %>%
+  mutate(trt = ifelse(oplottype == "CC", "Control", "Exclosure"))
+
+te_plot <- ggplot(treatl, aes(censusdate, total_e_ma, color = trt)) + 
+  geom_line() +
+  both_scale +
+  era_lines +
+  era_labs + theme(legend.position = c(.15, .7), legend.background = element_blank(), legend.title = element_blank()) +
+  ggtitle("Total rodent energy use") +
+  xlab("Date") +
+  ylab("Treatment-level mean energy use (kJ / plot)")
+  
+te_plot
+
+```
+
+
 ```{r, fig.dim = c(6,4)}
 
-gridExtra::grid.arrange(grobs = list(erod_plot, spei_plot), ncol =1)
+gridExtra::grid.arrange(grobs = list(spei_plot, erod_plot), ncol =1)
 
 ```
 

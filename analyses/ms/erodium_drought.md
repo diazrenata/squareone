@@ -26,10 +26,6 @@ knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
 
 theme_set(theme_bw())
 
-era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
-both_scale <- scale_color_viridis_d(begin = .1, end = .7)
-both_fscale <- scale_fill_viridis_d(begin = .1, end = .7)
-
 era_df <- make_era_df() %>%
   mutate(year = format.Date(event_date, "%Y")) %>%
   mutate(year = as.integer(year))
@@ -37,6 +33,25 @@ era_df <- make_era_df() %>%
 
     ## Loading in data version 2.95.0
 
+    ## Joining, by = "plot"
+
+``` r
+era_grid <-   facet_grid(cols = vars(oera), space = "free", scales = "free_x")
+
+era_labs <- scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name)) 
+era_lines <-   geom_vline(xintercept = era_df$event_date, linetype = 3)
+
+
+era_labs_year <- scale_x_continuous(sec.axis = dup_axis(name = NULL, breaks = era_df$year, labels = era_df$event_name)) 
+era_lines_year <-   geom_vline(xintercept = era_df$year, linetype = 3)
+both_scale <- scale_color_viridis_d(begin = .1, end = .7)
+both_fscale <- scale_fill_viridis_d(begin = .1, end = .7)
+
+treatl <- get_treatment_means() %>% 
+  remove_switch()
+```
+
+    ## Loading in data version 2.95.0
     ## Joining, by = "plot"
 
     ## Loading in data version 2.95.0
@@ -122,8 +137,10 @@ it:
 
 ![](erodium_drought_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
+![](erodium_drought_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
     ## Warning: Removed 22 rows containing missing values (position_stack).
 
     ## Warning: Removed 1 rows containing missing values (geom_col).
 
-![](erodium_drought_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](erodium_drought_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
