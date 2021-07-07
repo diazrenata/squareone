@@ -1,9 +1,9 @@
 ---
 title: "NDVI and other climate variables"
-output: word_document
-  # github_document:
-  #      df_print: kable
-  #      toc: true
+output: 
+  github_document:
+       df_print: kable
+       toc: true
   
 ---
 
@@ -256,3 +256,6 @@ ggplot(weather, aes(date, anomaly_maxt, color = anomaly_maxt > 0)) +
 
 Max temperature anomaly as difference from the 30-year PRISM normal.
 
+# References
+
+PRISM Climate Group, Oregon State University, http://prism.oregonstate.edu, Norm81m (Monthly and annual 1981-2010 Normals), active as of October 2019, latest release date July 2012.

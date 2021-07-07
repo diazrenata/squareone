@@ -11,6 +11,7 @@ NDVI and other climate variables
       - [Days above 35 C](#days-above-35-c)
       - [Min temperature](#min-temperature)
       - [Max temperature](#max-temperature)
+  - [References](#references)
 
 # NDVI
 
@@ -68,3 +69,9 @@ Min temperature anomaly as difference from the 30-year PRISM normal.
 ![](ndvi_climate_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 Max temperature anomaly as difference from the 30-year PRISM normal.
+
+# References
+
+PRISM Climate Group, Oregon State University,
+<http://prism.oregonstate.edu>, Norm81m (Monthly and annual 1981-2010
+Normals), active as of October 2019, latest release date July 2012.
