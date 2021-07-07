@@ -3,11 +3,10 @@ title: "Complete model results"
 output: 
   word_document:
        df_print: kable
-       reference_docx: style_reference.docx
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = T, fig.dim = c(6, 3))
+knitr::opts_chunk$set(echo = F, fig.dim = c(6, 3))
 library(soar)
 library(ggplot2)
 library(dplyr)
@@ -73,6 +72,8 @@ comp_gls <- gls(smgran_comp ~ era,  correlation = corCAR1(form = ~ period), data
 
 Following https://stats.stackexchange.com/questions/13859/finding-overall-p-value-for-gls-model, we compare a version of the model with no fixed effect to the above model. The two models are separated by 1 degree of freedom. 
 
+Likelihood ratio:
+
 ```{r}
 
 corValue <- intervals(comp_gls)$corStruct[2]
@@ -91,6 +92,8 @@ likR <- anova_table$L.Ratio[2]
 
 likR
 ```
+
+P-value:
 
 ```{r}
 # P value for the time period (era) effect:
@@ -134,6 +137,7 @@ totale_gls <- gls(total_e_rat ~  era,  correlation = corCAR1(form = ~ period), d
 
 ## Significance of effects
 
+Likelihood ratio:
 
 ```{r}
 
@@ -153,6 +157,8 @@ likR <- anova_table$L.Ratio[2]
 
 likR
 ```
+
+P-value:
 
 ```{r}
 # P value for the time period (era) effect:
@@ -262,16 +268,6 @@ smgran_estimates
 
 
 
-Estimates from `predict`:
-
-```{r}
-
-smgran_glm_se <- est_glm_ilink(smgran_glm, smgran_dat) %>%
-  dplyr::select(-period, -censusdate) %>%
-  dplyr::distinct()
-smgran_glm_se
-```
-
 # 5. C baileyi proportional abundance GLM
 
 
@@ -286,7 +282,6 @@ pb_glm <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_noz
 
 ```
 
-
 `oera` is the time period, and `oplottype` is treatment. 
 
 
@@ -296,30 +291,6 @@ summary(pb_glm)
 
 ```
 
-<!-- ## Significance of effects -->
-
-
-<!-- ```{r} -->
-<!-- pb_nointeraction_glm<- glm(pb_prop ~ oera + oplottype, family = quasibinomial(), data= pb_nozero) -->
-
-
-<!-- pb_era_glm<- glm(pb_prop ~ oera, family = quasibinomial(), data= pb_nozero) -->
-
-<!-- pb_time_glm<- glm(pb_prop ~ oera, family = quasibinomial(), data= pb_nozero) -->
-
-<!-- pb_intercept_glm<- glm(pb_prop ~ 1, family = quasibinomial(), data= pb_nozero) -->
-
-
-<!-- (anova(pb_glm, pb_nointeraction_glm, test = "Chisq")) -->
-
-<!-- (anova(pb_glm, pb_era_glm, test = "Chisq")) -->
-
-<!-- (anova(pb_glm, pb_time_glm, test = "Chisq")) -->
-
-<!-- (anova(pb_glm, pb_intercept_glm, test = "Chisq")) -->
-
-
-<!-- ``` -->
 
 ## Contrasts
 
@@ -349,32 +320,22 @@ pb_estimates
 
 
 
-Estimates from `predict`:
-
-```{r}
-
-pb_glm_se <- est_glm_ilink(pb_glm, pb_nozero) %>%
-  dplyr::select(-period, -censusdate) %>%
-  dplyr::distinct()
-pb_glm_se
-```
-
 # 6. E. ciculatum proportional abundance GLM
 
 _E. ciculatum_ abundance as a proportion of total plant abundance for each winter census. 
 
-Model call - note that an interaction between plot type and era is not significant, so we drop it:
+Model call - note that an interaction between plot type and era is not significant, so we drop it.
 
 ```{r}
-
-
-erod_glm <- glm(erod_treatment_prop_abundance ~ oplottype * oera, data = erodium_treatments_noz, family = quasibinomial())
-
-summary(erod_glm)
+# 
+# 
+# erod_glm <- glm(erod_treatment_prop_abundance ~ oplottype * oera, data = erodium_treatments_noz, family = quasibinomial())
+# 
+# summary(erod_glm)
 
 erod_glm_nointeraction <-  glm(erod_treatment_prop_abundance ~ oplottype + oera, data = erodium_treatments_noz, family = quasibinomial())
 
-(anova(erod_glm, erod_glm_nointeraction, test = "Chisq"))
+#(anova(erod_glm, erod_glm_nointeraction, test = "Chisq"))
 
 summary(erod_glm_nointeraction)
 ```
@@ -407,12 +368,11 @@ erod_estimates
 
 ```
 
-Estimates from `predict`:
 
-```{r}
+# References
 
-erod_glm_se <- est_glm_ilink(erod_glm, mutate(erodium_treatments_noz, period = year, censusdate = year)) %>%
-  dplyr::select(-period, -censusdate) %>%
-  dplyr::distinct()
-erod_glm_se
-```
+
+Russell V. Lenth (2021). emmeans: Estimated Marginal Means, aka Least-Squares Means. R package version 1.5.4. https://CRAN.R-project.org/package=emmeans
+
+
+Pinheiro J, Bates D, DebRoy S, Sarkar D, R Core Team (2020). _nlme: Linear and Nonlinear Mixed Effects Models_. R package version 3.1-149, <URL: https://CRAN.R-project.org/package=nlme>.
