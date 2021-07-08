@@ -1,2 +1,5 @@
 # squareone
-Plot switches in 1977, 1989, 2015
+
+Energetic compensation since 2010.
+
+Uses functions in https://github.com/diazrenata/soar.
