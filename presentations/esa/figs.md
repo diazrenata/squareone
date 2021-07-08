@@ -41,11 +41,10 @@ ggplot(simple_te, aes(treatment, energy, fill = Species)) +
 ggplot(simple_te, aes(treatment, energy, fill = Species)) +
   geom_col(alpha = .3, colour = "black") +
   theme(axis.text.x = element_blank()) +
-  ylab("Energy use") +
-  ggtitle("Hypothetical energetic compensation") +
+  ylab("Energy use (kJ)") +
   scale_fill_viridis_d(option = "turbo", end = .8) +
   xlab("Treatment") +
-  theme(legend.text = element_blank())
+  theme(legend.text = element_blank(), axis.text.y = element_text(size = 18), axis.title = element_text(size = 18), title = element_text(size = 15), legend.title = element_text(size = 18))
 ```
 
 ![](figs_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->

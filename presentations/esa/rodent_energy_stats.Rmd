@@ -86,15 +86,7 @@ PB energy use as a proportion of treatment-level totals on controls and exclosur
 pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_nozero)
 
 pb_glm_treat_se <- est_glm_ilink(pb_glm_treat, pb_nozero)
-
-ggplot(filter(pb_glm_treat_se), aes(censusdate, est, color = oplottype, fill = oplottype)) +
-  geom_line() +
-  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
-  geom_line(aes(y = pb_prop_ma)) +
-  ylab("PB % of energy use") +
-  ggtitle("PB ratio over time") +
-  theme(legend.position = "top") +
-  era_grid + both_scale + both_fscale
+s
 ```
 
 
@@ -207,16 +199,16 @@ totale_mean_gls_pairs
 ```
 
 
-```{r, fig.dim = c(4.5, 4.5)}
+```{r, fig.dim = c(6.5,5)}
 
 compensation_pred <- select(comp_mean_pred, era, emmean, lower.CL, upper.CL, oplottype) %>% distinct() %>% mutate(timeperiods =  c("1988-1996", "1996-2010", "2010-2020"))
 
-ggplot(compensation_pred, aes(timeperiods, emmean)) + geom_point() + geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL)) + xlab("Time period") + ylab("Compensation %") + ggtitle("Energetic compensation for kangaroo rats") + ylim(0, 1) + geom_text(aes("1988-1996", .4, label = "a")) + geom_text(aes("1996-2010", .75, label = "b")) + geom_text(aes("2010-2020", .4, label = "a"))
+ggplot(compensation_pred, aes(timeperiods, emmean)) + geom_point() + geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL))  + ylab("Compensation %") + ggtitle("Energetic compensation for kangaroo rats") + ylim(0, 1) + geom_text(aes("1988-1996", .4, label = "a"), size = 6) + geom_text(aes("1996-2010", .75, label = "b"), size = 6) + geom_text(aes("2010-2020", .4, label = "a"), size = 6) + theme(axis.text = element_text(size = 18), axis.title = element_text(size = 18), axis.title.x = element_blank(), title = element_text(size = 18))
 
 
 totale_pred <- select(totale_mean_pred, era, emmean, lower.CL, upper.CL ) %>% distinct() %>% mutate(timeperiods =  c("1988-1996", "1996-2010", "2010-2020"))
 
-ggplot(totale_pred, aes(timeperiods, emmean)) + geom_point() + geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL)) + xlab("Time period") + ylab("Total energy on exclosures / controls") + ggtitle("Loss of energy use without kangaroo rats") + ylim(0, 1) + geom_text(aes("1988-1996", .4, label = "a")) + geom_text(aes("1996-2010", .8, label = "b")) + geom_text(aes("2010-2020", .6, label = "c"))
+ggplot(totale_pred, aes(timeperiods, emmean)) + geom_point() + geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL)) + xlab("Time period") + ylab("Total energy on exclosures / controls") + ggtitle("Loss of energy use without kangaroo rats") + ylim(0, 1) + geom_text(aes("1988-1996", .5, label = "a"), size = 6) + geom_text(aes("1996-2010", .8, label = "b"), size = 6) + geom_text(aes("2010-2020", .6, label = "c"), size = 6) + theme(axis.text = element_text(size = 18), axis.title = element_text(size = 18), axis.title.x = element_blank(), title = element_text(size = 18))
 
 
 ```

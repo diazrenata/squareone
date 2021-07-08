@@ -14,7 +14,7 @@ theme_set(theme_bw())
 ```
 
 
-```{r, fig.dim = c(5,4)}
+```{r, fig.dim = c(4.5, 3)}
 
 simple_te <- expand.grid(Species = c('a', 'b'), treatment = c('c', 'e')) %>%
   as_tibble() %>%
@@ -31,11 +31,10 @@ ggplot(simple_te, aes(treatment, energy, fill = Species)) +
 ggplot(simple_te, aes(treatment, energy, fill = Species)) +
   geom_col(alpha = .3, colour = "black") +
   theme(axis.text.x = element_blank()) +
-  ylab("Energy use") +
-  ggtitle("Hypothetical energetic compensation") +
+  ylab("Energy use (kJ)") +
   scale_fill_viridis_d(option = "turbo", end = .8) +
   xlab("Treatment") +
-  theme(legend.text = element_blank())
+  theme(legend.text = element_blank(), axis.text.y = element_text(size = 18), axis.title = element_text(size = 18), title = element_text(size = 15), legend.title = element_text(size = 18))
 
 
 ```
