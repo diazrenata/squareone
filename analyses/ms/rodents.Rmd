@@ -192,6 +192,47 @@ g2
 
 ```
 
+## 2. Rodent community composition - krats
+
+
+
+```{r}
+
+dipo_dat <- treatl %>%
+  mutate(dipo_prop = dipo_e / total_e,
+         smgran_prop= smgran_e / total_e) %>%
+  group_by(oplottype) %>%
+  mutate(smgran_prop_ma = maopts(smgran_prop),
+         dipo_prop_ma = maopts(dipo_prop)) %>%
+  ungroup() 
+
+dipo_c_dat <- dipo_dat %>%
+  filter(oplottype == "CC")
+
+dipo_glm <- glm(dipo_prop ~ oera, family = quasibinomial(), data= dipo_c_dat)
+
+dipo_glm_se <- est_glm_ilink(dipo_glm, dipo_c_dat) %>%
+  left_join(select(dipo_c_dat, period, dipo_prop_ma)) %>%
+  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
+         Rodents = "All small granivores\n(non-Dipodomys)") %>%
+  rename(rod_prop_ma = dipo_prop_ma)
+
+
+dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, est)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_line(aes(y = rod_prop_ma)) +
+  ylab("Proportion of total community energy use") +
+  ggtitle("Controls") +
+  #theme(legend.position = c(.15, .6)) + both_scale + both_fscale   +
+  geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
+  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name)) + xlab("") +
+  theme(axis.title.y = element_text(size = 8), legend.title = element_blank(), legend.text = element_text(size =8))+ theme(axis.title.x = element_blank(), axis.title.y = element_blank(), title = element_text(size = 10), legend.background = element_blank(), legend.direction = "vertical")
+
+
+
+```
+
 # Model results
 
 ## 1. Compensation & total energy use
