@@ -29,7 +29,7 @@ ndvi_scale <-   scale_color_viridis_d(option = "mako", end = .8)
 
 ```
 
-# Total rodent abundance
+<!-- # Total rodent abundance -->
 
 ```{r}
 
@@ -48,7 +48,7 @@ te_plot <- ggplot(te_anomaly, aes(censusdate, total_e)) +
   theme( title = element_text(size = 10), axis.text = element_text(size = 10), legend.background = element_blank(), legend.direction = "vertical", legend.position = "none") + geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1800), linetype = 3, inherit.aes = F) +
   geom_hline(yintercept = te_anomaly$te_mean[1], linetype = 2) +
   geom_text(data = data.frame(), aes(as.Date("1990-10-01"), 750, label = "Long-term mean"))
-te_plot
+#te_plot
 
 te_anom_plot <- ggplot(te_anomaly, aes(censusdate, te_anomaly, color = te_anomaly_positive, fill = te_anomaly_positive)) +
   geom_col() +
@@ -59,10 +59,10 @@ te_anom_plot <- ggplot(te_anomaly, aes(censusdate, te_anomaly, color = te_anomal
   scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name)) +
   theme(axis.title.y = element_text(size =  10), legend.title = element_blank(), legend.text = element_text(size =  10))+ theme( title = element_text(size = 10), axis.text = element_text(size = 10), legend.background = element_blank(), legend.direction = "vertical", legend.position = "none") + scale_color_viridis_d(option = "cividis", begin= .1, end =.8)
 
-te_anom_plot
+#te_anom_plot
 ```
 
-# NDVI
+<!-- # NDVI -->
 
 ```{r}
 
@@ -100,10 +100,10 @@ ndvi_plot <- ggplot(ndvi_dat, aes(date, ndvi_difference, color = ndvi_difference
   xlab("Date") +
   ylab("Difference from \nlong-term mean") +
   ggtitle("NDVI anomaly")
-ndvi_plot
+#ndvi_plot
 ```
 
-# Drought (SPEI index)
+<!-- # Drought (SPEI index) -->
 
 ```{r}
 library(SPEI)
@@ -167,11 +167,11 @@ spei_plot <- ggplot(weather_full_drought, aes(newdate, spei12, color = dry, fill
   ggtitle("Drought (SPEI index)") +
   scale_y_continuous(n.breaks = 5, labels = space_label )
 
-spei_plot
+#spei_plot
 
 ```
 
-# All plots
+# Figure S1
 
 ```{r, fig.dim = c(6,8)}
 library(multipanelfigure)
@@ -183,3 +183,24 @@ all_panels <- multi_panel_figure(columns = 1, rows =3, row_spacing = c(5, 0, 0))
 
 all_panels
 ```
+
+
+Changes in overall community energy use (A), NDVI (B), and local climate (C) surrounding the 2010 shift in rodent community composition. As documented in Christensen et al. (2018), the 2010 transition followed a period of low abundance community-wide (A) and low plant productivity (B). Since 2010, the site has experienced two periods of drought (C) interspersed with an unusually wet period. 
+
+Total rodent energy use (A) is calculated as the total energy use of all granviores on control plots ($Etot_C$) in each census period. The horizontal dashed line is the long-term mean, and the vertical dashed lines mark the dates of major transitions in the rodent community. NDVI anomaly (B) is calculated as the difference between monthly NDVI and the long-term mean for that month. NDVI data were obtained from Landsat 5, 7, and 8 using the `ndvi` function in the R package `portalr` (Maesk et al. 2006; Vermote et al. 2016; Christensen et al. 2019). Drought (C) was calculated using a 12-month Standardized Precipitation Evapotranspiraiton index (SPEI) for all months from 1989-2020, using the Thornthwaite method to estimate potential evapotranspiration (using the R package `SPEI`, Beguería and Vicente-Serrano 2017; Slette et al. 2019; Cárdenas et al. 2021). Values greater than 0 (blue) indicate wetter than average conditions, and values less than 0 (red) indicate drier conditions. Values between -1 and 1 (horizontal lines) are considered within normal variability for a system, while values < -1 constitute drought (Slette et al. 2019). 
+
+## References
+
+Beguería, S., and S. M. Vicente-Serrano. 2017. SPEI: Calculation of the Standardised Precipitation-Evapotranspiration Index.
+
+Cárdenas, P. A., E. Christensen, S. K. M. Ernest, D. C. Lightfoot, R. L. Schooley, P. Stapp, and J. A. Rudgers. 2021. Declines in rodent abundance and diversity track regional climate variability in North American drylands. Global Change Biology:gcb.15672.
+
+Christensen, E. M., D. J. Harris, and S. K. M. Ernest. 2018. Long-term community change through multiple rapid transitions in a desert rodent community. Ecology 99:1523–1529.
+
+Christensen, E. M., G. M. Yenni, H. Ye, J. L. Simonis, E. K. Bledsoe, R. M. Diaz, S. D. Taylor, E. P. White, and S. K. M. Ernest. 2019. portalr: an R package for summarizing and using the Portal Project Data. Journal of Open Source Software 4:1098.
+
+Masek, J.G., Vermote, E.F., Saleous, N., Wolfe, R., Hall, F.G., Huemmrich, F., Gao, F., Kutler, J., and Lim, T.K. (2006). A Landsat surface reflectance data set for North America, 1990-100, IEEE Geoscience and Remote Sensing Letters. 3:68-72.
+
+Slette, I. J., A. K. Post, M. Awad, T. Even, A. Punzalan, S. Williams, M. D. Smith, and A. K. Knapp. 2019. How ecologists define drought, and why we should do better. Global Change Biology 25:3193–3200.
+
+Vermote, E., Justice, C., Claverie, M., & Franch, B. (2016). Preliminary analysis of the performance of the Landsat 8/OLI land surface reflectance product. Remote Sensing of Environment, 185, 46-56.
