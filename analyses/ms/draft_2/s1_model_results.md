@@ -1,92 +1,62 @@
-MS figs
+Model results
 ================
 
-  - [Figures](#figures)
-      - [Compensation and total energy
-        use](#compensation-and-total-energy-use)
-          - [Compensation](#compensation)
-          - [Total energy ratio](#total-energy-ratio)
-      - [Rodent community composition](#rodent-community-composition)
-          - [C. baileyi](#c.-baileyi)
-          - [Dipodomys](#dipodomys)
-      - [Full figure](#full-figure)
-  - [Model results](#model-results)
-      - [Compensation & total energy
-        use](#compensation-total-energy-use)
-          - [Compensation](#compensation-1)
-          - [Total energy use](#total-energy-use)
-      - [Community composition](#community-composition)
-          - [Kangaroo rats](#kangaroo-rats)
-          - [C. baileyi](#c.-baileyi-1)
+  - [Compensation & total energy use](#compensation-total-energy-use)
+      - [Compensation](#compensation)
+      - [Total energy use](#total-energy-use)
+  - [Community composition](#community-composition)
+      - [Kangaroo rats](#kangaroo-rats)
+      - [C. baileyi](#c.-baileyi)
 
-# Figures
+<!-- # Figures -->
 
-## Compensation and total energy use
+<!-- ## Compensation and total energy use -->
 
-Lines are 6-month moving averages. Horizontal lines + ribbons are means
-and SE or CL from GLM or GLS.
+<!-- Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS. -->
 
-### Compensation
+<!-- ### Compensation -->
 
-**Compensation** refers to compensatory gains in energy use by small
-granivores on exclosure plots relative to controls. Calculated as
-\(\frac{SmgranExclosure - SmgranControl}{DipoControl}\). **Total
-energy** refers to the overall loss in energy use caused by kangaroo rat
-removal.
+<!-- **Compensation** refers to compensatory gains in energy use by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$. **Total energy** refers to the overall loss in energy use caused by kangaroo rat removal. -->
 
     ## Joining, by = "era"
 
-![](rodents_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
-
-### Total energy ratio
+<!-- ### Total energy ratio -->
 
     ## Joining, by = "era"
 
-![](rodents_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+<!-- ## Rodent community composition -->
 
-## Rodent community composition
-
-### C. baileyi
+<!-- ### C. baileyi -->
 
     ## Joining, by = c("period", "oplottype")
 
     ## Joining, by = c("period", "oplottype", "censusdate")
 
-    ## Warning: Removed 228 row(s) containing missing values (geom_path).
-
-![](rodents_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
-
-### Dipodomys
+<!-- ### Dipodomys -->
 
     ## Joining, by = c("period", "oplottype")
 
     ## Joining, by = "period"
 
-![](rodents_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+<!-- ## Full figure -->
 
-## Full figure
+<!-- ```{r, fig.dim = c(6, 9)} -->
 
-    ## Setting row to 1
+<!-- all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0) %>% -->
 
-    ## Setting column to 1
+<!--   fill_panel(totale_plot) %>% -->
 
-    ## Setting row to 2
+<!--   fill_panel(comp_plot) %>% -->
 
-    ## Setting column to 1
+<!--   fill_panel(dplot) %>% -->
 
-    ## Setting row to 3
+<!--   fill_panel(pbplot) -->
 
-    ## Setting column to 1
+<!-- all_panels -->
 
-    ## Setting row to 4
+<!-- ``` -->
 
-    ## Setting column to 1
-
-    ## Warning: Removed 228 row(s) containing missing values (geom_path).
-
-![](rodents_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
-
-# Model results
+<!-- # Model results -->
 
 ## Compensation & total energy use
 

@@ -1,5 +1,5 @@
 ---
-title: "MS figs"
+title: "Model results"
 output: #word_document
    github_document:
         df_print: kable
@@ -36,16 +36,16 @@ era_df <- make_era_df()
 
 ```
 
-# Figures
+<!-- # Figures -->
 
-## Compensation and total energy use
+<!-- ## Compensation and total energy use -->
 
 
-Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS.
+<!-- Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS. -->
 
-### Compensation
+<!-- ### Compensation -->
 
-**Compensation** refers to compensatory gains in energy use by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$. **Total energy** refers to the overall loss in energy use caused by kangaroo rat removal.
+<!-- **Compensation** refers to compensatory gains in energy use by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$. **Total energy** refers to the overall loss in energy use caused by kangaroo rat removal. -->
 
 ```{r}
 
@@ -81,10 +81,10 @@ comp_plot <- ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(ce
   scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) +
   theme(axis.title.y = element_text(size =  10), axis.text = element_text(size = 10)) + xlab("")
 
-comp_plot
+#comp_plot
 ```
 
-### Total energy ratio
+<!-- ### Total energy ratio -->
 
 ```{r}
 
@@ -120,13 +120,13 @@ totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), ae
   scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name))+
   theme(axis.title.y = element_text(size =  10),  axis.text = element_text(size = 10)) + xlab("")
 
-totale_plot
+#totale_plot
 
 ```
 
-## Rodent community composition
+<!-- ## Rodent community composition -->
 
-### C. baileyi
+<!-- ### C. baileyi -->
 
 
 ```{r}
@@ -157,12 +157,12 @@ pbplot <- ggplot(pb_glm_treat_se, aes(censusdate, est, color = Treatment, fill =
   theme( title = element_text(size = 10), legend.background = element_blank(), axis.title.y = element_text(), legend.direction = "vertical", axis.text = element_text(size = 10)) +   xlab("Date")  
 
 
-pbplot
+#pbplot
 
 ```
 
 
-### Dipodomys
+<!-- ### Dipodomys -->
 
 ```{r}
 
@@ -199,24 +199,24 @@ dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, est)) +
   scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) + xlab("") +
   theme(axis.title.y = element_text(size =  10), legend.title = element_blank(), legend.text = element_text(size =  10))+ theme( title = element_text(size = 10), axis.text = element_text(size = 10), legend.background = element_blank(), legend.direction = "vertical")
 
-dplot
+#dplot
 
 ```
 
-## Full figure
+<!-- ## Full figure -->
 
-```{r, fig.dim = c(6, 9)}
+<!-- ```{r, fig.dim = c(6, 9)} -->
 
-all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0) %>%
-  fill_panel(totale_plot) %>%
-  fill_panel(comp_plot) %>%
-  fill_panel(dplot) %>%
-  fill_panel(pbplot)
+<!-- all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0) %>% -->
+<!--   fill_panel(totale_plot) %>% -->
+<!--   fill_panel(comp_plot) %>% -->
+<!--   fill_panel(dplot) %>% -->
+<!--   fill_panel(pbplot) -->
 
-all_panels
-```
+<!-- all_panels -->
+<!-- ``` -->
 
-# Model results
+<!-- # Model results -->
 
 ## Compensation & total energy use
 
