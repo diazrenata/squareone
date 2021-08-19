@@ -2,7 +2,7 @@ Covariates of rodent community change
 ================
 
   - [Figure S1](#figure-s1)
-      - [References](#references)
+  - [References](#references)
 
 <!-- # Total rodent abundance -->
 
@@ -53,23 +53,24 @@ interspersed with an unusually wet period.
 
 Total rodent energy use (A) is calculated as the total energy use of all
 granviores on control plots (\(Etot_C\)) in each census period. The
-horizontal dashed line is the long-term mean, and the vertical dashed
-lines mark the dates of major transitions in the rodent community. NDVI
-anomaly (B) is calculated as the difference between monthly NDVI and the
-long-term mean for that month. NDVI data were obtained from Landsat 5,
-7, and 8 using the `ndvi` function in the R package `portalr` (Maesk et
-al. 2006; Vermote et al. 2016; Christensen et al. 2019). Drought (C) was
-calculated using a 12-month Standardized Precipitation
-Evapotranspiraiton index (SPEI) for all months from 1989-2020, using the
-Thornthwaite method to estimate potential evapotranspiration (using the
-R package `SPEI`, Beguería and Vicente-Serrano 2017; Slette et al. 2019;
-Cárdenas et al. 2021). Values greater than 0 (blue) indicate wetter than
-average conditions, and values less than 0 (red) indicate drier
-conditions. Values between -1 and 1 (horizontal lines) are considered
-within normal variability for a system, while values \< -1 constitute
-drought (Slette et al. 2019).
+anomaly (shown) is calculated as the differene between the total energy
+use in each census period and the long-term mean of total energy use.
+Vertical dashed lines mark the dates of major transitions in the rodent
+community. NDVI anomaly (B) is calculated as the difference between
+monthly NDVI and the long-term mean for that month. NDVI data were
+obtained from Landsat 5, 7, and 8 using the `ndvi` function in the R
+package `portalr` (Maesk et al. 2006; Vermote et al. 2016; Christensen
+et al. 2019). Drought (C) was calculated using a 12-month Standardized
+Precipitation Evapotranspiraiton index (SPEI) for all months from
+1989-2020, using the Thornthwaite method to estimate potential
+evapotranspiration (using the R package `SPEI`, Beguería and
+Vicente-Serrano 2017; Slette et al. 2019; Cárdenas et al. 2021). Values
+greater than 0 (blue) indicate wetter than average conditions, and
+values less than 0 (red) indicate drier conditions. Values between -1
+and 1 (horizontal lines) are considered within normal variability for a
+system, while values \< -1 constitute drought (Slette et al. 2019).
 
-## References
+# References
 
 Beguería, S., and S. M. Vicente-Serrano. 2017. SPEI: Calculation of the
 Standardised Precipitation-Evapotranspiration Index.
