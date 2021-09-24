@@ -38,6 +38,4 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# drake
-
-analyses/plants/ldats/drake-cache-soar.sqlite
+*.DS_Store*
