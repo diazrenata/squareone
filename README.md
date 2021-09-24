@@ -1,8 +1,6 @@
 # squareone
 
-Energetic compensation since 2010.
-
-Uses functions in https://github.com/diazrenata/soar.
+Analyses supporting the ms "Maintenance of community function through compensation breaks down over time in a desert rodent community". bioRxiv: 
 
 To replicate:
 
