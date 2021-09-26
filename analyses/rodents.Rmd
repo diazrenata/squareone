@@ -19,8 +19,7 @@ theme_set(theme_bw())
 
 library(nlme)
 library(emmeans)
-treatl <- get_treatment_means() %>%
-  remove_switch()
+treatl <- get_treatment_means() 
 both_scale <- scale_color_viridis_d(option = "cividis", begin = .1, end = .8, direction = -1)
 both_fscale <- scale_fill_viridis_d(option = "cividis", begin = .1, end = .8, direction = -1)
 

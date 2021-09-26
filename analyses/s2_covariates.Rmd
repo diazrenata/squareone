@@ -17,8 +17,7 @@ library(multipanelfigure)
 
 theme_set(theme_bw())
 
-treatl <- get_treatment_means() %>%
-  remove_switch()
+treatl <- get_treatment_means()
 
 era_df <- make_era_df() %>%
   mutate(year = format.Date(event_date, "%Y")) %>%
