@@ -1,9 +1,10 @@
 ---
-title: "MS figs"
+title: "Figures for main text"
 output: #word_document
-   github_document:
-        df_print: kable
-        toc: true
+   # github_document:
+   #      df_print: kable
+   #      toc: true
+   pdf_document 
 ---
 
 ```{r setup, include=FALSE}
@@ -11,8 +12,6 @@ knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
 library(soar)
 library(ggplot2)
 library(dplyr)
-library(mgcv)
-library(gratia)
 library(multipanelfigure)
 
 theme_set(theme_bw())
@@ -51,18 +50,6 @@ Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE o
 
 comp_mean_gls <- gls(smgran_comp ~ era,  correlation = corCAR1(form = ~ period), data = compensation)
 
-
-# from https://stats.stackexchange.com/questions/13859/finding-overall-p-value-for-gls-model 
-comp_int_gls <- gls(smgran_comp ~ 1, correlation = corCAR1(form = ~period, value = 0.5141927, fixed = TRUE), data = compensation)
-
-comp_mean_gls_ml <- update(comp_mean_gls, . ~ ., method = "ML")
-
-comp_int_gls_ml <- update(comp_int_gls, . ~ ., method = "ML")
-
-#anova(comp_mean_gls_ml, comp_int_gls_ml)
-
-#pchisq(38.10586, 2, lower.tail = F)
-
 comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ era)
 
 comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
@@ -89,17 +76,6 @@ comp_plot
 
 totale_mean_gls <- gls(total_e_rat ~  era,  correlation = corCAR1(form = ~ period), data = energy_ratio)
 
-
-
-totale_int_gls <- gls(total_e_rat ~ 1, correlation = corCAR1(form = ~period, value = 0.6318768, fixed = TRUE), data = energy_ratio)
-
-totale_mean_gls_ml <- update(totale_mean_gls, . ~ ., method = "ML")
-
-totale_int_gls_ml <- update(totale_int_gls, . ~ ., method = "ML")
-
-#anova(totale_mean_gls_ml, totale_int_gls_ml)
-
-#pchisq(40.28898, 2, lower.tail = F)
 
 totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ era)
 
@@ -213,141 +189,4 @@ all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0) %>%
   fill_panel(pbplot)
 
 all_panels
-```
-
-# Model results
-
-## Compensation & total energy use
-
-### Compensation
-
-```{r}
-
-summary(comp_mean_gls)
-```
-
-
-Estimates: 
-
-```{r}
-
-compensation_estimates <- as.data.frame(comp_mean_gls_emmeans)
-compensation_estimates
-
-```
-
-Contrasts:
-
-```{r}
-compensation_contrasts <- as.data.frame(pairs(comp_mean_gls_emmeans))
-compensation_contrasts
-
-```
-
-### Total energy use
-
-
-```{r}
-
-summary(totale_mean_gls)
-```
-
-
-Estimates: 
-
-```{r}
-
-totale_estimates <- as.data.frame(totale_mean_gls_emmeans)
-totale_estimates
-
-```
-
-Contrasts:
-
-```{r}
-totale_contrasts <- as.data.frame(pairs(totale_mean_gls_emmeans))
-totale_contrasts
-
-```
-
-## Community composition
-
-### Kangaroo rats
-
-
-```{r}
-
-summary(dipo_glm)
-```
-
-
-Estimates:
-
-Estimates from `emmeans` differ numerically (very slightly) from estimates obtained via `predict()` and back transformation. Below are estimates from `emmeans`, because those are what are used for contrasts.
-
-```{r}
-
-
-dipoemmeans <- regrid(emmeans(dipo_glm, specs = ~ oera))
-
-dipoestimates <- as.data.frame(dipoemmeans)
-
-dipoestimates
-
-```
-
-Estimates from `predict`:
-
-```{r}
-
-select(dipo_glm_se, oera, est, lower, upper) %>% distinct()
-
-```
-
-
-Contrasts:
-
-```{r}
-dipocontrasts <- as.data.frame(pairs(dipoemmeans))
-dipocontrasts
-
-```
-
-
-### C. baileyi
-
-
-```{r}
-
-summary(pb_glm_treat)
-```
-
-
-Estimates: 
-
-```{r}
-
-pb_emmeans <- regrid(emmeans(pb_glm_treat, specs = ~ oera | oplottype))
-
-pb_estimates <- as.data.frame(pb_emmeans)
-
-pb_estimates
-
-```
-
-
-Estimates from `predict`:
-
-```{r}
-
-select(pb_glm_treat_se, oplottype, oera, est, lower, upper) %>% distinct()
-
-```
-
-Contrasts:
-
-```{r}
-pb_contrasts <- as.data.frame(pairs(pb_emmeans))
-pb_contrasts
-
 ```

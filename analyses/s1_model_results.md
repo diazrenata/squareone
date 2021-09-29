@@ -8,59 +8,26 @@ Model results
       - [Kangaroo rats](#kangaroo-rats)
       - [C. baileyi](#c.-baileyi)
 
-<!-- # Figures -->
+# Compensation & total energy use
 
-<!-- ## Compensation and total energy use -->
+## Compensation
 
-<!-- Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS. -->
+Model:
 
-<!-- ### Compensation -->
+``` r
+comp_mean_gls <- gls(smgran_comp ~ era,  correlation = corCAR1(form = ~ period), data = compensation)
 
-<!-- **Compensation** refers to compensatory gains in energy use by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$. **Total energy** refers to the overall loss in energy use caused by kangaroo rat removal. -->
+comp_mean_gls_ml <- update(comp_mean_gls, . ~ ., method = "ML")
+
+comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ era)
+
+comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
+  right_join(compensation)
+```
 
     ## Joining, by = "era"
 
-<!-- ### Total energy ratio -->
-
-    ## Joining, by = "era"
-
-<!-- ## Rodent community composition -->
-
-<!-- ### C. baileyi -->
-
-    ## Joining, by = c("period", "oplottype")
-
-    ## Joining, by = c("period", "oplottype", "censusdate")
-
-<!-- ### Dipodomys -->
-
-    ## Joining, by = c("period", "oplottype")
-
-    ## Joining, by = "period"
-
-<!-- ## Full figure -->
-
-<!-- ```{r, fig.dim = c(6, 9)} -->
-
-<!-- all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0) %>% -->
-
-<!--   fill_panel(totale_plot) %>% -->
-
-<!--   fill_panel(comp_plot) %>% -->
-
-<!--   fill_panel(dplot) %>% -->
-
-<!--   fill_panel(pbplot) -->
-
-<!-- all_panels -->
-
-<!-- ``` -->
-
-<!-- # Model results -->
-
-## Compensation & total energy use
-
-### Compensation
+Results of generalized least squares:
 
     ## Generalized least squares fit by REML
     ##   Model: smgran_comp ~ era 
@@ -116,7 +83,13 @@ Contrasts:
 
 </div>
 
-### Total energy use
+## Total energy use
+
+Model:
+
+    ## Joining, by = "era"
+
+Model summary:
 
     ## Generalized least squares fit by REML
     ##   Model: total_e_rat ~ era 
@@ -172,9 +145,42 @@ Contrasts:
 
 </div>
 
-## Community composition
+# Community composition
 
-### Kangaroo rats
+## Kangaroo rats
+
+Model:
+
+``` r
+dipo_dat <- treatl %>%
+  mutate(dipo_prop = dipo_e / total_e,
+         smgran_prop= smgran_e / total_e) %>%
+  group_by(oplottype) %>%
+  mutate(smgran_prop_ma = maopts(smgran_prop),
+         dipo_prop_ma = maopts(dipo_prop)) %>%
+  ungroup() 
+
+dipo_c_dat <- dipo_dat %>%
+  filter(oplottype == "CC")
+
+dipo_glm <- glm(dipo_prop ~ oera, family = quasibinomial(), data= dipo_c_dat)
+
+dipo_glm_se <- est_glm_ilink(dipo_glm, dipo_c_dat) %>%
+  left_join(select(dipo_c_dat, period, dipo_prop_ma)) %>%
+  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
+         Rodents = "All small granivores\n(non-Dipodomys)") %>%
+  rename(rod_prop_ma = dipo_prop_ma)
+```
+
+    ## Joining, by = c("period", "oplottype")
+
+    ## Joining, by = "period"
+
+``` r
+dipo_title <- expression(paste("Kangaroo rat (", italic("Dipodomys"), ") energy use"))
+```
+
+Model summary:
 
     ## 
     ## Call:
@@ -240,7 +246,25 @@ Contrasts:
 
 </div>
 
-### C. baileyi
+## C. baileyi
+
+Model:
+
+``` r
+pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_nozero)
+
+pb_glm_treat_se <- est_glm_ilink(pb_glm_treat, pb_nozero) %>%
+  full_join(select(pb, period, oplottype, pb_prop_ma, censusdate)) %>%
+  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
+         Rodents = "C. baileyi") %>%
+  rename(rod_prop_ma = pb_prop_ma)
+```
+
+    ## Joining, by = c("period", "oplottype")
+
+    ## Joining, by = c("period", "oplottype", "censusdate")
+
+Model summary:
 
     ## 
     ## Call:
