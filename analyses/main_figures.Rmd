@@ -13,24 +13,39 @@ library(soar)
 library(ggplot2)
 library(dplyr)
 library(multipanelfigure)
-
-theme_set(theme_bw())
-
 library(nlme)
 library(emmeans)
-treatl <- get_treatment_means() 
-both_scale <- scale_color_viridis_d(option = "cividis", begin = .1, end = .8, direction = -1)
-both_fscale <- scale_fill_viridis_d(option = "cividis", begin = .1, end = .8, direction = -1)
 
+# Get data using `portalr`:
+#treatl <- get_treatment_means() 
+# Alternatively, read data from `data/`:
+ treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
 
-pb <- get_pb(treatl)
+ treatl <- treatl %>%
+   mutate(censusdate = as.Date(censusdate),
+          oera = ordered(oera),
+          oplottype = ordered(oplottype))
+ 
+pb <- get_pb(treatl) 
+
 pb_nozero <- pb %>%
   filter(as.numeric(oera) > 1)
 energy_ratio <- get_e_ratio(treatl)
 compensation <- get_compensation(treatl)
 
-era_df <- make_era_df()
 
+# For figures:
+
+theme_set(theme_bw())
+
+both_scale <- scale_color_viridis_d(option = "cividis", begin = .1, end = .8, direction = -1)
+both_fscale <- scale_fill_viridis_d(option = "cividis", begin = .1, end = .8, direction = -1)
+
+#era_df <- make_era_df()
+# Alternatively, get the era_df from `data/`:
+era_df <- read.csv(here::here("data", "era_df.csv"))
+era_df <- era_df %>%
+  mutate(event_date = as.Date(event_date))
 
 ```
 
@@ -48,11 +63,12 @@ Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE o
 ```{r}
 
 
-comp_mean_gls <- gls(smgran_comp ~ era,  correlation = corCAR1(form = ~ period), data = compensation)
+comp_mean_gls <- gls(smgran_comp ~ oera,  correlation = corCAR1(form = ~ period), data = compensation)
 
-comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ era)
+comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ oera)
 
 comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
+  mutate(oera = ordered(oera)) %>%
   right_join(compensation)
 
 comp_plot <- ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean)) +
@@ -74,13 +90,14 @@ comp_plot
 
 ```{r}
 
-totale_mean_gls <- gls(total_e_rat ~  era,  correlation = corCAR1(form = ~ period), data = energy_ratio)
+totale_mean_gls <- gls(total_e_rat ~  oera,  correlation = corCAR1(form = ~ period), data = energy_ratio)
 
 
-totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ era)
+totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
 
 
 totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
+  mutate(oera = ordered(oera)) %>%
   right_join(energy_ratio)
   
 totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean)) +

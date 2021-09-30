@@ -23,7 +23,23 @@ library(emmeans)
 
 theme_set(theme_bw())
 
-treatl <- get_treatment_means()
+
+# Get data using `portalr`:
+#treatl <- get_treatment_means() 
+# Alternatively, read data from `data/`:
+ treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
+
+ treatl <- treatl %>%
+   mutate(censusdate = as.Date(censusdate),
+          oera = ordered(oera),
+          oplottype = ordered(oplottype))
+ 
+pb <- get_pb(treatl) 
+
+pb_nozero <- pb %>%
+  filter(as.numeric(oera) > 1)
+energy_ratio <- get_e_ratio(treatl)
+compensation <- get_compensation(treatl)
 
 ```
 
@@ -37,13 +53,13 @@ Model:
 
 ```{r, echo =T}
 
-compensation <- get_compensation(treatl)
 
-comp_mean_gls <- gls(smgran_comp ~ era,  correlation = corCAR1(form = ~ period), data = compensation)
+comp_mean_gls <- gls(smgran_comp ~ oera,  correlation = corCAR1(form = ~ period), data = compensation)
 
-comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ era)
+comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ oera)
 
 comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
+  mutate(oera = ordered(oera)) %>%
   right_join(compensation)
 
 ```
@@ -79,9 +95,8 @@ compensation_contrasts
 Model:
 
 ```{r, echo = T}
-energy_ratio <- get_e_ratio(treatl)
 
-totale_mean_gls <- gls(total_e_rat ~  era,  correlation = corCAR1(form = ~ period), data = energy_ratio)
+totale_mean_gls <- gls(total_e_rat ~  oera,  correlation = corCAR1(form = ~ period), data = energy_ratio)
 
   
 ```
@@ -97,7 +112,7 @@ summary(totale_mean_gls)
 Estimates: 
 
 ```{r}
-totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ era)
+totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
 
 totale_estimates <- as.data.frame(totale_mean_gls_emmeans)
 totale_estimates
@@ -189,11 +204,6 @@ dipocontrasts
 Model:
 
 ```{r, echo = T}
-
-pb <- get_pb(treatl)
-
-pb_nozero <- pb %>%
-  filter(as.numeric(oera) > 1)
 
 pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_nozero)
 

@@ -20,12 +20,35 @@ library(multipanelfigure)
 
 theme_set(theme_bw())
 
-treatl <- get_treatment_means()
 
-era_df <- make_era_df() %>%
+# Get data using `portalr`:
+#treatl <- get_treatment_means() 
+#ndvi_dat <- portalr::ndvi()
+#weather <- portalr::weather(level = "monthly", fill = T)
+# era_df <- make_era_df() %>%
+#   mutate(year = format.Date(event_date, "%Y")) %>%
+#   mutate(year = as.integer(year))
+
+
+# Alternatively, read data from `data/`:
+ treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
+
+ treatl <- treatl %>%
+   mutate(censusdate = as.Date(censusdate),
+          oera = ordered(oera),
+          oplottype = ordered(oplottype))
+ 
+ ndvi_dat <- read.csv(here::here("data", "ndvi_dat.csv")) %>%
+   mutate(date = as.Date(date))
+ 
+ weather <- read.csv(here::here("data", "weather.csv"), stringsAsFactors = T)
+
+ era_df <- read.csv(here::here("data", "era_df.csv")) %>%
+   mutate(event_date =as.Date(event_date)) %>%
   mutate(year = format.Date(event_date, "%Y")) %>%
   mutate(year = as.integer(year))
 
+ 
 ndvi_scale <-   scale_color_viridis_d(option = "mako", end = .8) 
 
 
@@ -78,7 +101,6 @@ era_labs_year <- scale_x_continuous(sec.axis = dup_axis(name = NULL, breaks = er
 era_lines_year <-   geom_vline(xintercept = era_df$year, linetype = 3)
 
 
-ndvi_dat <- portalr::ndvi()
 
 
 ndvi_dat <- ndvi_dat %>%
@@ -109,8 +131,6 @@ ndvi_plot <- ggplot(ndvi_dat, aes(date, ndvi_difference, color = ndvi_difference
 
 ```{r}
 library(SPEI)
-
-weather <- portalr::weather(level = "monthly", fill = T)
 
 weather <- weather %>%
     dplyr::mutate(date = format(lubridate::parse_date_time(paste(month, year, sep=" "),
