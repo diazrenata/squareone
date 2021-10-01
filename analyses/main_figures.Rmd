@@ -206,4 +206,9 @@ all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0) %>%
   fill_panel(pbplot)
 
 all_panels
+
+
+ggsave("figure_1.pdf", plot = all_panels, device = "pdf", width = 6, height = 9, units = "in", dpi = 800)
+
+
 ```
