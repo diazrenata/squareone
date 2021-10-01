@@ -45,7 +45,8 @@ both_fscale <- scale_fill_viridis_d(option = "cividis", begin = .1, end = .8, di
 # Alternatively, get the era_df from `data/`:
 era_df <- read.csv(here::here("data", "era_df.csv"))
 era_df <- era_df %>%
-  mutate(event_date = as.Date(event_date))
+  mutate(event_date = as.Date(event_date),
+         no_name = "")
 
 ```
 
