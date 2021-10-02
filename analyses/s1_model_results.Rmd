@@ -1,18 +1,17 @@
 ---
 title: "Appendix S1 - Full model results"
 output: 
-     # word_document:
-     #    df_print: kable
-     #    toc: false
-     #    reference_docx: style_reference.docx
+     word_document:
+        df_print: kable
+        toc: true
    # github_document:
    #      df_print: kable
    #      toc: true
-   pdf_document
+  # pdf_document
 ---
 
-```{r setup, include=T, echo = T}
-knitr::opts_chunk$set(echo = T)
+```{r setup, include=T, echo = F}
+knitr::opts_chunk$set(echo = F)
 
 library(soar)
 library(ggplot2)
@@ -48,10 +47,9 @@ compensation <- get_compensation(treatl)
 
 ## Compensation
 
-Model: 
 
 
-```{r, echo =T}
+```{r, echo =F}
 
 
 comp_mean_gls <- gls(smgran_comp ~ oera,  correlation = corCAR1(form = ~ period), data = compensation)
@@ -65,15 +63,15 @@ comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
 ```
 
 
-Results of generalized least squares:
+### Table S1. Coefficients from GLS for compensation
 
 ```{r}
-
-(summary(comp_mean_gls))
+compensation_coef <- as.data.frame(summary(comp_mean_gls)$tTable)
+compensation_coef
 ```
 
 
-Estimates: 
+### Table S2. Estimates from GLS for compensation 
 
 ```{r}
 
@@ -82,7 +80,7 @@ compensation_estimates
 
 ```
 
-Contrasts:
+### Table S3. Contrasts from GLS for compensation 
 
 ```{r}
 compensation_contrasts <- as.data.frame(pairs(comp_mean_gls_emmeans))
@@ -92,24 +90,26 @@ compensation_contrasts
 
 ## Total energy use
 
-Model:
-
-```{r, echo = T}
+```{r, echo = F}
 
 totale_mean_gls <- gls(total_e_rat ~  oera,  correlation = corCAR1(form = ~ period), data = energy_ratio)
 
   
 ```
 
-Model summary:
+
+### Table S4. Coefficients from GLS on total energy ratio
 
 ```{r}
 
-summary(totale_mean_gls)
+te_coef <- as.data.frame(summary(totale_mean_gls)$tTable)
+
+te_coef
+
 ```
 
 
-Estimates: 
+### Table S5. Estimates from GLS on total energy ratio
 
 ```{r}
 totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
@@ -119,7 +119,8 @@ totale_estimates
 
 ```
 
-Contrasts:
+
+### Table S6. Contrasts from GLS on total energy ratio
 
 ```{r}
 totale_contrasts <- as.data.frame(pairs(totale_mean_gls_emmeans))
@@ -129,11 +130,10 @@ totale_contrasts
 
 # Community composition
 
-## Kangaroo rats
+## Kangaroo rat proportional energy use
 
-Model:
 
-```{r, echo = T}
+```{r, echo = F}
 
 dipo_dat <- treatl %>%
   mutate(dipo_prop = dipo_e / total_e,
@@ -152,17 +152,17 @@ dipo_glm <- glm(dipo_prop ~ oera, family = quasibinomial(), data= dipo_c_dat)
 
 ```
 
-Model summary:
+### Table S7. Coefficients from GLM on Dipodomys energy use.
 
 ```{r}
 
-summary(dipo_glm)
+dipo_coef <- as.data.frame(summary(dipo_glm)$coefficients)
+dipo_coef
+
 ```
 
 
-Estimates:
-
-Estimates from `emmeans` differ numerically (very slightly) from estimates obtained via `predict()` and back transformation. Below are estimates from `emmeans`, because those are what are used for contrasts.
+### Table S8. Estimates from GLM on Dipodomys energy use.
 
 ```{r}
 
@@ -175,22 +175,8 @@ dipoestimates
 
 ```
 
-Estimates from `predict`:
 
-```{r}
-
-dipo_glm_se <- est_glm_ilink(dipo_glm, dipo_c_dat) %>%
-  left_join(select(dipo_c_dat, period, dipo_prop_ma)) %>%
-  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
-         Rodents = "All small granivores\n(non-Dipodomys)") %>%
-  rename(rod_prop_ma = dipo_prop_ma)
-
-select(dipo_glm_se, oera, est, lower, upper) %>% distinct()
-
-```
-
-
-Contrasts:
+### Table S9. Contrasts from GLM on Dipodomys energy use.
 
 ```{r}
 dipocontrasts <- as.data.frame(pairs(dipoemmeans))
@@ -199,25 +185,26 @@ dipocontrasts
 ```
 
 
-## C. baileyi
+## C. baileyi proportional energy use
 
-Model:
 
-```{r, echo = T}
+```{r, echo = F}
 
 pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_nozero)
 
 ```
 
-Model summary:
+### Table S10. Coefficients from GLM on C. baileyi energy use
 
 ```{r}
 
-summary(pb_glm_treat)
+pb_coef <- as.data.frame(summary(pb_glm_treat)$coefficients)
+pb_coef
+
 ```
 
 
-Estimates: 
+### Table S11. Estimates from GLM on C. baileyi energy use
 
 ```{r}
 
@@ -229,22 +216,7 @@ pb_estimates
 
 ```
 
-
-Estimates from `predict`:
-
-```{r}
-
-pb_glm_treat_se <- est_glm_ilink(pb_glm_treat, pb_nozero) %>%
-  full_join(select(pb, period, oplottype, pb_prop_ma, censusdate)) %>%
-  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
-         Rodents = "C. baileyi") %>%
-  rename(rod_prop_ma = pb_prop_ma)
-
-select(pb_glm_treat_se, oplottype, oera, est, lower, upper) %>% distinct()
-
-```
-
-Contrasts:
+### Table S12. Contrasts from GLM on C. baileyi energy use.
 
 ```{r}
 pb_contrasts <- as.data.frame(pairs(pb_emmeans))

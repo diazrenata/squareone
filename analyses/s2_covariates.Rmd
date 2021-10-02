@@ -1,14 +1,14 @@
 ---
 title: "Appendix S2 - Covariates of rodent community change"
 output: 
-     # word_document:
-     #    df_print: kable
-     #    toc: false
-     #    reference_docx: style_reference.docx
+     word_document:
+        df_print: kable
+        toc: false
+       # reference_docx: style_reference.docx
    # github_document:
    #      df_print: kable
    #      toc: true
-   pdf_document
+  #pdf_document
 ---
 
 ```{r setup, include=FALSE}
