@@ -1,6 +1,6 @@
 # squareone
 
-Analyses supporting the ms "Maintenance of community function through compensation breaks down over time in a desert rodent community". bioRxiv (to be added) 
+Analyses supporting the ms "Maintenance of community function through compensation breaks down over time in a desert rodent community". The preprint is currently available on bioRxiv at: https://doi.org/10.1101/2021.10.01.462799 
 
 To replicate:
 
