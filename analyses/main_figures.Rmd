@@ -19,7 +19,19 @@ library(emmeans)
 # Get data using `portalr`:
 #treatl <- get_treatment_means() 
 # Alternatively, read data from `data/`:
- treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
+# treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
+
+plotl <- get_plot_totals()
+
+plot_types <- list_plot_types() %>% filter(plot_type == "EE")
+
+set.seed(1977)
+remove_plot <- sample(plot_types$plot, 1, F)
+
+plotl <- plotl %>%
+  filter(plot != 19)
+
+treatl <- plots_to_treatment_means(plotl) 
 
  treatl <- treatl %>%
    mutate(censusdate = as.Date(censusdate),
@@ -78,7 +90,7 @@ comp_plot <- ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(ce
   geom_line(aes(y = smgran_comp_ma)) +
   ggtitle("Energetic compensation") +
   ylab(bquote(frac(SG[E] - SG[C], KR[C]))) +
-  ylim(-.05, 1) +
+  #ylim(-.05, 1) +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = -.05, yend = 1), linetype = 3)+
   xlab("") +
   scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) +

@@ -1,13 +1,14 @@
 ---
 title: "Appendix S1 - Full model results"
-output: 
-     word_document:
-        df_print: kable
-        toc: true
-   # github_document:
-   #      df_print: kable
-   #      toc: true
-  # pdf_document
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  word_document:
+    df_print: kable
+    toc: yes
+  pdf_document:
+    toc: yes
 ---
 
 ```{r setup, include=T, echo = F}
@@ -26,9 +27,22 @@ theme_set(theme_bw())
 # Get data using `portalr`:
 #treatl <- get_treatment_means() 
 # Alternatively, read data from `data/`:
- treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
+# treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
 
- treatl <- treatl %>%
+plotl <- get_plot_totals()
+
+plot_types <- list_plot_types() %>% filter(plot_type == "EE")
+
+set.seed(1977)
+remove_plot <- sample(plot_types$plot, 1, F)
+
+
+plotl <- plotl %>%
+  filter(plot != remove_plot)
+
+treatl <- plots_to_treatment_means(plotl) 
+
+treatl <- treatl %>%
    mutate(censusdate = as.Date(censusdate),
           oera = ordered(oera),
           oplottype = ordered(oplottype))
@@ -50,7 +64,7 @@ compensation <- get_compensation(treatl)
 
 
 ```{r, echo =F}
-
+remove_plot
 
 comp_mean_gls <- gls(smgran_comp ~ oera,  correlation = corCAR1(form = ~ period), data = compensation)
 
