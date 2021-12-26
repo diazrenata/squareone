@@ -6,9 +6,6 @@ pt <- soar::get_plot_totals()
 excl_plots <- list_plot_types()
 excl_plots <- excl_plots %>% filter(plot_type == "EE")
 
-set.seed(1977)
-excl_plot_out <- sample(excl_plots$plot, 1, F)
-excl_plot_out <- 19 # there is a little bit of dependence on which plot you remove --> whether a - c is significant for compensaiton. if you remove plot 19, c > a (but still not to match total e). if you remove any other plot, c !> a, with varying degrees of difference. :shrug: because there are only 5 options for the plot to remove, and because dropping the plot like that is kind of a weird thing to do (reviewer suggestion), I'm inclined to try all of them and be clear eyed about the dependence there. 
 
 control_means <- pt %>%
   filter(plot_type == "CC") %>%
@@ -31,7 +28,7 @@ ggplot(filter(pt_vars, plot_type == "EE", oera == "c_post_reorg"), aes(censusdat
 
 
 pt_vars_filtered <- pt_vars %>%
-  filter(plot != excl_plot_out, oplottype == "EE")
+  filter(oplottype == "EE")
 
 library(nlme)
 
@@ -73,7 +70,5 @@ pairs(comp_emmeans)
 comp_pred <- pt_vars_filtered %>% mutate(preds = predict(comp_lme, level = 0))
 
 ggplot(comp_pred, aes(censusdate, preds, color = fplot)) + geom_point()
-# 
-# ggplot(filter(pt_vars, plot_type == "EE", plot != 19), aes(censusdate, compensation, color = fplot)) + geom_point() 
 
 
