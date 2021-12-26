@@ -1,12 +1,12 @@
 ---
 title: "Appendix S1 - Full model results"
 output:
-  html_document:
-    toc: yes
-    df_print: paged
-  word_document:
-    df_print: kable
-    toc: yes
+  # html_document:
+  #   toc: yes
+  #   df_print: paged
+  # word_document:
+  #   df_print: kable
+  #   toc: yes
   pdf_document:
     toc: yes
 ---
@@ -161,7 +161,7 @@ dipo_dat <- treatl %>%
 dipo_c_dat <- dipo_dat %>%
   filter(oplottype == "CC")
 
-dipo_glm <- glm(dipo_prop ~ oera, family = quasibinomial(), data= dipo_c_dat)
+dipo_glm <- glm(dipo_prop ~ oera, family = binomial(), data= dipo_c_dat)
 
 
 
@@ -205,15 +205,28 @@ dipocontrasts
 
 ```{r, echo = F}
 
-pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_nozero)
+pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial(), data= pb_nozero)
+pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
+pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial(), data= pb_nozero)
+# 
+# AIC(pb_glm_interaction)
+# AIC(pb_glm_nointeraction)
+# AIC(pb_glm_notreat)
+# 
+# anova(pb_glm_interaction, pb_glm_nointeraction, test = "Chi")
+# anova(pb_glm_nointeraction, pb_glm_notreat, test = "Chi")
 
 ```
+
+
+Note that a model fit as `pb_proportional_energy_use ~ era + treatment + era:treatment` does not outperform a model fit without the interaction term, or `pb_proportional_energy_use ~ era + treatment` (AIC for the no interaction model = 231 compared to 237 for the interaction model; p-value for an anova Chi-squared comparison of the two models = 0.15). We therefore use the model without the interaction term. 
+
 
 ### Table S10. Coefficients from GLM on C. baileyi energy use
 
 ```{r}
 
-pb_coef <- as.data.frame(summary(pb_glm_treat)$coefficients)
+pb_coef <- as.data.frame(summary(pb_glm_nointeraction)$coefficients)
 pb_coef
 
 ```
@@ -223,7 +236,7 @@ pb_coef
 
 ```{r}
 
-pb_emmeans <- regrid(emmeans(pb_glm_treat, specs = ~ oera | oplottype))
+pb_emmeans <- regrid(emmeans(pb_glm_nointeraction, specs = ~ oera))
 
 pb_estimates <- as.data.frame(pb_emmeans)
 

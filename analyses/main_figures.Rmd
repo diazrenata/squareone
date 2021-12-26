@@ -139,9 +139,13 @@ totale_plot
 ```{r}
 
 
-pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_nozero)
 
-pb_glm_treat_se <- est_glm_ilink(pb_glm_treat, pb_nozero) %>%
+pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial(), data= pb_nozero)
+pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
+pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial(), data= pb_nozero)
+
+
+pb_glm_nointeraction_se <- est_glm_ilink(pb_glm_nointeraction, pb_nozero) %>%
   full_join(select(pb, period, oplottype, pb_prop_ma, censusdate)) %>%
   mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
          Rodents = "C. baileyi") %>%
@@ -149,7 +153,7 @@ pb_glm_treat_se <- est_glm_ilink(pb_glm_treat, pb_nozero) %>%
 
 pb_title <- expression(paste(italic("C. baileyi"), " energy use"))
 
-pbplot <- ggplot(pb_glm_treat_se, aes(censusdate, est, color = Treatment, fill = Treatment)) +
+pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, est, color = Treatment, fill = Treatment)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
@@ -184,7 +188,7 @@ dipo_dat <- treatl %>%
 dipo_c_dat <- dipo_dat %>%
   filter(oplottype == "CC")
 
-dipo_glm <- glm(dipo_prop ~ oera, family = quasibinomial(), data= dipo_c_dat)
+dipo_glm <- glm(dipo_prop ~ oera, family = binomial(), data= dipo_c_dat)
 
 dipo_glm_se <- est_glm_ilink(dipo_glm, dipo_c_dat) %>%
   left_join(select(dipo_c_dat, period, dipo_prop_ma)) %>%
