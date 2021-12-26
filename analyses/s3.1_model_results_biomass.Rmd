@@ -29,7 +29,7 @@ theme_set(theme_bw())
 # Alternatively, read data from `data/`:
 # treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
 
-plotl <- get_plot_totals()
+plotl <- get_plot_totals(currency = "biomass")
 
 plot_types <- list_plot_types() %>% filter(plot_type == "EE")
 

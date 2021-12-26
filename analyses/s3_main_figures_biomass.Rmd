@@ -21,7 +21,7 @@ library(emmeans)
 # Alternatively, read data from `data/`:
 # treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
 
-plotl <- get_plot_totals()
+plotl <- get_plot_totals(currency = "biomass")
 
 plot_types <- list_plot_types() %>% filter(plot_type == "EE")
 
@@ -29,7 +29,7 @@ set.seed(1977)
 remove_plot <- sample(plot_types$plot, 1, F)
 
 plotl <- plotl %>%
-  filter(plot != 19)
+  filter(plot != remove_plot)
 
 treatl <- plots_to_treatment_means(plotl) 
 
