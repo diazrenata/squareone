@@ -1,5 +1,5 @@
 ---
-title: "Appendix S1 - Full model results"
+title: "Appendix S1 - Full analytical methods and model results"
 subtitle: "Supplemental information for Diaz and Ernest, “Maintenance of community function through compensation breaks down over time in a desert rodent community”. In review at Ecology."
 output:
   # html_document:
@@ -9,14 +9,15 @@ output:
     df_print: kable
     reference_docx: default_gdoc.docx
     toc: yes
-  # pdf_document:
+  # # pdf_document:
   #   toc: yes
+  #   df_print: kable
 ---
 
 ```{r setup, include=T, echo = F, results = F, warning = F, message = F}
 knitr::opts_chunk$set(echo = F,  warning = F, message = F)
 
-library(soar)
+library(soar) # install using remotes::install_github("diazrenata/soar")
 library(ggplot2)
 library(dplyr)
 library(multipanelfigure)
@@ -25,62 +26,176 @@ library(emmeans)
 
 theme_set(theme_bw())
 
+```
 
-# Get data using `portalr`:
-#treatl <- get_treatment_means() 
-# Alternatively, read data from `data/`:
-# treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
+\newpage
 
-# This section is new. Load data using `get_plot_totals` so that you can remove an exclosure plot (resulting in a balanced set of 4 exclosures and 4 controls)
+# Data
+
+## Functions
+
+Data are accessed and processed using functions stored in https://github.com/diazrenata/soar, archived on Zenodo at https://doi.org/10.5281/zenodo.5539880. Install these functions either by running:
+
+
+```{r, eval = F, echo = T}
+remotes::install_github("diazrenata/soar")
+```
+
+or by downloading the Zenodo archive and installing the package manually. 
+
+## Data access
+
+Data can be downloaded directly from the Portal data repository:
+
+```{r, echo = T, eval = F}
 
 plotl <- get_plot_totals()
 
 plot_types <- list_plot_types() %>% filter(plot_type == "EE")
+```
 
-set.seed(1977) # 1977 is my usual Portal seed
-remove_plot <- sample(plot_types$plot, 1, F)
+For speed and offline access, data files are also included in this repository in the `data` directory:
+
+```{r, echo =T}
+
+plotl <- read.csv(here::here("data", "plotl.csv"), stringsAsFactors = T)
+plot_types <- read.csv(here::here("data", "plot_types.csv"), stringsAsFactors = T)
+
+```
+
+## Balancing exclosure and control plots
+
+Because there are 5 exclosure plots and 4 control plots in these data, we remove 1 exclosure plot to achieve a balanced design. From the 5 possible exclosures to remove, we randomly select 1 using the seed 1977 (the year the Portal Project was initiated). 
+
+```{r, echo = T}
+
+plot_types <- plot_types  %>% 
+  filter(plot_type == "EE")
+
+set.seed(1977) 
+remove_plot <- sample(plot_types$plot, 1, F) # results in removing plot 19
 
 plotl <- plotl %>%
   filter(plot != remove_plot)
+```
 
+## Treatment-level means and quantities of interest
+
+In order to calculate compensation and the total energy ratio, it is necessary to take the treatment-level mean total energy use and energy use by kangaroo rats and small granivores on control plots. For consistency in the main analysis, we take treatment-level means for all quantities.
+
+Because this necessarily elides some degree of variability between plots with treatment types, we also conducted a provisional analysis incorporating between-plot variability for exclosure plots (but not for control plots), with qualitatively the same results (see appendix S4). 
+
+To take treatment-level means:
+
+```{r, echo = T}
+# Treatment-level means:
 treatl <- plots_to_treatment_means(plotl) 
 
+# Format column types
 treatl <- treatl %>%
-   mutate(censusdate = as.Date(censusdate),
-          oera = ordered(oera),
-          oplottype = ordered(oplottype))
- 
+  mutate(censusdate = as.Date(censusdate),
+         oera = ordered(oera),
+         oplottype = ordered(oplottype))
+```
+
+
+Calculate proportional energy use of *C. baileyi* on exclosure and control plots. The `pb_nozero` dataframe omits the first time period, because during that time *C. baileyi* was essentially absent at the site (and the large number of 0s for an entire treatment-by-factor level combination breaks statistical models).
+
+```{r, echo = T}
 pb <- get_pb(treatl) 
 
 pb_nozero <- pb %>%
   filter(as.numeric(oera) > 1)
+
+```
+
+Calculate total energy ratio and compensation, comparing exclosure to control plots:
+
+```{r, echo =T}
 energy_ratio <- get_e_ratio(treatl)
 compensation <- get_compensation(treatl)
 
 ```
 
 
-<!-- Because there are 5 exclosures and 4 controls, we remove 1 exclosure plot. Using `set.seed(1977)` and sampling 1 plot from the 5 possible exclosures to remove, we remove plot `r remove_plot`.  -->
+Calculate kangaroo rat (Dipodomys) proportion of total energy use on control plots:
+
+```{r, echo =T}
+
+dipo_c_dat <- get_dipo_c(treatl)
+
+```
+
+
+## Variable names for analyses
+
+The variables used in these analyses, and their definitions.
+
+- `period`: The monthly census period number for each census. Numeric.
+- `censusdate`: The date of the monthly census. Date.
+- `era`: The "time period", as described in the text. Character, one of `a_pre_pb` (first time period, before *C. baileyi* arrived at the site), `b_pre_reorg` (second time period, after *C. baileyi* established but before the most recent reorganization event), or `c_post_reorg` (third time period, after the last reorganization event).
+- `oera`: `era` as an ordered factor, for modeling. Ordered factor.
+- `plot_type`: The treatment, either `CC` for control or `EE` for exclosure. Character.
+- `oplottype`: `plot_type` as an ordered factor, for modeling. Ordered factor.
+- `total_e_rat`, `total_e_rat_ma` (specific to `energy_ratio`): The ratio of total energy use on exclosure plots relative to control plots, and the 6-month moving average. Numeric, unbounded.
+- `smgran_comp`, `smgran_comp_ma` (specific to `compensation`): Energetic compensation by small granivores for kangaroo rat removal, and the 6-month moving average. Numeric, unbounded.
+- `pb_prop`, `pb_prop_ma` (specific to `pb` and `pb_nozero`): The proportion of treatment-level energy use accounted for by *C. baileyi*, and the 6-month moving average. Numeric, proportion bounded 0-1.
+- `dipo_prop`, `dipo_prop_ma` (specific to `dipo_c_dat`): The proportion of treatment-level energy use accounted for by all kangaroo rats, and the 6-month moving average. Numeric, proportion bounded 0-1.
+
+
 
 \newpage
 
 # Compensation
 
+Fit a generalized least squares accounting for temporal autocorrelation between monthly censuses within each time period using a continuous autoregressive structure of order 1.
 
-
-```{r, echo =F}
-
+```{r, echo = T}
 
 comp_mean_gls <- gls(smgran_comp ~ oera,  correlation = corCAR1(form = ~ period), data = compensation)
+```
 
-comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ oera)
+## Model specification and selection
 
-comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
-  mutate(oera = ordered(oera)) %>%
-  right_join(compensation)
+Compared to an intercept-only (null) model, the timeperiod term improves fit. AIC of model with timeperiod term = 69.8; AIC without = 84.7: 
+
+```{r, echo = T}
+
+comp_mean_gls_notime <- gls(smgran_comp ~ 1,  correlation = corCAR1(form = ~ period), data = compensation)
 
 ```
 
+```{r, echo =T}
+AIC(comp_mean_gls)
+AIC(comp_mean_gls_notime)
+
+```
+
+
+The temporal autocorrelation term improves fit over not including the term. AIC with the autocorrelation term, 69.8; AIC for without, 157.1:
+
+```{r, echo = T}
+comp_mean_gls_noautoc <- gls(smgran_comp ~ oera, data = compensation)
+```
+
+```{r, echo =T}
+AIC(comp_mean_gls_noautoc)
+AIC(comp_mean_gls)
+
+```
+
+
+Calculate estimates from the final model:
+
+```{r, echo = T}
+
+comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ oera)
+
+```
+
+\newpage
+
+## Results
 
 ### Table S1. Coefficients from GLS for compensation
 
@@ -108,16 +223,54 @@ compensation_contrasts
 
 ```
 \newpage
- 
+
 # Total energy use
 
-```{r, echo = F}
+## Model specification and selection
+
+As for compensation, fit a generalized least squares accounting for temporal autocorrelation between monthly censuses within each time period using a continuous autoregressive structure of order 1.
+
+```{r, echo = T}
 
 totale_mean_gls <- gls(total_e_rat ~  oera,  correlation = corCAR1(form = ~ period), data = energy_ratio)
 
-  
 ```
 
+
+Compared to an intercept-only (null) model, the timeperiod term improves fit. AIC of model with timeperiod term = -133; AIC without = -118.
+
+```{r, echo = T}
+
+totale_mean_gls_notime <- gls(total_e_rat ~  1,  correlation = corCAR1(form = ~ period), data = energy_ratio)
+```
+
+```{r, echo =T}
+AIC(totale_mean_gls)
+AIC(totale_mean_gls_notime)
+```
+
+
+Again, the temporal autocorrelation term improves fit over not including the term. AIC with the autocorrelation term is - 133; without, 13.29.
+
+```{r, echo =T}
+totale_mean_gls_notautoc <- gls(total_e_rat ~ oera, data = energy_ratio)
+```
+
+```{r, echo = T}
+AIC(totale_mean_gls_notautoc)
+AIC(totale_mean_gls)
+```
+
+
+Calculate estimates:
+
+```{r, echo =T}
+totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
+```
+
+\newpage
+
+## Results
 
 ### Table S4. Coefficients from GLS on total energy ratio
 
@@ -133,7 +286,6 @@ te_coef
 ### Table S5. Estimates from GLS on total energy ratio
 
 ```{r}
-totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
 
 totale_estimates <- as.data.frame(totale_mean_gls_emmeans)
 totale_estimates
@@ -152,29 +304,39 @@ totale_contrasts
 
 \newpage
 
-
-
 # Kangaroo rat proportional energy use
 
+## Model specification and selection
 
-```{r, echo = F}
+Proportional energy use is bounded 0-1 and cannot be fit with generalized least squares. We therefore use a binomial GLM with no temporal autocorrelation term. 
 
-dipo_dat <- treatl %>%
-  mutate(dipo_prop = dipo_e / total_e,
-         smgran_prop= smgran_e / total_e) %>%
-  group_by(oplottype) %>%
-  mutate(smgran_prop_ma = maopts(smgran_prop),
-         dipo_prop_ma = maopts(dipo_prop)) %>%
-  ungroup() 
+```{r, echo = T}
 
-dipo_c_dat <- dipo_dat %>%
-  filter(oplottype == "CC")
-
-dipo_glm <- glm(dipo_prop ~ oera, family = binomial(), data= dipo_c_dat)
-
-
+dipo_glm <- glm(dipo_prop ~ oera, family = binomial, data= dipo_c_dat)
 
 ```
+
+Compared to an intercept-only (null) model, the timeperiod term improves fit. AIC of model with timeperiod term = 258; AIC without = 281. 
+
+```{r, echo = T}
+dipo_intercept_glm <- glm(dipo_prop ~ 1, family = binomial, data = dipo_c_dat)
+```
+
+```{r, echo =T}
+AIC(dipo_glm)
+AIC(dipo_intercept_glm)
+```
+
+Calculate estimates:
+
+```{r, echo =T}
+dipoemmeans <- regrid(emmeans(dipo_glm, specs = ~ oera))
+```
+
+
+\newpage
+
+## Results
 
 ### Table S7. Coefficients from GLM on Dipodomys energy use.
 
@@ -191,10 +353,7 @@ dipo_coef
 ```{r}
 
 
-dipoemmeans <- regrid(emmeans(dipo_glm, specs = ~ oera))
-
 dipoestimates <- as.data.frame(dipoemmeans)
-
 dipoestimates
 
 ```
@@ -213,25 +372,35 @@ dipocontrasts
 
 # C. baileyi proportional energy use
 
+## Model specification and selection
 
-```{r, echo = F}
 
-pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial(), data= pb_nozero)
-pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
-pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial(), data= pb_nozero)
-# 
-# AIC(pb_glm_interaction)
-# AIC(pb_glm_nointeraction)
-# AIC(pb_glm_notreat)
-# 
-# anova(pb_glm_interaction, pb_glm_nointeraction, test = "Chi")
-# anova(pb_glm_nointeraction, pb_glm_notreat, test = "Chi")
+As for kangaroo rat energy use, we use a binomial GLM to fit *C. bailyei* proportional energy use. Because *C. baileyi* occurs on both exclosure and control plots, we investigate whether *C. baileyi*'s proportional energy use differs between treatment types. We compare models incorporating separate slopes, separate intercepts, or no terms for treatment modulating the change in *C. baileyi* proportional energy use across time periods. We also test a null (intercept-only) model of no change across time periods.
+
+The best-fitting (lowest AIC; use of stepwise selection via `anova` yields the same result) model is for an effect of time period and of treatment, but no interaction. We therefore proceed with this model. 
+
+```{r, echo = T}
+
+pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial, data= pb_nozero)
+pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial, data= pb_nozero)
+pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial, data= pb_nozero)
+pb_glm_notime <- glm(pb_prop ~ 1, family = binomial, data= pb_nozero)
+
+AIC(pb_glm_interaction) 
+AIC(pb_glm_nointeraction) 
+AIC(pb_glm_notreat)
+AIC(pb_glm_notime)
 
 ```
 
+Calculate estimates:
 
-<!-- Note that a model fit as `pb_proportional_energy_use ~ era + treatment + era:treatment` does not outperform a model fit without the interaction term, or `pb_proportional_energy_use ~ era + treatment` (AIC for the no interaction model = 231 compared to 237 for the interaction model; p-value for an anova Chi-squared comparison of the two models = 0.15). We therefore use the model without the interaction term.  -->
+```{r, echo = T}
+pb_emmeans <- regrid(emmeans(pb_glm_nointeraction, specs = ~ oera))
+```
 
+\newpage
+## Results
 
 ### Table S10. Coefficients from GLM on C. baileyi energy use
 
@@ -247,7 +416,6 @@ pb_coef
 
 ```{r}
 
-pb_emmeans <- regrid(emmeans(pb_glm_nointeraction, specs = ~ oera))
 
 pb_estimates <- as.data.frame(pb_emmeans)
 
