@@ -1,10 +1,14 @@
 ---
 title: "Biomass analysis"
-output: #word_document
+output: 
    # github_document:
    #      df_print: kable
    #      toc: true
-   pdf_document 
+   #pdf_document 
+    word_document:
+          df_print: kable
+          reference_docx: default_gdoc.docx
+          toc: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -35,11 +39,11 @@ plotl <- plotl %>%
 
 treatl <- plots_to_treatment_means(plotl) 
 
- treatl <- treatl %>%
-   mutate(censusdate = as.Date(censusdate),
-          oera = ordered(oera),
-          oplottype = ordered(oplottype))
- 
+treatl <- treatl %>%
+  mutate(censusdate = as.Date(censusdate),
+         oera = ordered(oera),
+         oplottype = ordered(oplottype))
+
 pb <- get_pb(treatl) 
 
 pb_nozero <- pb %>%
@@ -64,16 +68,7 @@ era_df <- era_df %>%
 
 ```
 
-# Figures
-
-## Compensation and total biomass
-
-
-Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS.
-
-### Compensation
-
-**Compensation** refers to compensatory gains in biomass by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$. **Total biomass** refers to the overall loss in biomass caused by kangaroo rat removal.
+\newpage
 
 ```{r}
 
@@ -86,22 +81,24 @@ comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
   mutate(oera = ordered(oera)) %>%
   right_join(compensation)
 
+comp_title <- expression(paste(bold("B."), " Biomass compensation"))
+
 comp_plot <- ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
   geom_line(aes(y = smgran_comp_ma)) +
-  ggtitle("Biomass compensation") +
-  ylab(bquote(frac(SG[E] - SG[C], KR[C]))) +
-  #ylim(-.05, 1) +
-  geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = -.05, yend = 1), linetype = 3)+
+  ggtitle(comp_title) +
+  ylab(bquote((SG[E] - SG[C]) / KR[C])) +
+  geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = -.05, yend = 1.4), linetype = 3)+
   xlab("") +
-  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) +
-  theme(axis.title.y = element_text(size =  10), axis.text = element_text(size = 10)) + xlab("")
+  theme(title = element_text(size = 7),
+        axis.title.y = element_text(size =  7), 
+        axis.text = element_text(size = 6)) + 
+  xlab("")
 
 #comp_plot
 ```
 
-### Total biomass ratio
 
 ```{r}
 
@@ -114,27 +111,28 @@ totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
 totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
   mutate(oera = ordered(oera)) %>%
   right_join(energy_ratio)
-  
+
+
+te_title <- expression(paste(bold("A."), " Total biomass"))
+
+
 totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
   geom_line(aes(y = total_e_rat_ma)) +
-  ggtitle("Total biomass") +
-  ylab(bquote(frac(Btot[E], Btot[C]))) +
+  ggtitle(te_title) +
+  ylab(bquote(Btot[E] / Btot[C])) +
   theme(legend.position = "none") +
   ylim(-0, 1.2) +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1.2), linetype = 3) +
-  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name))+
-  theme(axis.title.y = element_text(size =  10),  axis.text = element_text(size = 10)) + xlab("")
+  theme(title = element_text(size = 7), 
+        axis.title.y = element_text(size =  7),  
+        axis.text = element_text(size = 6)) + 
+  xlab("")
 
 #totale_plot
 
 ```
-
-## Rodent community composition
-
-### C. baileyi
-
 
 ```{r}
 
@@ -151,21 +149,28 @@ pb_glm_nointeraction_se <- est_glm_ilink(pb_glm_nointeraction, pb_nozero) %>%
          Rodents = "C. baileyi") %>%
   rename(rod_prop_ma = pb_prop_ma)
 
-pb_title <- expression(paste(italic("C. baileyi"), " biomass"))
+
+pb_title <- expression(paste(bold("D. "), italic("C. baileyi"), " biomass"))
 
 pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, est, color = Treatment, fill = Treatment)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
-  ylab(bquote(frac(CB, Btot))) +
- ggtitle(pb_title) +
-  theme(legend.position = c(.15, .6)) + 
+  ylab(bquote(CB / Etot)) +
+  ggtitle(pb_title) +
+  theme(legend.position = c(.15, .75)) + 
   both_scale + 
-  both_fscale   +
+  both_fscale +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
-  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) + 
-  theme(axis.title.y = element_text(size =  10), legend.title = element_blank(), legend.text = element_text(size =8))+ 
-  theme( title = element_text(size = 10), legend.background = element_blank(), axis.title.y = element_text(), legend.direction = "vertical", axis.text = element_text(size = 10)) +   xlab("Date")  
+  theme(axis.title.y = element_text(size =  7), 
+        legend.title = element_blank(), 
+        legend.text = element_text(size =6), 
+        legend.key.size = unit(.1, units = "in"), 
+        title = element_text(size = 7), 
+        legend.background = element_blank(), 
+        legend.direction = "vertical", 
+        axis.text = element_text(size = 6)) +   
+  xlab("Date")  
 
 
 #pbplot
@@ -173,7 +178,6 @@ pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, est, color = Treatment
 ```
 
 
-### Dipodomys
 
 ```{r}
 
@@ -195,28 +199,27 @@ dipo_glm_se <- est_glm_ilink(dipo_glm, dipo_c_dat) %>%
   mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
          Rodents = "All small granivores\n(non-Dipodomys)") %>%
   rename(rod_prop_ma = dipo_prop_ma)
-dipo_title <- expression(paste("Kangaroo rat (", italic("Dipodomys"), ") biomass"))
+dipo_title <- expression(paste(bold("C."), " Kangaroo rat (", italic("Dipodomys"), ") biomass"))
 
 
 dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, est)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
-  ylab( bquote(frac(KR[C], Btot[C]))) +
+  ylab(bquote(KR[C] / Etot[C])) +
   xlab("") +
   ggtitle(dipo_title) +
-  #theme(legend.position = c(.15, .6)) + both_scale + both_fscale   +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
-  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) + xlab("") +
-  theme(axis.title.y = element_text(size =  10), legend.title = element_blank(), legend.text = element_text(size =  10))+ theme( title = element_text(size = 10), axis.text = element_text(size = 10), legend.background = element_blank(), legend.direction = "vertical")
+  theme(axis.title.y = element_text(size =  7), title = element_text(size = 7), axis.text = element_text(size = 6))
+
 
 #dplot
 
 ```
 
-## Full figure
+# Figure S2 - Biomass
 
-```{r, fig.dim = c(6, 9)}
+```{r, fig.dim = c(3, 5)}
 
 all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0) %>%
   fill_panel(totale_plot) %>%
@@ -232,12 +235,19 @@ all_panels
 
 ```
 
+\newpage
+
+## Legend
+
+Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS.
+**Compensation** refers to compensatory gains in biomass by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$. **Total biomass** refers to the overall loss in biomass caused by kangaroo rat removal.
+
+
+\newpage
+
 # Model results
 
-
-# Compensation & total biomass
-
-## Compensation
+# Compensation
 
 
 
@@ -248,8 +258,8 @@ all_panels
 #comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ oera)
 
 #comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
-  # mutate(oera = ordered(oera)) %>%
-  # right_join(compensation)
+# mutate(oera = ordered(oera)) %>%
+# right_join(compensation)
 
 ```
 
@@ -280,13 +290,15 @@ compensation_contrasts
 
 ```
 
-## Total biomass
+\newpage
+
+# Total biomass
 
 ```{r, echo = F}
 
 #totale_mean_gls <- gls(total_e_rat ~  oera,  correlation = corCAR1(form = ~ period), data = energy_ratio)
 
-  
+
 ```
 
 
@@ -321,9 +333,9 @@ totale_contrasts
 
 ```
 
-# Community composition
 
-## Kangaroo rat proportional biomass
+\newpage
+# Kangaroo rat proportional biomass
 
 
 ```{r, echo = F}
@@ -378,8 +390,8 @@ dipocontrasts
 
 ```
 
-
-## C. baileyi proportional biomass
+\newpage
+# C. baileyi proportional biomass
 
 
 ```{r, echo = F}
