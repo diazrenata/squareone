@@ -99,7 +99,6 @@ comp_plot <- ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(ce
         axis.text = element_text(size = 6)) + 
   xlab("")
 
-#comp_plot
 ```
 
 
@@ -133,7 +132,6 @@ totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), ae
         axis.text = element_text(size = 6)) + 
   xlab("")
 
-#totale_plot
 
 ```
 
@@ -141,9 +139,7 @@ totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), ae
 
 
 
-pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial(), data= pb_nozero)
 pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
-pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial(), data= pb_nozero)
 
 
 pb_glm_nointeraction_se <- est_glm_ilink(pb_glm_nointeraction, pb_nozero) %>%
@@ -176,7 +172,6 @@ pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, est, color = Treatment
   xlab("Date")  
 
 
-#pbplot
 
 ```
 
@@ -216,8 +211,6 @@ dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, est)) +
   theme(axis.title.y = element_text(size =  7), title = element_text(size = 7), axis.text = element_text(size = 6))
 
 
-#dplot
-
 ```
 
 # Appendix S3 Figure S1 - Biomass
@@ -231,10 +224,6 @@ all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0, panel_la
   fill_panel(pbplot)
 
 all_panels
-
-
-#ggsave("figure_s1_biomass.pdf", plot = all_panels, device = "pdf", width = 6, height = 9, units = "in", dpi = 800)
-
 
 ```
 
@@ -251,20 +240,6 @@ Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE o
 # Model results - Biomass
 
 # Compensation
-
-
-
-```{r, echo =F}
-# 
-# comp_mean_gls <- gls(smgran_comp ~ oera,  correlation = corCAR1(form = ~ period), data = compensation)
-
-#comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ oera)
-
-#comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
-# mutate(oera = ordered(oera)) %>%
-# right_join(compensation)
-
-```
 
 
 ### Table S1. Coefficients from GLS for compensation
@@ -297,14 +272,6 @@ compensation_contrasts
 
 # Total biomass
 
-```{r, echo = F}
-
-#totale_mean_gls <- gls(total_e_rat ~  oera,  correlation = corCAR1(form = ~ period), data = energy_ratio)
-
-
-```
-
-
 ### Table S4. Coefficients from GLS on total biomass ratio
 
 ```{r}
@@ -319,7 +286,6 @@ te_coef
 ### Table S5. Estimates from GLS on total biomass ratio
 
 ```{r}
-#totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
 
 totale_estimates <- as.data.frame(totale_mean_gls_emmeans)
 totale_estimates
@@ -340,25 +306,6 @@ totale_contrasts
 \newpage
 # Kangaroo rat proportional biomass
 
-
-```{r, echo = F}
-
-# dipo_dat <- treatl %>%
-#   mutate(dipo_prop = dipo_e / total_e,
-#          smgran_prop= smgran_e / total_e) %>%
-#   group_by(oplottype) %>%
-#   mutate(smgran_prop_ma = maopts(smgran_prop),
-#          dipo_prop_ma = maopts(dipo_prop)) %>%
-#   ungroup() 
-# 
-# dipo_c_dat <- dipo_dat %>%
-#   filter(oplottype == "CC")
-# 
-# dipo_glm <- glm(dipo_prop ~ oera, family = binomial(), data= dipo_c_dat)
-# 
-
-
-```
 
 ### Table S7. Coefficients from GLM on Dipodomys biomass.
 
@@ -398,22 +345,11 @@ dipocontrasts
 
 
 ```{r, echo = F}
-# 
-# pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial(), data= pb_nozero)
+
  pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
-# pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial(), data= pb_nozero)
-# #
-# AIC(pb_glm_interaction)
-# AIC(pb_glm_nointeraction)
-# AIC(pb_glm_notreat)
-# 
-# anova(pb_glm_interaction, pb_glm_nointeraction, test = "Chi")
-# anova(pb_glm_nointeraction, pb_glm_notreat, test = "Chi")
+
 
 ```
-
-
-<!-- Note that a model fit as `pb_proportional_biomass ~ era + treatment + era:treatment` does not outperform a model fit without the interaction term, or `pb_proportional_biomass ~ era + treatment` (AIC for the no interaction model = 231 compared to 237 for the interaction model; p-value for an anova Chi-squared comparison of the two models = 0.16). We therefore use the model without the interaction term.  -->
 
 
 ### Table S10. Coefficients from GLM on C. baileyi biomass
