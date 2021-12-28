@@ -36,11 +36,11 @@ plotl <- plotl %>%
 
 treatl <- plots_to_treatment_means(plotl) 
 
- treatl <- treatl %>%
-   mutate(censusdate = as.Date(censusdate),
-          oera = ordered(oera),
-          oplottype = ordered(oplottype))
- 
+treatl <- treatl %>%
+  mutate(censusdate = as.Date(censusdate),
+         oera = ordered(oera),
+         oplottype = ordered(oplottype))
+
 pb <- get_pb(treatl) 
 
 pb_nozero <- pb %>%
@@ -94,20 +94,20 @@ comp_plot <- ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(ce
   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
   geom_line(aes(y = smgran_comp_ma)) +
   ggtitle(comp_title) +
- # ylab(bquote(frac(SG[E] - SG[C], KR[C]))) +
-   ylab(bquote((SG[E] - SG[C]) / KR[C])) +
-  #ylim(-.05, 1) +
+  ylab(bquote((SG[E] - SG[C]) / KR[C])) +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = -.05, yend = 1.4), linetype = 3)+
   xlab("") +
-  #scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) +
-  theme(title = element_text(size = 7), axis.title.y = element_text(size =  7), axis.text = element_text(size = 6)) + xlab("")
+  theme(title = element_text(size = 7),
+        axis.title.y = element_text(size =  7), 
+        axis.text = element_text(size = 6)) + 
+  xlab("")
 
 comp_plot
 ```
 
 ### Total energy ratio
 
- **Total energy** refers to the overall loss in energy use caused by kangaroo rat removal, or the ratio $\frac{TotalEnergyExclosure}{TotalEnergyControl}$ where $TotalEnergy$ is the total energy use by all rodents on exclosure and control plots.
+**Total energy** refers to the overall loss in energy use caused by kangaroo rat removal, or the ratio $\frac{TotalEnergyExclosure}{TotalEnergyControl}$ where $TotalEnergy$ is the total energy use by all rodents on exclosure and control plots.
 
 ```{r}
 
@@ -123,19 +123,20 @@ totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
 
 te_title <- expression(paste(bold("A."), " Total energy use"))
 
-  
+
 totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
   geom_line(aes(y = total_e_rat_ma)) +
   ggtitle(te_title) +
-  # ylab(bquote(frac(Etot[E], Etot[C]))) +
-    ylab(bquote(Etot[E] / Etot[C])) +
+  ylab(bquote(Etot[E] / Etot[C])) +
   theme(legend.position = "none") +
   ylim(-0, 1.2) +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1.2), linetype = 3) +
-  #scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name))+
-  theme(title = element_text(size = 7), axis.title.y = element_text(size =  7),  axis.text = element_text(size = 6)) + xlab("")
+  theme(title = element_text(size = 7), 
+        axis.title.y = element_text(size =  7),  
+        axis.text = element_text(size = 6)) + 
+  xlab("")
 
 totale_plot
 
@@ -167,16 +168,21 @@ pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, est, color = Treatment
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
-  # ylab(bquote(frac(CB, Etot))) +
   ylab(bquote(CB / Etot)) +
- ggtitle(pb_title) +
+  ggtitle(pb_title) +
   theme(legend.position = c(.15, .75)) + 
   both_scale + 
-  both_fscale   +
+  both_fscale +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
-  #scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) + 
-  theme(axis.title.y = element_text(size =  7), legend.title = element_blank(), legend.text = element_text(size =6), legend.key.size = unit(.1, units = "in"))+ 
-  theme( title = element_text(size = 7), legend.background = element_blank(), axis.title.y = element_text(), legend.direction = "vertical", axis.text = element_text(size = 6)) +   xlab("Date")  
+  theme(axis.title.y = element_text(size =  7), 
+        legend.title = element_blank(), 
+        legend.text = element_text(size =6), 
+        legend.key.size = unit(.1, units = "in"), 
+        title = element_text(size = 7), 
+        legend.background = element_blank(), 
+        legend.direction = "vertical", 
+        axis.text = element_text(size = 6)) +   
+  xlab("Date")  
 
 
 pbplot
@@ -213,14 +219,10 @@ dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, est)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
-  # ylab( bquote(frac(KR[C], Etot[C]))) +
-    ylab( bquote(KR[C] / Etot[C])) +
-
+  ylab(bquote(KR[C] / Etot[C])) +
   xlab("") +
   ggtitle(dipo_title) +
-  #theme(legend.position = c(.15, .6)) + both_scale + both_fscale   +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
- # scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) + xlab("") +
   theme(axis.title.y = element_text(size =  7), title = element_text(size = 7), axis.text = element_text(size = 6))
 
 dplot

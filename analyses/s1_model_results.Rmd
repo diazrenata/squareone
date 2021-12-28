@@ -1,18 +1,20 @@
 ---
 title: "Appendix S1 - Full model results"
+subtitle: "Supplemental information for Diaz and Ernest, “Maintenance of community function through compensation breaks down over time in a desert rodent community”. In review at Ecology."
 output:
   # html_document:
   #   toc: yes
   #   df_print: paged
-  # word_document:
-  #   df_print: kable
-  #   toc: yes
-  pdf_document:
+  word_document:
+    df_print: kable
+    reference_docx: default_gdoc.docx
     toc: yes
+  # pdf_document:
+  #   toc: yes
 ---
 
-```{r setup, include=T, echo = F}
-knitr::opts_chunk$set(echo = F)
+```{r setup, include=T, echo = F, results = F, warning = F, message = F}
+knitr::opts_chunk$set(echo = F,  warning = F, message = F)
 
 library(soar)
 library(ggplot2)
@@ -58,11 +60,11 @@ compensation <- get_compensation(treatl)
 ```
 
 
-Because there are 5 exclosures and 4 controls, we remove 1 exclosure plot. Using `set.seed(1977)` and sampling 1 plot from the 5 possible exclosures to remove, we remove plot `r remove_plot`. 
+<!-- Because there are 5 exclosures and 4 controls, we remove 1 exclosure plot. Using `set.seed(1977)` and sampling 1 plot from the 5 possible exclosures to remove, we remove plot `r remove_plot`.  -->
 
-# Compensation & total energy use
+\newpage
 
-## Compensation
+# Compensation
 
 
 
@@ -105,8 +107,9 @@ compensation_contrasts <- as.data.frame(pairs(comp_mean_gls_emmeans)) %>%
 compensation_contrasts
 
 ```
-
-## Total energy use
+\newpage
+ 
+# Total energy use
 
 ```{r, echo = F}
 
@@ -147,9 +150,11 @@ totale_contrasts
 
 ```
 
-# Community composition
+\newpage
 
-## Kangaroo rat proportional energy use
+
+
+# Kangaroo rat proportional energy use
 
 
 ```{r, echo = F}
@@ -204,8 +209,9 @@ dipocontrasts
 
 ```
 
+\newpage
 
-## C. baileyi proportional energy use
+# C. baileyi proportional energy use
 
 
 ```{r, echo = F}
@@ -224,7 +230,7 @@ pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial(), data= pb_nozero)
 ```
 
 
-Note that a model fit as `pb_proportional_energy_use ~ era + treatment + era:treatment` does not outperform a model fit without the interaction term, or `pb_proportional_energy_use ~ era + treatment` (AIC for the no interaction model = 231 compared to 237 for the interaction model; p-value for an anova Chi-squared comparison of the two models = 0.15). We therefore use the model without the interaction term. 
+<!-- Note that a model fit as `pb_proportional_energy_use ~ era + treatment + era:treatment` does not outperform a model fit without the interaction term, or `pb_proportional_energy_use ~ era + treatment` (AIC for the no interaction model = 231 compared to 237 for the interaction model; p-value for an anova Chi-squared comparison of the two models = 0.15). We therefore use the model without the interaction term.  -->
 
 
 ### Table S10. Coefficients from GLM on C. baileyi energy use
