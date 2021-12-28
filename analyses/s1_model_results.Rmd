@@ -58,6 +58,8 @@ compensation <- get_compensation(treatl)
 ```
 
 
+Because there are 5 exclosures and 4 controls, we remove 1 exclosure plot. Using `set.seed(1977)` and sampling 1 plot from the 5 possible exclosures to remove, we remove plot `r remove_plot`. 
+
 # Compensation & total energy use
 
 ## Compensation
@@ -65,7 +67,7 @@ compensation <- get_compensation(treatl)
 
 
 ```{r, echo =F}
-remove_plot
+
 
 comp_mean_gls <- gls(smgran_comp ~ oera,  correlation = corCAR1(form = ~ period), data = compensation)
 
@@ -98,7 +100,8 @@ compensation_estimates
 ### Table S3. Contrasts from GLS for compensation 
 
 ```{r}
-compensation_contrasts <- as.data.frame(pairs(comp_mean_gls_emmeans))
+compensation_contrasts <- as.data.frame(pairs(comp_mean_gls_emmeans)) %>%
+  mutate(p.value = round(p.value, digits = 4))
 compensation_contrasts
 
 ```
@@ -138,7 +141,8 @@ totale_estimates
 ### Table S6. Contrasts from GLS on total energy ratio
 
 ```{r}
-totale_contrasts <- as.data.frame(pairs(totale_mean_gls_emmeans))
+totale_contrasts <- as.data.frame(pairs(totale_mean_gls_emmeans))%>%
+  mutate(p.value = round(p.value, digits = 4))
 totale_contrasts
 
 ```
@@ -194,7 +198,8 @@ dipoestimates
 ### Table S9. Contrasts from GLM on Dipodomys energy use.
 
 ```{r}
-dipocontrasts <- as.data.frame(pairs(dipoemmeans))
+dipocontrasts <- as.data.frame(pairs(dipoemmeans))%>%
+  mutate(p.value = round(p.value, digits = 4))
 dipocontrasts
 
 ```
@@ -247,7 +252,8 @@ pb_estimates
 ### Table S12. Contrasts from GLM on C. baileyi energy use.
 
 ```{r}
-pb_contrasts <- as.data.frame(pairs(pb_emmeans))
+pb_contrasts <- as.data.frame(pairs(pb_emmeans)) %>%
+  mutate(p.value = round(p.value, digits = 4))
 pb_contrasts
 
 ```

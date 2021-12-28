@@ -274,7 +274,8 @@ compensation_estimates
 ### Table S3. Contrasts from GLS for compensation 
 
 ```{r}
-compensation_contrasts <- as.data.frame(pairs(comp_mean_gls_emmeans))
+compensation_contrasts <- as.data.frame(pairs(comp_mean_gls_emmeans))%>%
+  mutate(p.value = round(p.value, digits = 4))
 compensation_contrasts
 
 ```
@@ -314,7 +315,8 @@ totale_estimates
 ### Table S6. Contrasts from GLS on total biomass ratio
 
 ```{r}
-totale_contrasts <- as.data.frame(pairs(totale_mean_gls_emmeans))
+totale_contrasts <- as.data.frame(pairs(totale_mean_gls_emmeans))%>%
+  mutate(p.value = round(p.value, digits = 4))
 totale_contrasts
 
 ```
@@ -370,7 +372,8 @@ dipoestimates
 ### Table S9. Contrasts from GLM on Dipodomys biomass.
 
 ```{r}
-dipocontrasts <- as.data.frame(pairs(dipoemmeans))
+dipocontrasts <- as.data.frame(pairs(dipoemmeans))%>%
+  mutate(p.value = round(p.value, digits = 4))
 dipocontrasts
 
 ```
@@ -423,7 +426,8 @@ pb_estimates
 ### Table S12. Contrasts from GLM on C. baileyi biomass.
 
 ```{r}
-pb_contrasts <- as.data.frame(pairs(pb_emmeans))
+pb_contrasts <- as.data.frame(pairs(pb_emmeans))%>%
+  mutate(p.value = round(p.value, digits = 4))
 pb_contrasts
 
 ```
