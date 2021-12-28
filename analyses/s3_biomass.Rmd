@@ -53,6 +53,7 @@ pb_nozero <- pb %>%
   filter(as.numeric(oera) > 1)
 energy_ratio <- get_e_ratio(treatl)
 compensation <- get_compensation(treatl)
+dipo_c_dat <- get_dipo_c(treatl)
 
 
 # For figures:
@@ -178,17 +179,6 @@ pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, est, color = Treatment
 
 
 ```{r}
-
-dipo_dat <- treatl %>%
-  mutate(dipo_prop = dipo_e / total_e,
-         smgran_prop= smgran_e / total_e) %>%
-  group_by(oplottype) %>%
-  mutate(smgran_prop_ma = maopts(smgran_prop),
-         dipo_prop_ma = maopts(dipo_prop)) %>%
-  ungroup() 
-
-dipo_c_dat <- dipo_dat %>%
-  filter(oplottype == "CC")
 
 dipo_glm <- glm(dipo_prop ~ oera, family = binomial(), data= dipo_c_dat)
 
