@@ -194,7 +194,7 @@ spei_plot <- ggplot(weather_full_drought, aes(newdate, spei12, color = dry, fill
 
 ```
 
-# Figure S1
+# Appendix S2 Figure S1 - Covariates of rodent community change
 
 ```{r, fig.dim = c(6,7)}
 library(multipanelfigure)

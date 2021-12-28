@@ -1,5 +1,6 @@
 ---
-title: "Biomass analysis"
+title: "Appendix S3 - Biomass analysis"
+subtitle: "Supplemental information for Diaz and Ernest, “Maintenance of community function through compensation breaks down over time in a desert rodent community”. In review at Ecology."
 output: 
    # github_document:
    #      df_print: kable
@@ -11,8 +12,8 @@ output:
           toc: yes
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, fig.dim = c(6, 3))
+```{r setup, include=FALSE, message = F, warning= F}
+knitr::opts_chunk$set(echo = FALSE,  message = F, warning= F)
 library(soar)
 library(ggplot2)
 library(dplyr)
@@ -20,17 +21,19 @@ library(multipanelfigure)
 library(nlme)
 library(emmeans)
 
-# Get data using `portalr`:
-#treatl <- get_treatment_means() 
-# Alternatively, read data from `data/`:
-# treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
+## Get data using `portalr`:
+# plotl <- get_plot_totals(currency = "biomass")
+# plot_types <- list_plot_types()
+# Or, load:
+plotl <- read.csv(here::here("data", "plotl_biomass.csv"), stringsAsFactors = T)
 
-# This section is new. Load data using `get_plot_totals` so that you can remove an exclosure plot (resulting in a balanced set of 4 exclosures and 4 controls)
+plot_types <- read.csv(here::here("data", "plot_types.csv"), stringsAsFactors = T)
 
-plotl <- get_plot_totals(currency = "biomass")
 
-plot_types <- list_plot_types() %>% filter(plot_type == "EE")
+plot_types <- plot_types  %>% 
+  filter(plot_type == "EE")
 
+# Remove 1 of 5 exclosure plots
 set.seed(1977) # 1977 is my usual Portal seed
 remove_plot <- sample(plot_types$plot, 1, F)
 
@@ -156,7 +159,7 @@ pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, est, color = Treatment
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
-  ylab(bquote(CB / Etot)) +
+  ylab(bquote(CB / Btot)) +
   ggtitle(pb_title) +
   theme(legend.position = c(.15, .75)) + 
   both_scale + 
@@ -206,7 +209,7 @@ dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, est)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
-  ylab(bquote(KR[C] / Etot[C])) +
+  ylab(bquote(KR[C] / Btot[C])) +
   xlab("") +
   ggtitle(dipo_title) +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
@@ -217,11 +220,11 @@ dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, est)) +
 
 ```
 
-# Figure S2 - Biomass
+# Appendix S3 Figure S1 - Biomass
 
-```{r, fig.dim = c(3, 5)}
+```{r, fig.dim = c(4,6)}
 
-all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0) %>%
+all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0, panel_label_type = "none") %>%
   fill_panel(totale_plot) %>%
   fill_panel(comp_plot) %>%
   fill_panel(dplot) %>%
@@ -245,7 +248,7 @@ Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE o
 
 \newpage
 
-# Model results
+# Model results - Biomass
 
 # Compensation
 
@@ -395,22 +398,22 @@ dipocontrasts
 
 
 ```{r, echo = F}
-
-pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial(), data= pb_nozero)
-pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
-pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial(), data= pb_nozero)
-#
-AIC(pb_glm_interaction)
-AIC(pb_glm_nointeraction)
-AIC(pb_glm_notreat)
-
-anova(pb_glm_interaction, pb_glm_nointeraction, test = "Chi")
-anova(pb_glm_nointeraction, pb_glm_notreat, test = "Chi")
+# 
+# pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial(), data= pb_nozero)
+ pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
+# pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial(), data= pb_nozero)
+# #
+# AIC(pb_glm_interaction)
+# AIC(pb_glm_nointeraction)
+# AIC(pb_glm_notreat)
+# 
+# anova(pb_glm_interaction, pb_glm_nointeraction, test = "Chi")
+# anova(pb_glm_nointeraction, pb_glm_notreat, test = "Chi")
 
 ```
 
 
-Note that a model fit as `pb_proportional_biomass ~ era + treatment + era:treatment` does not outperform a model fit without the interaction term, or `pb_proportional_biomass ~ era + treatment` (AIC for the no interaction model = 231 compared to 237 for the interaction model; p-value for an anova Chi-squared comparison of the two models = 0.16). We therefore use the model without the interaction term. 
+<!-- Note that a model fit as `pb_proportional_biomass ~ era + treatment + era:treatment` does not outperform a model fit without the interaction term, or `pb_proportional_biomass ~ era + treatment` (AIC for the no interaction model = 231 compared to 237 for the interaction model; p-value for an anova Chi-squared comparison of the two models = 0.16). We therefore use the model without the interaction term.  -->
 
 
 ### Table S10. Coefficients from GLM on C. baileyi biomass
