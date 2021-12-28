@@ -5,12 +5,13 @@ output:
   # html_document:
   #   toc: yes
   #   df_print: paged
-  word_document:
-    df_print: kable
-    reference_docx: default_gdoc.docx
-    toc: yes
-  # pdf_document:
+  # word_document:
+  #   df_print: kable
+  #   reference_docx: default_gdoc.docx
   #   toc: yes
+  pdf_document:
+    toc: yes
+    df_print: kable
 ---
 
 ```{r setup, include=T, echo = F, results = F, warning = F, message = F}
