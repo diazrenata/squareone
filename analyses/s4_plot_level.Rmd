@@ -5,13 +5,13 @@ output:
   # html_document:
   #   toc: yes
   #   df_print: paged
-  # word_document:
-  #   df_print: kable
-  #   reference_docx: default_gdoc.docx
-  #   toc: yes
-  pdf_document:
-    toc: yes
+  word_document:
     df_print: kable
+    reference_docx: default_gdoc.docx
+    toc: yes
+  # pdf_document:
+  #   toc: yes
+  #   df_print: kable
 ---
 
 ```{r setup, include=T, echo = F, results = F, warning = F, message = F}
@@ -44,52 +44,101 @@ remove_plot <- sample(plot_types$plot, 1, F)
 plotl <- plotl %>%
   filter(plot != remove_plot)
 
-treatl <- plots_to_treatment_means(plotl) 
-
-treatl <- treatl %>%
-   mutate(censusdate = as.Date(censusdate),
-          oera = ordered(oera),
-          oplottype = ordered(oplottype))
- 
-pb <- get_pb(treatl) 
-
-pb_nozero <- pb %>%
-  filter(as.numeric(oera) > 1)
-energy_ratio <- get_e_ratio(treatl)
-compensation <- get_compensation(treatl)
-
 ```
 
+\newpage
+
+# Explanation
+
+In order to  calculate energetic compensation and the total energy ratio, we require an estimate for the baseline values of total energy use, kangaroo rat energy use, and small granivore energy use on control plots. Estimating these baselines requires aggregating over between-plot variability among the control plots. For consistency, in the main analysis, we also aggregate across the exclosure plots and focus on treatment-level means throughout. Here, we explore the effect of between-plot variability on our analyses by examining the effect of plot as a random factor within exclosure plots (for total energy and compensation) and across all plots involved in analyses of proportional energy use (controls and exclosures for *C. baileyi*, and only controls for *Dipodomys*). 
+
+# Calculations of compensation and the total energy ratio
+
+```{r, echo = T}
+
+control_means <- plotl %>%
+  filter(plot_type == "CC") %>%
+  group_by(period) %>%
+  summarize(mean_total_e = mean(total_e),
+            mean_dipo_e = mean(dipo_e),
+            mean_smgran_e = mean(smgran_e)) %>%
+  ungroup() 
+
+plotl_vars <- plotl %>%
+  left_join(control_means) %>%
+  mutate(energy_ratio = total_e / mean_total_e,
+         compensation = (smgran_e - mean_smgran_e) / mean_dipo_e,
+         dipo_ratio = dipo_e / total_e,
+         pb_ratio = pb_e / total_e) %>%
+  filter(plot != remove_plot)
+
+compensation_dat <- filter(plotl_vars, oplottype == "EE")
+total_e_dat <- filter(plotl_vars, oplottype == "EE")
+pb_dat <- filter(plotl_vars, as.numeric(oera) > 1)
+dipo_c_dat <- filter(plotl_vars, oplottype == "CC")
+```
 
 \newpage
 
 # Compensation
 
+## Model specification and selection
 
+We fit linear mixed-effects models fitting `compensation ~ time period` with a random effect of plot and a temporal autocorrelation term to account for autocorrelation between monthly census periods within each timeperiod. We compare these to models without the autocorrelation term, without the random effect, and without the term for time period. 
 
-```{r, echo =F}
+The best-model (lowest AIC) is the full model (terms for time period, autocorrelation, and a random effect of plot) with an AIC of 1360.207. 
 
+```{r, echo =T}
 
-comp_mean_gls <- gls(smgran_comp ~ oera,  correlation = corCAR1(form = ~ period), data = compensation)
+# Full model:
+comp_plot_gls <- lme(compensation ~ oera , random = ~1|fplot,  correlation = corCAR1(form = ~ period | fplot), data = compensation_dat)
 
-comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ oera)
+# No autocorrelation term:
+comp_plot_gls_noautoc <- lme(compensation ~ oera , random = ~1|fplot, data = compensation_dat)
 
-comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
-  mutate(oera = ordered(oera)) %>%
-  right_join(compensation)
+# No random effect of plot:
+comp_plot_gls_norandom <- gls(compensation ~ oera , correlation = corCAR1(form = ~ period | fplot), data = compensation_dat)
+
+# No term for time period:
+comp_plot_gls_notime <- lme(compensation ~ 1 , random = ~1|fplot,  correlation = corCAR1(form = ~ period | fplot), data = compensation_dat)
+
+# No term for time period, or autocorrelation term:
+comp_plot_gls_notime_nocor <- lme(compensation ~ 1 , random = ~1|fplot, data = compensation_dat)
+
+# No terms - intercept-only null model:
+comp_plot_gls_notime_nocor_norand <- gls(compensation ~ 1 , data = compensation_dat)
+
+AIC(comp_plot_gls)
+AIC(comp_plot_gls_noautoc)
+AIC(comp_plot_gls_norandom)
+AIC(comp_plot_gls_notime)
+AIC(comp_plot_gls_notime_nocor)
+AIC(comp_plot_gls_notime_nocor_norand)
 
 ```
 
+We proceed with estimates and contrasts from the full model.
 
-### Table S1. Coefficients from GLS for compensation
+```{r, echo = T}
+comp_mean_gls_emmeans <- emmeans(comp_plot_gls, specs = ~ oera)
+
+
+
+```
+
+\newpage
+
+## Results
+
+### Table S1. Coefficients from linear mixed-effects model for compensation
 
 ```{r}
-compensation_coef <- as.data.frame(summary(comp_mean_gls)$tTable)
+compensation_coef <- as.data.frame(summary(comp_plot_gls)$tTable)
 compensation_coef
 ```
 
 
-### Table S2. Estimates from GLS for compensation 
+### Table S2. Estimates from linear mixed-effects model for compensation 
 
 ```{r}
 
@@ -98,7 +147,7 @@ compensation_estimates
 
 ```
 
-### Table S3. Contrasts from GLS for compensation 
+### Table S3. Contrasts from linear mixed-effects model for compensation 
 
 ```{r}
 compensation_contrasts <- as.data.frame(pairs(comp_mean_gls_emmeans)) %>%
@@ -110,29 +159,63 @@ compensation_contrasts
  
 # Total energy use
 
-```{r, echo = F}
+## Model specification and selection
 
-totale_mean_gls <- gls(total_e_rat ~  oera,  correlation = corCAR1(form = ~ period), data = energy_ratio)
+
+As for compensation, fit linear mixed-effects models fitting `total_energy_ratio ~ time period` with a random effect of plot and a temporal autocorrelation term to account for autocorrelation between monthly census periods within each timeperiod. We compare these to models without the autocorrelation term, without the random effect, and without the term for time period. 
+
+The best-model (lowest AIC) is the full model (terms for time period, autocorrelation, and a random effect of plot) with an AIC of 474.8. 
+
+```{r, echo = T}
+
+totale_plot_gls <- lme(energy_ratio~ oera , random = ~1|fplot,  correlation = corCAR1(form = ~ period | fplot), data = total_e_dat)
+
+totale_plot_gls_noautoc <- lme(energy_ratio~ oera , random = ~1|fplot, data = total_e_dat)
+
+totale_plot_gls_norandom <- gls(energy_ratio~ oera , correlation = corCAR1(form = ~ period | fplot), data = total_e_dat)
+
+
+totale_plot_gls_notime <- lme(energy_ratio~ 1 , random = ~1|fplot,  correlation = corCAR1(form = ~ period | fplot), data = total_e_dat)
+totale_plot_gls_notime_nocor <- lme(energy_ratio~ 1 , random = ~1|fplot, data = total_e_dat)
+totale_plot_gls_notime_nocor_norand <- gls(energy_ratio~ 1 , data = total_e_dat)
+
+AIC(totale_plot_gls)
+AIC(totale_plot_gls_noautoc)
+AIC(totale_plot_gls_norandom)
+AIC(totale_plot_gls_notime)
+AIC(totale_plot_gls_notime_nocor)
+AIC(totale_plot_gls_notime_nocor_norand)
+
 
   
 ```
 
 
-### Table S4. Coefficients from GLS on total energy ratio
+We proceed with estimates and contrasts from the full model.
+
+```{r, echo = T}
+totale_mean_gls_emmeans <- emmeans(totale_plot_gls, specs = ~ oera)
+
+```
+
+
+\newpage
+
+## Results
+### Table S4. Coefficients from linear mixed-effects model on total energy ratio
 
 ```{r}
 
-te_coef <- as.data.frame(summary(totale_mean_gls)$tTable)
+te_coef <- as.data.frame(summary(totale_plot_gls)$tTable)
 
 te_coef
 
 ```
 
 
-### Table S5. Estimates from GLS on total energy ratio
+### Table S5. Estimates from linear mixed-effects model on total energy ratio
 
 ```{r}
-totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
 
 totale_estimates <- as.data.frame(totale_mean_gls_emmeans)
 totale_estimates
@@ -140,7 +223,7 @@ totale_estimates
 ```
 
 
-### Table S6. Contrasts from GLS on total energy ratio
+### Table S6. Contrasts from linear mixed-effects model on total energy ratio
 
 ```{r}
 totale_contrasts <- as.data.frame(pairs(totale_mean_gls_emmeans))%>%
@@ -157,21 +240,13 @@ totale_contrasts
 
 
 ```{r, echo = F}
+library(lme4)
 
-dipo_dat <- treatl %>%
-  mutate(dipo_prop = dipo_e / total_e,
-         smgran_prop= smgran_e / total_e) %>%
-  group_by(oplottype) %>%
-  mutate(smgran_prop_ma = maopts(smgran_prop),
-         dipo_prop_ma = maopts(dipo_prop)) %>%
-  ungroup() 
+dipo_glmer <- glmer(dipo_ratio ~ oera + (1|fplot), data = dipo_c_dat, family = binomial)
+dipo_glm <- glm(dipo_ratio ~ oera, data = dipo_c_dat, family = binomial)
 
-dipo_c_dat <- dipo_dat %>%
-  filter(oplottype == "CC")
-
-dipo_glm <- glm(dipo_prop ~ oera, family = binomial(), data= dipo_c_dat)
-
-
+AIC(dipo_glmer)
+AIC(dipo_glm)
 
 ```
 
@@ -179,7 +254,7 @@ dipo_glm <- glm(dipo_prop ~ oera, family = binomial(), data= dipo_c_dat)
 
 ```{r}
 
-dipo_coef <- as.data.frame(summary(dipo_glm)$coefficients)
+dipo_coef <- as.data.frame(summary(dipo_glmer)$coefficients)
 dipo_coef
 
 ```
@@ -190,7 +265,7 @@ dipo_coef
 ```{r}
 
 
-dipoemmeans <- regrid(emmeans(dipo_glm, specs = ~ oera))
+dipoemmeans <- regrid(emmeans(dipo_glmer, specs = ~ oera))
 
 dipoestimates <- as.data.frame(dipoemmeans)
 
@@ -199,7 +274,7 @@ dipoestimates
 ```
 
 
-### Table S9. Contrasts from GLM on Dipodomys energy use.
+### Table S9. Contrasts from GLMER on Dipodomys energy use.
 
 ```{r}
 dipocontrasts <- as.data.frame(pairs(dipoemmeans))%>%
@@ -215,28 +290,39 @@ dipocontrasts
 
 ```{r, echo = F}
 
-pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial(), data= pb_nozero)
-pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
-pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial(), data= pb_nozero)
-# 
-# AIC(pb_glm_interaction)
-# AIC(pb_glm_nointeraction)
-# AIC(pb_glm_notreat)
-# 
-# anova(pb_glm_interaction, pb_glm_nointeraction, test = "Chi")
-# anova(pb_glm_nointeraction, pb_glm_notreat, test = "Chi")
+pb_glmer_interaction <- glmer(pb_ratio ~ oera * oplottype + (1|fplot), data = pb_dat, family = binomial)
+pb_glmer_nointeraction <- glmer(pb_ratio ~ oera + oplottype + (1|fplot), data = pb_dat, family = binomial)
+pb_glmer_notreat <- glmer(pb_ratio ~ oera + (1|fplot), data = pb_dat, family = binomial)
+pb_glmer_notime <- glmer(pb_ratio ~ 1 + (1|fplot), data = pb_dat, family = binomial)
+
+
+pb_glm_interaction <- glm(pb_ratio ~ oera * oplottype , data = pb_dat, family = binomial)
+pb_glm_nointeraction <- glm(pb_ratio ~ oera + oplottype , data = pb_dat, family = binomial)
+pb_glm_notreat <- glm(pb_ratio ~ oera, data = pb_dat, family = binomial)
+pb_glm_notime <- glm(pb_ratio ~ 1, data = pb_dat, family = binomial)
+
+
+
+AIC(pb_glmer_interaction)
+AIC(pb_glmer_nointeraction)
+AIC(pb_glmer_notreat)
+AIC(pb_glmer_notime)
+
+AIC(pb_glm_interaction)
+AIC(pb_glm_nointeraction)
+AIC(pb_glm_notreat)
+AIC(pb_glm_notime)
+
 
 ```
 
-
-<!-- Note that a model fit as `pb_proportional_energy_use ~ era + treatment + era:treatment` does not outperform a model fit without the interaction term, or `pb_proportional_energy_use ~ era + treatment` (AIC for the no interaction model = 231 compared to 237 for the interaction model; p-value for an anova Chi-squared comparison of the two models = 0.15). We therefore use the model without the interaction term.  -->
 
 
 ### Table S10. Coefficients from GLM on C. baileyi energy use
 
 ```{r}
 
-pb_coef <- as.data.frame(summary(pb_glm_nointeraction)$coefficients)
+pb_coef <- as.data.frame(summary(pb_glmer_nointeraction)$coefficients)
 pb_coef
 
 ```
@@ -246,7 +332,7 @@ pb_coef
 
 ```{r}
 
-pb_emmeans <- regrid(emmeans(pb_glm_nointeraction, specs = ~ oera))
+pb_emmeans <- regrid(emmeans(pb_glmer_nointeraction, specs = ~ oera))
 
 pb_estimates <- as.data.frame(pb_emmeans)
 
