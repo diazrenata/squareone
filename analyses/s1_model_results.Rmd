@@ -388,7 +388,7 @@ pb_comparison <- data.frame(
 
 pb_comparison
 
-pb_emmeans <- regrid(emmeans(pb_glm_nointeraction, specs = ~ oera))
+pb_emmeans <- regrid(emmeans(pb_glm_nointeraction, specs = ~ oera | oplottype))
 ```
 
 ### Table S10. Coefficients from GLM on C. baileyi energy use
