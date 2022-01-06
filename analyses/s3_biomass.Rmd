@@ -30,15 +30,16 @@ plotl <- read.csv(here::here("data", "plotl_biomass.csv"), stringsAsFactors = T)
 plot_types <- read.csv(here::here("data", "plot_types.csv"), stringsAsFactors = T)
 
 
+# Remove 1 of 5 exclosure plots
+
 plot_types <- plot_types  %>% 
   filter(plot_type == "EE")
 
-# Remove 1 of 5 exclosure plots
 set.seed(1977) # 1977 is my usual Portal seed
 remove_plot <- sample(plot_types$plot, 1, F)
 
 plotl <- plotl %>%
-  filter(plot != remove_plot)
+  filter(plot != remove_plot) # results in removing plot 19
 
 treatl <- plots_to_treatment_means(plotl) 
 
@@ -142,9 +143,13 @@ totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), ae
 
 pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
 
+pb_glm_nointeraction_emmeans <- emmeans(pb_glm_nointeraction, specs = ~ oera | oplottype)
 
-pb_glm_nointeraction_se <- est_glm_ilink(pb_glm_nointeraction, pb_nozero) %>%
-  full_join(select(pb, period, oplottype, pb_prop_ma, censusdate)) %>%
+pb_glm_nointeraction_se <- as.data.frame(regrid(pb_glm_nointeraction_emmeans)) %>%
+  mutate(oera = as.character(oera),
+         oplottype = as.character(oplottype)) %>% 
+  right_join(mutate(pb_nozero, oera = as.character(oera), oplottype = as.character(oplottype))) %>%
+    full_join(select(pb, period, oplottype, pb_prop_ma, censusdate)) %>%
   mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
          Rodents = "C. baileyi") %>%
   rename(rod_prop_ma = pb_prop_ma)
@@ -152,9 +157,9 @@ pb_glm_nointeraction_se <- est_glm_ilink(pb_glm_nointeraction, pb_nozero) %>%
 
 pb_title <- expression(paste(bold("D. "), italic("C. baileyi"), " biomass"))
 
-pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, est, color = Treatment, fill = Treatment)) +
+pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, prob, color = Treatment, fill = Treatment)) +
   geom_line() +
-  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_ribbon(aes(ymin = asymp.LCL, ymax= asymp.UCL), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
   ylab(bquote(CB / Btot)) +
   ggtitle(pb_title) +
@@ -182,17 +187,20 @@ pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, est, color = Treatment
 
 dipo_glm <- glm(dipo_prop ~ oera, family = binomial(), data= dipo_c_dat)
 
-dipo_glm_se <- est_glm_ilink(dipo_glm, dipo_c_dat) %>%
-  left_join(select(dipo_c_dat, period, dipo_prop_ma)) %>%
-  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
-         Rodents = "All small granivores\n(non-Dipodomys)") %>%
+dipo_glm_emmeans <- emmeans(dipo_glm, specs = ~ oera)
+
+dipo_glm_se <- as.data.frame(regrid(dipo_glm_emmeans)) %>%
+  mutate(oera = as.character(oera)) %>% 
+  right_join(mutate(dipo_c_dat, oera = as.character(oera))) %>%
+  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure")) %>%
   rename(rod_prop_ma = dipo_prop_ma)
+
 dipo_title <- expression(paste(bold("C."), " Kangaroo rat (", italic("Dipodomys"), ") biomass"))
 
 
-dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, est)) +
+dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, prob)) +
   geom_line() +
-  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_ribbon(aes(ymin = asymp.LCL, ymax= asymp.UCL), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
   ylab(bquote(KR[C] / Btot[C])) +
   xlab("") +
@@ -309,6 +317,10 @@ dipo_coef
 
 ### Table S8. Estimates from GLM on Dipodomys biomass.
 
+Note that estimates are back-transformed onto the response scale.
+
+
+
 ```{r}
 
 
@@ -353,6 +365,10 @@ pb_coef
 
 
 ### Table S11. Estimates from GLM on C. baileyi biomass
+
+Note that estimates are back-transformed onto the response scale.
+
+
 
 ```{r}
 

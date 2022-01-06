@@ -152,22 +152,25 @@ totale_plot
 
 
 
-pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial(), data= pb_nozero)
 pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
-pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial(), data= pb_nozero)
 
+pb_glm_nointeraction_emmeans <- emmeans(pb_glm_nointeraction, specs = ~ oera | oplottype)
 
-pb_glm_nointeraction_se <- est_glm_ilink(pb_glm_nointeraction, pb_nozero) %>%
-  full_join(select(pb, period, oplottype, pb_prop_ma, censusdate)) %>%
+pb_glm_nointeraction_se <- as.data.frame(regrid(pb_glm_nointeraction_emmeans)) %>%
+  mutate(oera = as.character(oera),
+         oplottype = as.character(oplottype)) %>% 
+  right_join(mutate(pb_nozero, oera = as.character(oera), oplottype = as.character(oplottype))) %>%
+    full_join(select(pb, period, oplottype, pb_prop_ma, censusdate)) %>%
   mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
          Rodents = "C. baileyi") %>%
   rename(rod_prop_ma = pb_prop_ma)
 
-pb_title <- expression(paste(bold("D. "), italic("C. baileyi"), " energy use"))
 
-pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, est, color = Treatment, fill = Treatment)) +
+pb_title <- expression(paste(bold("D. "), italic("C. baileyi"), " proportional energy use"))
+
+pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, prob, color = Treatment, fill = Treatment)) +
   geom_line() +
-  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_ribbon(aes(ymin = asymp.LCL, ymax= asymp.UCL), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
   ylab(bquote(CB / Etot)) +
   ggtitle(pb_title) +
@@ -198,17 +201,21 @@ pbplot
 
 dipo_glm <- glm(dipo_prop ~ oera, family = binomial(), data= dipo_c_dat)
 
-dipo_glm_se <- est_glm_ilink(dipo_glm, dipo_c_dat) %>%
-  left_join(select(dipo_c_dat, period, dipo_prop_ma)) %>%
-  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
-         Rodents = "All small granivores\n(non-Dipodomys)") %>%
+
+dipo_glm_emmeans <- emmeans(dipo_glm, specs = ~ oera)
+
+dipo_glm_se <- as.data.frame(regrid(dipo_glm_emmeans)) %>%
+  mutate(oera = as.character(oera)) %>% 
+  right_join(mutate(dipo_c_dat, oera = as.character(oera))) %>%
+  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure")) %>%
   rename(rod_prop_ma = dipo_prop_ma)
-dipo_title <- expression(paste(bold("C."), " Kangaroo rat (", italic("Dipodomys"), ") energy use"))
+
+dipo_title <- expression(paste(bold("C."), " Kangaroo rat (", italic("Dipodomys"), ") proportional energy use"))
 
 
-dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, est)) +
+dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, prob)) +
   geom_line() +
-  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_ribbon(aes(ymin = asymp.LCL, ymax= asymp.UCL), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
   ylab(bquote(KR[C] / Etot[C])) +
   xlab("") +

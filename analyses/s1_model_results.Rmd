@@ -1,6 +1,7 @@
 ---
 title: "Appendix S1 - Full analytical methods and model results"
 subtitle: "Supplemental information for Diaz and Ernest, “Maintenance of community function through compensation breaks down over time in a desert rodent community”. In review at Ecology."
+author: "Fully annotated code and RMarkdown documents to reproduce these analyses are available at https://doi.org/10.5281/zenodo.5544362 and https://doi.org/10.5281/zenodo.5539881."
 output:
   # html_document:
   #   toc: yes
@@ -60,6 +61,27 @@ plot_types <- list_plot_types() %>% filter(plot_type == "EE")
 
 plotl <- read.csv(here::here("data", "plotl.csv"), stringsAsFactors = T)
 plot_types <- read.csv(here::here("data", "plot_types.csv"), stringsAsFactors = T)
+
+```
+
+<!-- For interpretability, translating the era and treatment "names" as RMD coded them for analysis to the corresponding dates: -->
+
+```{r, echo = F}
+
+oera_df <- data.frame(
+  oera = c("a_pre_pb", "b_pre_reorg", "c_post_reorg"),
+  `Timeperiod` = c("1988-1997", "1997-2010", "2010-2020")
+)
+
+oplot_df <- data.frame(
+  oplottype = c("CC", "EE"),
+  `Treatment` = c("Control", "Exclosure")
+)
+
+contrasts_df <- data.frame(
+  contrast = c("a_pre_pb - b_pre_reorg", "a_pre_pb - c_post_reorg", "b_pre_reorg - c_post_reorg"),
+  Comparison = c("1988-1997 - 1997-2010", "1988-1997 - 2010-2020", "1997-2010 - 2010-2020")
+)
 
 ```
 
@@ -148,7 +170,7 @@ dipo_c_dat <- get_dipo_c(treatl)
 
 # Compensation
 
-We fit a generalized least squares accounting for temporal autocorrelation between monthly censuses within each time period using a continuous autoregressive structure of order 1. We compared this model to models fit without the autocorrelation structure and without the time period term using AIC. The "full" model was the best-fitting model via AIC, and we used this model to calculate estimates and contrasts. 
+We fit a generalized least squares (of the form *compensation ~ timeperiod*; note that "timeperiod" is coded as "oera" throughout) using the `gls` function from the R package `nlme` (Pinheiro et al. 2021). Because values from monthly censuses within each time period are subject to temporal autocorrelation, we included a continuous autoregressive temporal autocorrelation structure of order 1 (using the `CORCAR1` function). We compared this model to models fit without the autocorrelation structure and without the time period term using AIC. The model with both the time period term and the autocorrelation structure was the best-fitting model via AIC, and we used this model to calculate estimates and contrasts using the package `emmeans` (Lenth 2021). 
 
 ```{r, echo = F}
 
@@ -162,7 +184,7 @@ comp_mean_null <- gls(smgran_comp ~ 1, data = compensation)
 ```
 
 
-### Table S1. AIC scores for candidate models for compensation.
+### Table S1. Model comparison for compensation.
 
 ```{r, echo = F}
 
@@ -192,6 +214,8 @@ comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ oera)
 
 ### Table S1. Coefficients from GLS for compensation
 
+Note that "oera" is the variable name for the term for time period in these analyses. 
+
 ```{r}
 compensation_coef <- as.data.frame(summary(comp_mean_gls)$tTable)
 compensation_coef
@@ -202,7 +226,9 @@ compensation_coef
 
 ```{r}
 
-compensation_estimates <- as.data.frame(comp_mean_gls_emmeans)
+compensation_estimates <- oera_df %>%
+  left_join(as.data.frame(comp_mean_gls_emmeans)) %>%
+  select(-oera)
 compensation_estimates
 
 ```
@@ -210,18 +236,20 @@ compensation_estimates
 ### Table S3. Contrasts from GLS for compensation 
 
 ```{r}
-compensation_contrasts <- as.data.frame(pairs(comp_mean_gls_emmeans)) %>%
-  mutate(p.value = round(p.value, digits = 4))
+compensation_contrasts <-contrasts_df %>%
+  left_join(as.data.frame(pairs(comp_mean_gls_emmeans))) %>%
+  mutate(p.value = round(p.value, digits = 4)) %>%
+  select(-contrast)
 compensation_contrasts
 
 ```
 \newpage
 
-# Total energy use
+# Total energy use ratio
 
-As for compensation, we fit a generalized least squares accounting for temporal autocorrelation between monthly censuses within each time period using a continuous autoregressive structure of order 1. We compared this model to models fit without each of the terms, and found the full model had the best performance via AIC. We used this model for estimates and contrasts.
+As for compensation, we fit a generalized least squares of the form *total_energy_ratio ~ timeperiod*, accounting for temporal autocorrelation between monthly censuses within each time period using a continuous autoregressive autocorrelation structure of order 1. We compared this model to models fit without the timeperiod term and/or autocorrelation structure, and found the full (timeperiod plus autocorrelation) model had the best performance via AIC. We used this model for estimates and contrasts.
 
-### Table S5. Model comparison via AIC for total energy ratio. 
+### Table S5. Model comparison for total energy ratio. 
 
 ```{r, echo = F}
 
@@ -252,13 +280,13 @@ totale_comparison
 ```
 
 
-<!-- We calculated estimates from this model using emmeans: -->
-
 ```{r, echo =F}
 totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
 ```
 
 ### Table S4. Coefficients from GLS on total energy ratio
+
+Note that "oera" is the variable name for the term for time period in these analyses. 
 
 ```{r}
 
@@ -273,7 +301,9 @@ te_coef
 
 ```{r}
 
-totale_estimates <- as.data.frame(totale_mean_gls_emmeans)
+totale_estimates <- oera_df %>%
+  left_join(as.data.frame(totale_mean_gls_emmeans)) %>%
+  select(-oera)
 totale_estimates
 
 ```
@@ -282,7 +312,9 @@ totale_estimates
 ### Table S6. Contrasts from GLS on total energy ratio
 
 ```{r}
-totale_contrasts <- as.data.frame(pairs(totale_mean_gls_emmeans))%>%
+totale_contrasts <- contrasts_df %>%
+  left_join(as.data.frame(pairs(totale_mean_gls_emmeans))) %>%
+  select(-contrast) %>%
   mutate(p.value = round(p.value, digits = 4))
 totale_contrasts
 
@@ -290,9 +322,9 @@ totale_contrasts
 
 \newpage
 
-# Kangaroo rat proportional energy use
+# Kangaroo rat (Dipodomys) proportional energy use
 
-Proportional energy use is bounded 0-1 and cannot be fit with generalized least squares. We therefore use a binomial GLM with no temporal autocorrelation term. We compared a model fit with a timeperiod term to an intercept-only (null) model using AIC, and found the timeperiod term improved model fit. We used this model for estimates and contrasts.
+Proportional energy use is bounded 0-1 and cannot be fit with generalized least squares. We therefore used a binomial GLM with no temporal autocorrelation term, of the form *dipodomys_proportional_energy_use ~ timeperiod*. We compared a model fit with a timeperiod term to an intercept-only (null) model using AIC, and found the timeperiod term improved model fit. We used this model for estimates and contrasts.
 
 ```{r, echo = F}
 
@@ -301,7 +333,7 @@ dipo_glm <- glm(dipo_prop ~ oera, family = binomial, data= dipo_c_dat)
 dipo_intercept_glm <- glm(dipo_prop ~ 1, family = binomial, data = dipo_c_dat)
 ```
 
-### Table S9. Model comparison via AIC for Dipodomys proportional energy use.
+### Table S9. Model comparison for Dipodomys proportional energy use.
 
 ```{r, echo =F}
 
@@ -318,11 +350,13 @@ dipo_comparison
 
 
 ```{r, echo =F}
-dipoemmeans <- regrid(emmeans(dipo_glm, specs = ~ oera))
+dipoemmeans <- (emmeans(dipo_glm, specs = ~ oera))
 ```
 
 
 ### Table S7. Coefficients from GLM on Dipodomys energy use.
+
+Note that "oera" is the variable name for the term for time period in these analyses. Coefficients are given on the link (logit) scale.
 
 ```{r}
 
@@ -334,16 +368,24 @@ dipo_coef
 
 ### Table S8. Estimates from GLM on Dipodomys energy use.
 
+Note that estimates are back-transformed onto the response scale, for interpretability.
+
+
 ```{r}
 
 
-dipoestimates <- as.data.frame(dipoemmeans)
+dipoestimates <- oera_df %>%
+  left_join(as.data.frame(regrid(dipoemmeans))) %>%
+  select(-oera)
 dipoestimates
 
 ```
 
 
 ### Table S9. Contrasts from GLM on Dipodomys energy use.
+
+Contrasts are performed on the link (logit) scale.
+
 
 ```{r}
 dipocontrasts <- as.data.frame(pairs(dipoemmeans))%>%
@@ -358,10 +400,20 @@ dipocontrasts
 
 ## Model specification and selection
 
+As for kangaroo rat proportional energy use, we used a binomial generalized linear model to compare *C. baileyi* proportional energy use across time periods. Because *C. baileyi* occurs on both control and exclosure plots, we investigated whether the dynamics of *C. baileyi*'s proportional energy use differed between treatment types. We compared models incorporating separate slopes, separate intercepts, or no terms for treatment modulating the change in *C. baileyi* proportional energy use across time periods, i.e. comparing the full set of models:
 
-As for kangaroo rat energy use, we used a binomial GLM to fit *C. bailyei* proportional energy use. We investigated whether the dynamics *C. baileyi*'s proportional energy use differed between treatment types. We compared models incorporating separate slopes, separate intercepts, or no terms for treatment modulating the change in *C. baileyi* proportional energy use across time periods. We also tested a null (intercept-only) model of no change across time periods. We found that the best-fitting model incorporated effects for time period and for treatment, but no interaction between them. We therefore proceeded with this model. 
+- *cbaileyi_proportional_energy_use ~ timeperiod + treatment + timeperiod:treatment*
+- *cbaileyi_proportional_energy_use ~ timeperiod + treatment*
+- *cbaileyi_proportional_energy_use ~ timeperiod*
 
-### Table S13; Model comparison via AIC for C. baileyi proportional energy use.
+We also tested a null (intercept-only) model of no change across time periods:
+
+- *cbaileyi_proportional_energy_use ~ 1*
+
+
+We found that the best-fitting model incorporated effects for time period and for treatment, but no interaction between them (*cbaileyi_proportional_energy_use ~ timeperiod + treatment*). We therefore proceeded with this model. 
+
+### Table S13; Model comparison for C. baileyi proportional energy use.
 
 
 ```{r, echo = F}
@@ -388,10 +440,12 @@ pb_comparison <- data.frame(
 
 pb_comparison
 
-pb_emmeans <- regrid(emmeans(pb_glm_nointeraction, specs = ~ oera | oplottype))
+pb_emmeans <- (emmeans(pb_glm_nointeraction, specs = ~ oera | oplottype))
 ```
 
 ### Table S10. Coefficients from GLM on C. baileyi energy use
+
+Note that "oera" is the variable name for the term for time period in these analyses, and "oplottype" refers to treatment. Coefficients are given on the link (logit) scale.
 
 ```{r}
 
@@ -403,10 +457,15 @@ pb_coef
 
 ### Table S11. Estimates from GLM on C. baileyi energy use
 
+Note that estimates are back-transformed onto the response scale, for interpretability.
+
 ```{r}
 
 
-pb_estimates <- as.data.frame(pb_emmeans)
+pb_estimates <- oera_df %>% 
+  right_join(as.data.frame(regrid(pb_emmeans))) %>%
+  left_join(oplot_df) %>%
+  select(Timeperiod, Treatment, prob, SE, df, asymp.LCL, asymp.UCL)
 
 pb_estimates
 
@@ -414,9 +473,22 @@ pb_estimates
 
 ### Table S12. Contrasts from GLM on C. baileyi energy use.
 
+Contrasts are performed on the link (logit) scale.
+
 ```{r}
-pb_contrasts <- as.data.frame(pairs(pb_emmeans)) %>%
-  mutate(p.value = round(p.value, digits = 4))
+pb_contrasts <- contrasts_df %>%
+  right_join(as.data.frame(pairs(pb_emmeans))) %>%
+  left_join(oplot_df) %>%
+  mutate(p.value = round(p.value, digits = 4)) %>%
+  select(Comparison, Treatment, estimate, SE, df, z.ratio, p.value)
 pb_contrasts
 
 ```
+
+\newpage
+
+# References
+
+Lenth,  Russell V. (2021). emmeans: _Estimated Marginal Means, aka Least-Squares Means._ R package version 1.7.0. <URL: https://CRAN.R-project.org/package=emmeans>
+
+Pinheiro J, Bates D, DebRoy S, Sarkar D, R Core Team (2021). _nlme: Linear and Nonlinear Mixed Effects Models_. R package version 3.1-153, <URL: https://CRAN.R-project.org/package=nlme>.
