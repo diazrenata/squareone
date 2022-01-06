@@ -122,7 +122,7 @@ totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
   mutate(oera = ordered(oera)) %>%
   right_join(energy_ratio)
 
-te_title <- expression(paste(bold("A."), " Total energy use"))
+te_title <- expression(paste(bold("A."), " Total energy use ratio"))
 
 
 totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean)) +
@@ -210,7 +210,7 @@ dipo_glm_se <- as.data.frame(regrid(dipo_glm_emmeans)) %>%
   mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure")) %>%
   rename(rod_prop_ma = dipo_prop_ma)
 
-dipo_title <- expression(paste(bold("C."), " Kangaroo rat (", italic("Dipodomys"), ") proportional energy use"))
+dipo_title <- expression(paste(bold("C."), " Kangaroo rat proportional energy use"))
 
 
 dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, prob)) +

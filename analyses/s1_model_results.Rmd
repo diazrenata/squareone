@@ -166,8 +166,6 @@ dipo_c_dat <- get_dipo_c(treatl)
 
 
 
-\newpage
-
 # Compensation
 
 We fit a generalized least squares (of the form *compensation ~ timeperiod*; note that "timeperiod" is coded as "oera" throughout) using the `gls` function from the R package `nlme` (Pinheiro et al. 2021). Because values from monthly censuses within each time period are subject to temporal autocorrelation, we included a continuous autoregressive temporal autocorrelation structure of order 1 (using the `CORCAR1` function). We compared this model to models fit without the autocorrelation structure and without the time period term using AIC. The model with both the time period term and the autocorrelation structure was the best-fitting model via AIC, and we used this model to calculate estimates and contrasts using the package `emmeans` (Lenth 2021). 
@@ -212,7 +210,7 @@ comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ oera)
 
 ```
 
-### Table S1. Coefficients from GLS for compensation
+### Table S2. Coefficients from GLS for compensation
 
 Note that "oera" is the variable name for the term for time period in these analyses. 
 
@@ -222,7 +220,7 @@ compensation_coef
 ```
 
 
-### Table S2. Estimates from GLS for compensation 
+### Table S3. Estimates from GLS for compensation 
 
 ```{r}
 
@@ -233,7 +231,7 @@ compensation_estimates
 
 ```
 
-### Table S3. Contrasts from GLS for compensation 
+### Table S4. Contrasts from GLS for compensation 
 
 ```{r}
 compensation_contrasts <-contrasts_df %>%
@@ -284,7 +282,7 @@ totale_comparison
 totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
 ```
 
-### Table S4. Coefficients from GLS on total energy ratio
+### Table S6. Coefficients from GLS on total energy ratio
 
 Note that "oera" is the variable name for the term for time period in these analyses. 
 
@@ -297,7 +295,7 @@ te_coef
 ```
 
 
-### Table S5. Estimates from GLS on total energy ratio
+### Table S7. Estimates from GLS on total energy ratio
 
 ```{r}
 
@@ -309,7 +307,7 @@ totale_estimates
 ```
 
 
-### Table S6. Contrasts from GLS on total energy ratio
+### Table S8. Contrasts from GLS on total energy ratio
 
 ```{r}
 totale_contrasts <- contrasts_df %>%
@@ -354,7 +352,7 @@ dipoemmeans <- (emmeans(dipo_glm, specs = ~ oera))
 ```
 
 
-### Table S7. Coefficients from GLM on Dipodomys energy use.
+### Table S10. Coefficients from GLM on Dipodomys energy use.
 
 Note that "oera" is the variable name for the term for time period in these analyses. Coefficients are given on the link (logit) scale.
 
@@ -366,7 +364,7 @@ dipo_coef
 ```
 
 
-### Table S8. Estimates from GLM on Dipodomys energy use.
+### Table S11. Estimates from GLM on Dipodomys energy use.
 
 Note that estimates are back-transformed onto the response scale, for interpretability.
 
@@ -382,7 +380,7 @@ dipoestimates
 ```
 
 
-### Table S9. Contrasts from GLM on Dipodomys energy use.
+### Table S12. Contrasts from GLM on Dipodomys energy use.
 
 Contrasts are performed on the link (logit) scale.
 
@@ -413,7 +411,7 @@ We also tested a null (intercept-only) model of no change across time periods:
 
 We found that the best-fitting model incorporated effects for time period and for treatment, but no interaction between them (*cbaileyi_proportional_energy_use ~ timeperiod + treatment*). We therefore proceeded with this model. 
 
-### Table S13; Model comparison for C. baileyi proportional energy use.
+### Table S13. Model comparison for C. baileyi proportional energy use.
 
 
 ```{r, echo = F}
@@ -443,7 +441,7 @@ pb_comparison
 pb_emmeans <- (emmeans(pb_glm_nointeraction, specs = ~ oera | oplottype))
 ```
 
-### Table S10. Coefficients from GLM on C. baileyi energy use
+### Table S14. Coefficients from GLM on C. baileyi energy use
 
 Note that "oera" is the variable name for the term for time period in these analyses, and "oplottype" refers to treatment. Coefficients are given on the link (logit) scale.
 
@@ -455,7 +453,7 @@ pb_coef
 ```
 
 
-### Table S11. Estimates from GLM on C. baileyi energy use
+### Table S15. Estimates from GLM on C. baileyi energy use
 
 Note that estimates are back-transformed onto the response scale, for interpretability.
 
@@ -471,7 +469,7 @@ pb_estimates
 
 ```
 
-### Table S12. Contrasts from GLM on C. baileyi energy use.
+### Table S16. Contrasts from GLM on C. baileyi energy use.
 
 Contrasts are performed on the link (logit) scale.
 
