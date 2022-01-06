@@ -419,19 +419,16 @@ We found that the best-fitting model incorporated effects for time period and fo
 pb_glm_interaction <- glm(pb_prop ~ oera * oplottype, family = binomial, data= pb_nozero)
 pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial, data= pb_nozero)
 pb_glm_notreat <- glm(pb_prop ~ oera, family = binomial, data= pb_nozero)
-pb_glm_notime <- glm(pb_prop ~ oplottype, family = binomial, data= pb_nozero)
 pb_glm_null <- glm(pb_prop ~ 1, family = binomial, data= pb_nozero)
 
 pb_comparison <- data.frame(
   `Model specification` = c("intercept + timeperiod + treatment + timeperiod:treatment",
                             "intercept + timeperiod + treatment",
                             "intercept + timeperiod",
-                            "intercept + treatment",
                             "intercept"),
   AIC = c(AIC(pb_glm_interaction),
           AIC(pb_glm_nointeraction),
           AIC(pb_glm_notreat),
-          AIC(pb_glm_notime),
           AIC(pb_glm_null))
 )
 
