@@ -70,7 +70,8 @@ contrasts_df <- data.frame(
 
 # Explanation
 
-In order to  calculate energetic compensation and the total energy ratio, we require an estimate for the baseline values of total energy use, kangaroo rat energy use, and small granivore energy use on control plots. Estimating these baselines requires aggregating over between-plot variability among the control plots. For consistency, in the main analysis, we also aggregate across the exclosure plots and focus on treatment-level means throughout. Here, we explore the effect of between-plot variability on our analyses by examining the effect of plot as a random factor within exclosure plots (for total energy and compensation) and across all plots involved in analyses of proportional energy use (controls and exclosures for *C. baileyi*, and only controls for *Dipodomys*). 
+In order to  calculate energetic compensation and the total energy ratio, we require an estimate for the baseline values of total energy use, kangaroo rat energy use, and small granivore energy use on control plots. Estimating these baselines requires aggregating over between-plot variability among the control plots. For consistency, in the main analysis, we also aggregate across the exclosure plots and focus on treatment-level means throughout. Here, we explore the effect of between-plot variability on our analyses, to the extent possible. 
+We used treatment-level means across control plots to calculate energetic compensation and the total energy ratio, but calculated these quantities separately for each exclosure plot, and conducted analyses including a random effect of plot. We also conducted analyses of *Dipodomys* and *C. baileyi* proportional energy use using plot-level data, again including plot as a random effect. Results were qualitatively the same as using treatment-level means. 
 
 <!-- # Calculations of compensation and the total energy ratio -->
 
@@ -132,11 +133,11 @@ comp_plot_gls_notime_nocor_norand <- gls(compensation ~ 1 , data = compensation_
 
 
 compensation_comparison<- data.frame(
-  `Model specification` = c("intercept + timeperiod + plot (random) + autocorrelation",
-                            "intercept + timeperiod + plot (random)",
+  `Model specification` = c("intercept + timeperiod + plot (random effect) + autocorrelation",
+                            "intercept + timeperiod + plot (random effect)",
                             "intercept + timeperiod + autocorrelation" ,
-                            "intercept + plot (random) + autocorrelation",
-                            "intercept + plot (random)",
+                            "intercept + plot (random effect) + autocorrelation",
+                            "intercept + plot (random effect)",
                             "intercept"),
   AIC = c(AIC(comp_plot_gls),
           AIC(comp_plot_gls_noautoc),
@@ -199,7 +200,7 @@ compensation_contrasts
 ## Model specification and selection
 
 
-As for compensation, we fit linear mixed-effects models fitting `total_energy_ratio ~ time period` with a random effect of plot and a temporal autocorrelation term to account for autocorrelation between monthly census periods within each timeperiod. We compared these to models without the autocorrelation term, without the random effect, and without the term for time period. The best-fitting model included terms for time period, random effect of plot, and autocorrelation.
+As for compensation, we fit linear mixed-effects models fitting *total_energy_ratio ~ time period* with a random effect of plot and a temporal autocorrelation term to account for autocorrelation between monthly census periods within each timeperiod. We compared these to models without the autocorrelation term, without the random effect, and without the term for time period. The best-fitting model included terms for time period, random effect of plot, and autocorrelation.
 
 
 ### Table S5. Model comparison for total energy ratio.
@@ -218,11 +219,11 @@ totale_plot_gls_notime_nocor_norand <- gls(energy_ratio~ 1 , data = total_e_dat)
 
 
 te_comparison<- data.frame(
-  `Model specification` = c("intercept + timeperiod + plot (random) + autocorrelation",
-                            "intercept + timeperiod + plot (random)",
+  `Model specification` = c("intercept + timeperiod + plot (random effect) + autocorrelation",
+                            "intercept + timeperiod + plot (random effect)",
                             "intercept + timeperiod + autocorrelation" ,
-                            "intercept + plot (random) + autocorrelation",
-                            "intercept + plot (random)",
+                            "intercept + plot (random effect) + autocorrelation",
+                            "intercept + plot (random effect)",
                             "intercept"),
   AIC = c(AIC(totale_plot_gls),
           AIC(totale_plot_gls_noautoc),
@@ -288,7 +289,7 @@ totale_contrasts
 
 ## Model specification and selection
 
-To compare proportional energy use across time periods, we used generalized linear mixed models (using the `glmer` function in the R package `lme4`; Bates et al. 2015) with a binomial link function and a random effect of plot. 
+To compare proportional energy use across time periods, we used binomial generalized linear mixed models (using the `glmer` function in the R package `lme4`; Bates et al. 2015), which allowed us to include a random effect of plot. 
 
 For *Dipodomys* proportional energy use, we compared models with and without the random effect of plot and with and without a term for timeperiod. The best-fitting model included terms for timeperiod and a random effect of plot.
 
@@ -304,8 +305,8 @@ dipo_int_glmer <- glmer(dipo_ratio ~ 1 + (1|fplot), data = dipo_c_dat, family = 
 dipo_int_glm <- glm(dipo_ratio ~ 1, data = dipo_c_dat, family = binomial)
 
 dipo_comparison<- data.frame(
-  `Model specification` = c("intercept + timeperiod + plot (random)",
-                            "intercept + plot (random)",
+  `Model specification` = c("intercept + timeperiod + plot (random effect)",
+                            "intercept + plot (random effect)",
                             "intercept + timeperiod",
                             "intercept"),
   AIC = c(AIC(dipo_glmer),
@@ -403,10 +404,10 @@ pb_glm_notime <- glm(pb_ratio ~ 1, data = pb_dat, family = binomial)
 
 
 pb_comparison <- data.frame(
-  `Model specification` = c("intercept + timeperiod + treatment + timeperiod:treatment + plot (random)",
-                            "intercept + timeperiod + treatment + plot (random)",
-                            "intercept + timeperiod + plot (random)",
-                            "intercept + plot (random)",
+  `Model specification` = c("intercept + timeperiod + treatment + timeperiod:treatment + plot (random effect)",
+                            "intercept + timeperiod + treatment + plot (random effect)",
+                            "intercept + timeperiod + plot (random effect)",
+                            "intercept + plot (random effect)",
                             "intercept + timeperiod + treatment + timeperiod:treatment",
                             "intercept + timeperiod + treatment",
                             "intercept + timeperiod",
@@ -429,7 +430,7 @@ pb_comparison
 
 ### Table S14. Coefficients from GLMER on C. baileyi energy use
 
-Note that "oera" is the variable name for the term for time period in these analyses. 
+Note that "oera" is the variable name for the term for time period in these analyses, and "oplottype" refers to experimental treatment. 
 
 
 ```{r}

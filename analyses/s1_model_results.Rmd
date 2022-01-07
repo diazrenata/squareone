@@ -322,7 +322,9 @@ totale_contrasts
 
 # Kangaroo rat (Dipodomys) proportional energy use
 
-Proportional energy use is bounded 0-1 and cannot be fit with generalized least squares. We therefore used a binomial GLM with no temporal autocorrelation term, of the form *dipodomys_proportional_energy_use ~ timeperiod*. We compared a model fit with a timeperiod term to an intercept-only (null) model using AIC, and found the timeperiod term improved model fit. We used this model for estimates and contrasts.
+Proportional energy use is bounded 0-1 and cannot be fit with generalized least squares. We therefore used a binomial generalized linear model of the form *dipodomys_proportional_energy_use ~ timeperiod*. We compared a model fit with a timeperiod term to an intercept-only (null) model using AIC, and found the timeperiod term improved model fit. We used this model for estimates and contrasts. 
+
+Note that we were unable to incorporate temporal autocorrelation into generalized linear models, and we prioritized fitting models of the appropirate family over accounting for autocorrelation. Due to the pronounced differences between time periods for these variables, we were comfortable proceeding without explicitly accounting for autocorrelation. 
 
 ```{r, echo = F}
 

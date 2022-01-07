@@ -2,7 +2,7 @@
 title: "Appendix S3 - Biomass analysis"
 subtitle: "Supplemental information for Diaz and Ernest, “Maintenance of community function through compensation breaks down over time in a desert rodent community”. In review at Ecology."
 author: "Fully annotated code and RMarkdown documents to reproduce these analyses are available at https://doi.org/10.5281/zenodo.5544362 and https://doi.org/10.5281/zenodo.5539881."
-date: "All analytic methods for biomass are identical to the ones for energy use (Appendix S1)."
+date: "All statistical methods for biomass are identical to the ones for energy use (Appendix S1)."
 output: 
    # github_document:
    #      df_print: kable
@@ -158,7 +158,6 @@ dipo_c_dat <- get_dipo_c(treatl)
 <!-- - `pb_prop`, `pb_prop_ma` (specific to `pb` and `pb_nozero`): The proportion of treatment-level biomass accounted for by *C. baileyi*, and the 6-month moving average. Numeric, proportion bounded 0-1. -->
 <!-- - `dipo_prop`, `dipo_prop_ma` (specific to `dipo_c_dat`): The proportion of treatment-level biomass accounted for by all kangaroo rats, and the 6-month moving average. Numeric, proportion bounded 0-1. -->
 
-\newpage
 # Compensation
 
 We fit a generalized least squares (of the form *compensation ~ timeperiod*; note that "timeperiod" is coded as "oera" throughout) using the `gls` function from the R package `nlme` (Pinheiro et al. 2021). Because values from monthly censuses within each time period are subject to temporal autocorrelation, we included a continuous autoregressive temporal autocorrelation structure of order 1 (using the `CORCAR1` function). We compared this model to models fit without the autocorrelation structure and without the time period term using AIC. The model with both the time period term and the autocorrelation structure was the best-fitting model via AIC, and we used this model to calculate estimates and contrasts using the package `emmeans` (Lenth 2021). 
@@ -319,7 +318,7 @@ totalb_contrasts
 
 # Kangaroo rat (Dipodomys) proportional biomass
 
-Proportional biomass is bounded 0-1 and cannot be fit with generalized least squares. We therefore used a binomial GLM with no temporal autocorrelation term, of the form *dipodomys_proportional_biomass ~ timeperiod*. We compared a model fit with a timeperiod term to an intercept-only (null) model using AIC, and found the timeperiod term improved model fit. We used this model for estimates and contrasts.
+Proportional biomass is bounded 0-1 and cannot be fit with generalized least squares. We therefore used a binomial generalized linear model with no temporal autocorrelation term, of the form *dipodomys_proportional_biomass ~ timeperiod*. We compared a model fit with a timeperiod term to an intercept-only (null) model using AIC, and found the timeperiod term improved model fit. We used this model for estimates and contrasts.
 
 ```{r, echo = F}
 
