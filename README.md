@@ -12,6 +12,5 @@ To replicate:
 
 * Custom functions for downloading and processing data for these analyses are in the R package `soar`, at https://github.com/diazrenata/soar. This is to separate functions that are  called repeatedly in these analyses from the scripts that are only run once.
 *  Install the R package `soar` using: `remotes::install_github("diazrenata/soar")`. Alternatively, you can download the archived version from Github (https://github.com/diazrenata/soar) or Zenodo (https://doi.org/10.5281/zenodo.5539880) and install from there. 
-* To replicate the analyses and plots referenced in the main text, open `analyses/main_figures.Rmd` and run each section or render the document. 
-* To replicate the supplemental analyses, open the supplemental .Rmd files (`analyses/s1_model_results.Rmd` and `analyses/s2_covariates.Rmd`) and run them. 
+* Rendering each .Rmd document (e.g. squareone/analyses/s1_model_results.Rmd) will reproduce the figures and/or tables as presented in the manuscript and supplemental materials, as journal-ready formatted Word documents. Running portions of the .Rmd documents interactively allows you to work through individual analyses and explore the data more fully.
 * Note that the .Rmd documents contain additional notes (commented out) that are probably not of interest to most readers, but may be useful to anyone trying to replicate these analyses exactly or build off of them. 
