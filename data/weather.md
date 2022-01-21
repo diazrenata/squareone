@@ -7,8 +7,8 @@ Columns used in this analysis:
 
 - `year`: Year of record. Numeric.
 - `month`: Month. Numeric
-- `meantemp`: Mean temperature (C)
-- `precipitation`: Precipitation (mm)
+- `meantemp`: Mean temperature (C). Numeric.
+- `precipitation`: Precipitation (mm). Numeric.
 
 Erica M. Christensen, Glenda M. Yenni, Hao Ye, Juniper L.
   Simonis, Ellen K. Bledsoe, Renata M. Diaz, Shawn D. Taylor,
