@@ -1,6 +1,6 @@
 # ndvi_dat.csv
 
-Monthly NDVI at the field site from 1984-2020, accessed using `portalr` (Christensen et al. 2018).
+Monthly NDVI at the field site from 1984-2020, accessed using `portalr` (Christensen et al. 2019).
 
 Columns:
 
