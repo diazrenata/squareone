@@ -1,16 +1,27 @@
+# Script to explore how non-granivores respond to exclosure treatments over time.
+# In response to question, differential predation pressure on plots?
+
+
 library(dplyr)
 library(portalr)
 library(ggplot2)
 
+
+# abundance data for all rodents from portalr
 all_rodents <- abundance(level = "plot", time = "all")
 
 library(soar)
 
+# use soardat to get periods and plots to be consistent with data in this paper
 soardat <- get_plot_totals()
 
 
 all_rodents <- all_rodents %>% filter(plot %in% as.numeric(soardat$plot), period %in% soardat$period) %>% filter(plot != 19)
 
+
+# break species into:
+# rodents, not granivores
+# granivores, not krats (to compare response to exclosure treatment)
 rtable <- load_rodent_data()
 
 not_granivores <- rtable$species_table %>% filter(rodent == 1, granivore == 0, censustarget == 1, unidentified == 0) %>% select(species, scientificname)
@@ -44,6 +55,8 @@ granivore_abund <- granivore_abund %>%
   mutate(total_abundance = sum(total_abundance)) %>%
   ungroup()
 
+
+# plot treatment effects for granivores (not-krats) vs. nongranivores
 long_abund <- granivore_abund %>% mutate(rodents = "Granivores") %>%
   bind_rows(mutate(not_granivore_abund, rodents = "Nongranivores")) %>%
   group_by(treatment, rodents) %>%
