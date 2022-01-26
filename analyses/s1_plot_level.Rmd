@@ -103,8 +103,6 @@ dipo_c_dat <- filter(plotl_vars, oplottype == "CC")
 
 # Compensation
 
-## Model specification and selection
-
 We fit linear mixed-effects models (using the `lme` function in the R package `nlme`; Pinheiro et al. 2021) of the form `compensation ~ time period` with a random effect of plot and temporal autocorrelation structure to account for autocorrelation between monthly census periods within each time period. We compared these to models without the autocorrelation structure, without the random effect, and without the term for time period. The best-fitting model included terms for time period, random effect of plot, and autocorrelation.
 
 

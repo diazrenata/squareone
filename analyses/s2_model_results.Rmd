@@ -398,8 +398,6 @@ dipocontrasts
 
 # C. baileyi proportional energy use
 
-## Model specification and selection
-
 As for kangaroo rat proportional energy use, we used a binomial generalized linear model to compare *C. baileyi* proportional energy use across time periods. Because *C. baileyi* occurs on both control and exclosure plots, we investigated whether the dynamics of *C. baileyi*'s proportional energy use differed between treatment types. We compared models incorporating separate slopes, separate intercepts, or no terms for treatment modulating the change in *C. baileyi* proportional energy use across time periods, i.e. comparing the full set of models:
 
 - *cbaileyi_proportional_energy_use ~ timeperiod + treatment + timeperiod:treatment*
