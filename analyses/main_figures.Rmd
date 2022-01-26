@@ -16,22 +16,38 @@ library(multipanelfigure)
 library(nlme)
 library(emmeans)
 
-# Get data using `portalr`:
-#treatl <- get_treatment_means() 
-# Alternatively, read data from `data/`:
- treatl <- read.csv(here::here("data", "treatl.csv"), stringsAsFactors = T)
+## Get data using `portalr`:
+# plotl <- get_plot_totals()
+# plot_types <- list_plot_types()
 
- treatl <- treatl %>%
-   mutate(censusdate = as.Date(censusdate),
-          oera = ordered(oera),
-          oplottype = ordered(oplottype))
- 
+# Alternatively, read data from `data/`:
+
+plotl <- read.csv(here::here("data", "plotl.csv"), stringsAsFactors = T)
+plot_types <- read.csv(here::here("data", "plot_types.csv"), stringsAsFactors = T)
+
+plot_types <- plot_types  %>% 
+  filter(plot_type == "EE")
+
+set.seed(1977) # 1977 is my usual Portal seed
+remove_plot <- sample(plot_types$plot, 1, F)
+
+plotl <- plotl %>%
+  filter(plot != remove_plot)
+
+treatl <- plots_to_treatment_means(plotl) 
+
+treatl <- treatl %>%
+  mutate(censusdate = as.Date(censusdate),
+         oera = ordered(oera),
+         oplottype = ordered(oplottype))
+
 pb <- get_pb(treatl) 
 
 pb_nozero <- pb %>%
   filter(as.numeric(oera) > 1)
 energy_ratio <- get_e_ratio(treatl)
 compensation <- get_compensation(treatl)
+dipo_c_dat <- get_dipo_c(treatl)
 
 
 # For figures:
@@ -54,12 +70,11 @@ era_df <- era_df %>%
 
 ## Compensation and total energy use
 
-
 Lines are 6-month moving averages. Horizontal lines + ribbons are means and SE or CL from GLM or GLS.
 
 ### Compensation
 
-**Compensation** refers to compensatory gains in energy use by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$. **Total energy** refers to the overall loss in energy use caused by kangaroo rat removal.
+**Compensation** refers to compensatory gains in energy use by small granivores on exclosure plots relative to controls. Calculated as $\frac{SmgranExclosure - SmgranControl}{DipoControl}$, where $SmgranExclosure$ is total energy used by small granivores on exclosure plots, $SmgranControl$ is total energy used by small granivores on control plots, and $DipoControl$ is total energy used by kangaroo rats (genus *Dipodomys*) on control plots.
 
 ```{r}
 
@@ -72,22 +87,28 @@ comp_mean_pred <-  as.data.frame(comp_mean_gls_emmeans) %>%
   mutate(oera = ordered(oera)) %>%
   right_join(compensation)
 
+comp_title <- expression(paste(bold("b."), " Energetic compensation"))
+
+
 comp_plot <- ggplot(filter(comp_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
   geom_line(aes(y = smgran_comp_ma)) +
-  ggtitle("Energetic compensation") +
-  ylab(bquote(frac(SG[E] - SG[C], KR[C]))) +
-  ylim(-.05, 1) +
-  geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = -.05, yend = 1), linetype = 3)+
+  ggtitle(comp_title) +
+  ylab(bquote((SG[E] - SG[C]) / KR[C])) +
+  geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = -.05, yend = 1.4), linetype = 3)+
   xlab("") +
-  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) +
-  theme(axis.title.y = element_text(size =  10), axis.text = element_text(size = 10)) + xlab("")
+  theme(title = element_text(size = 7),
+        axis.title.y = element_text(size =  7), 
+        axis.text = element_text(size = 6)) + 
+  xlab("")
 
 comp_plot
 ```
 
 ### Total energy ratio
+
+**Total energy** refers to the overall loss in energy use caused by kangaroo rat removal, or the ratio $\frac{TotalEnergyExclosure}{TotalEnergyControl}$ where $TotalEnergy$ is the total energy use by all rodents on exclosure and control plots.
 
 ```{r}
 
@@ -100,18 +121,23 @@ totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
 totale_mean_pred <- as.data.frame(totale_mean_gls_emmeans) %>%
   mutate(oera = ordered(oera)) %>%
   right_join(energy_ratio)
-  
+
+te_title <- expression(paste(bold("a."), " Total energy use ratio"))
+
+
 totale_plot <- ggplot(filter(totale_mean_pred, oplottype %in% c("CC", "EE")), aes(censusdate, emmean)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = .2) +
   geom_line(aes(y = total_e_rat_ma)) +
-  ggtitle("Total energy use") +
-  ylab(bquote(frac(Etot[E], Etot[C]))) +
+  ggtitle(te_title) +
+  ylab(bquote(Etot[E] / Etot[C])) +
   theme(legend.position = "none") +
   ylim(-0, 1.2) +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1.2), linetype = 3) +
-  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$event_name))+
-  theme(axis.title.y = element_text(size =  10),  axis.text = element_text(size = 10)) + xlab("")
+  theme(title = element_text(size = 7), 
+        axis.title.y = element_text(size =  7),  
+        axis.text = element_text(size = 6)) + 
+  xlab("")
 
 totale_plot
 
@@ -125,29 +151,42 @@ totale_plot
 ```{r}
 
 
-pb_glm_treat <- glm(pb_prop ~ oera * oplottype, family = quasibinomial(), data= pb_nozero)
 
-pb_glm_treat_se <- est_glm_ilink(pb_glm_treat, pb_nozero) %>%
-  full_join(select(pb, period, oplottype, pb_prop_ma, censusdate)) %>%
+pb_glm_nointeraction <- glm(pb_prop ~ oera + oplottype, family = binomial(), data= pb_nozero)
+
+pb_glm_nointeraction_emmeans <- emmeans(pb_glm_nointeraction, specs = ~ oera | oplottype)
+
+pb_glm_nointeraction_se <- as.data.frame(regrid(pb_glm_nointeraction_emmeans)) %>%
+  mutate(oera = as.character(oera),
+         oplottype = as.character(oplottype)) %>% 
+  right_join(mutate(pb_nozero, oera = as.character(oera), oplottype = as.character(oplottype))) %>%
+    full_join(select(pb, period, oplottype, pb_prop_ma, censusdate)) %>%
   mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
          Rodents = "C. baileyi") %>%
   rename(rod_prop_ma = pb_prop_ma)
 
-pb_title <- expression(paste(italic("C. baileyi"), " energy use"))
 
-pbplot <- ggplot(pb_glm_treat_se, aes(censusdate, est, color = Treatment, fill = Treatment)) +
+pb_title <- expression(paste(bold("d. "), italic("C. baileyi"), " proportional energy use"))
+
+pbplot <- ggplot(pb_glm_nointeraction_se, aes(censusdate, prob, color = Treatment, fill = Treatment)) +
   geom_line() +
-  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_ribbon(aes(ymin = asymp.LCL, ymax= asymp.UCL), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
-  ylab(bquote(frac(CB, Etot))) +
- ggtitle(pb_title) +
-  theme(legend.position = c(.15, .6)) + 
+  ylab(bquote(CB / Etot)) +
+  ggtitle(pb_title) +
+  theme(legend.position = c(.15, .75)) + 
   both_scale + 
-  both_fscale   +
+  both_fscale +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
-  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) + 
-  theme(axis.title.y = element_text(size =  10), legend.title = element_blank(), legend.text = element_text(size =8))+ 
-  theme( title = element_text(size = 10), legend.background = element_blank(), axis.title.y = element_text(), legend.direction = "vertical", axis.text = element_text(size = 10)) +   xlab("Date")  
+  theme(axis.title.y = element_text(size =  7), 
+        legend.title = element_blank(), 
+        legend.text = element_text(size =6), 
+        legend.key.size = unit(.1, units = "in"), 
+        title = element_text(size = 7), 
+        legend.background = element_blank(), 
+        legend.direction = "vertical", 
+        axis.text = element_text(size = 6)) +   
+  xlab("Date")  
 
 
 pbplot
@@ -159,38 +198,30 @@ pbplot
 
 ```{r}
 
-dipo_dat <- treatl %>%
-  mutate(dipo_prop = dipo_e / total_e,
-         smgran_prop= smgran_e / total_e) %>%
-  group_by(oplottype) %>%
-  mutate(smgran_prop_ma = maopts(smgran_prop),
-         dipo_prop_ma = maopts(dipo_prop)) %>%
-  ungroup() 
 
-dipo_c_dat <- dipo_dat %>%
-  filter(oplottype == "CC")
+dipo_glm <- glm(dipo_prop ~ oera, family = binomial(), data= dipo_c_dat)
 
-dipo_glm <- glm(dipo_prop ~ oera, family = quasibinomial(), data= dipo_c_dat)
 
-dipo_glm_se <- est_glm_ilink(dipo_glm, dipo_c_dat) %>%
-  left_join(select(dipo_c_dat, period, dipo_prop_ma)) %>%
-  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure"),
-         Rodents = "All small granivores\n(non-Dipodomys)") %>%
+dipo_glm_emmeans <- emmeans(dipo_glm, specs = ~ oera)
+
+dipo_glm_se <- as.data.frame(regrid(dipo_glm_emmeans)) %>%
+  mutate(oera = as.character(oera)) %>% 
+  right_join(mutate(dipo_c_dat, oera = as.character(oera))) %>%
+  mutate(Treatment = ifelse(oplottype == "CC", "Control", "Exclosure")) %>%
   rename(rod_prop_ma = dipo_prop_ma)
-dipo_title <- expression(paste("Kangaroo rat (", italic("Dipodomys"), ") energy use"))
+
+dipo_title <- expression(paste(bold("c."), " Kangaroo rat proportional energy use"))
 
 
-dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, est)) +
+dplot <- ggplot(filter(dipo_glm_se, oplottype == "CC"), aes(censusdate, prob)) +
   geom_line() +
-  geom_ribbon(aes(ymin = lower, ymax= upper), alpha = .3) +
+  geom_ribbon(aes(ymin = asymp.LCL, ymax= asymp.UCL), alpha = .3) +
   geom_line(aes(y = rod_prop_ma)) +
-  ylab( bquote(frac(KR[C], Etot[C]))) +
+  ylab(bquote(KR[C] / Etot[C])) +
   xlab("") +
   ggtitle(dipo_title) +
-  #theme(legend.position = c(.15, .6)) + both_scale + both_fscale   +
   geom_segment(data = era_df, aes(x = event_date, xend = event_date, y = 0, yend = 1), linetype = 3, inherit.aes = F) +
-  scale_x_date(sec.axis = dup_axis(name = NULL, breaks = era_df$event_date, labels = era_df$no_name)) + xlab("") +
-  theme(axis.title.y = element_text(size =  10), legend.title = element_blank(), legend.text = element_text(size =  10))+ theme( title = element_text(size = 10), axis.text = element_text(size = 10), legend.background = element_blank(), legend.direction = "vertical")
+  theme(axis.title.y = element_text(size =  7), title = element_text(size = 7), axis.text = element_text(size = 6))
 
 dplot
 
@@ -198,18 +229,23 @@ dplot
 
 ## Full figure
 
-```{r, fig.dim = c(6, 9)}
+```{r, fig.dim = c(3,5)}
 
-all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0) %>%
+all_panels <- multi_panel_figure(columns = 1, rows =4, row_spacing = 0, panel_label_type = "none") %>%
   fill_panel(totale_plot) %>%
   fill_panel(comp_plot) %>%
   fill_panel(dplot) %>%
   fill_panel(pbplot)
 
 all_panels
+```
+
+```{r, fig.dim = c(3, 5)}
+
+ggsave("figure_1.tif", plot = all_panels, device = "tiff", width = 3, height =5, units = "in", dpi = 800)
 
 
-ggsave("figure_1.pdf", plot = all_panels, device = "pdf", width = 6, height = 9, units = "in", dpi = 800)
+ggsave("figure_1.pdf", plot = all_panels, device = "pdf", width = 3, height = 5, units = "in", dpi = 800)
 
 
 ```
