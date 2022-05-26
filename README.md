@@ -1,6 +1,6 @@
 # squareone
 
-Analyses supporting Diaz and Ernest, "Maintenance of community function through compensation breaks down over time in a desert rodent community". The preprint is currently available on bioRxiv at: https://doi.org/10.1101/2021.10.01.462799 
+Analyses supporting Diaz and Ernest, "Maintenance of community function through compensation breaks down over time in a desert rodent community", now published in _Ecology_: https://doi.org/10.1002/ecy.3709
 
 Repository structure:
 
