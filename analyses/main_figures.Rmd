@@ -1,10 +1,9 @@
 ---
 title: "Figures for main text"
 output: #word_document
-   # github_document:
-   #      df_print: kable
-   #      toc: true
-   pdf_document 
+   github_document:
+        df_print: kable
+        toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -62,7 +61,8 @@ both_fscale <- scale_fill_viridis_d(option = "cividis", begin = .1, end = .8, di
 era_df <- read.csv(here::here("data", "era_df.csv"))
 era_df <- era_df %>%
   mutate(event_date = as.Date(event_date),
-         no_name = "")
+         no_name = "") %>%
+  mutate(event_name = ifelse(grepl("baileyi", event_name), event_name, "C. baileyi decline"))
 
 ```
 
