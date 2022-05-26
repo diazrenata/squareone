@@ -6,15 +6,13 @@ output:
   # html_document:
   #   toc: yes
   #   df_print: paged
-  # word_document:
-  #   df_print: kable
-  #   reference_docx: default_gdoc.docx
-  #   toc: yes
+  word_document:
+    df_print: kable
+    reference_docx: default_gdoc.docx
+    toc: yes
   # # pdf_document:
   #   toc: yes
   #   df_print: kable
-  github_document:
-    default
 ---
 
 ```{r setup, include=T, echo = F, results = F, warning = F, message = F}
@@ -206,12 +204,9 @@ compensation_comparison
 ```
 
 
-```{r, echo = F, results = T}
+```{r, echo = F}
 
 comp_mean_gls_emmeans <- emmeans(comp_mean_gls, specs = ~ oera)
-
- plot(comp_mean_gls, oera ~  resid(.))
-
 
 ```
 
@@ -283,10 +278,8 @@ totale_comparison
 ```
 
 
-```{r, echo =F, results = T}
+```{r, echo =F}
 totale_mean_gls_emmeans <- emmeans(totale_mean_gls, specs = ~ oera)
- plot(totale_mean_gls, specs = ~ oera, oera ~  resid(.))
-
 ```
 
 ### Table S6. Coefficients from GLS on total energy ratio

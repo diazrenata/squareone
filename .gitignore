@@ -41,5 +41,3 @@ vignettes/*.pdf
 *.DS_Store*
 
 manuscript/revision1/reviews/reviews.pdf
-
-proofs/*
