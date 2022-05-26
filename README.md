@@ -5,7 +5,7 @@ Analyses supporting Diaz and Ernest, "Maintenance of community function through 
 Repository structure:
 
 - `analyses`: Contains .Rmd scripts to replicate the figures and tables in the main text and supplements.
-- `data`: Contains all data files necessary to replicate the analyses in the manuscript. (Alternatively, the `analyses` scripts contain code to re-download from the main Portal Data repo).
+- `data`: Contains all data files necessary to replicate the analyses in the manuscript. (Alternatively, the `analyses` scripts contain code to re-download from the main [Portal Data repo](https://github.com/weecology/PortalData).
 - `manuscript`: Contains past versions of the ms and iterations through review.  
 
 To replicate:
