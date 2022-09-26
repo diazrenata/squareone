@@ -1,3 +1,9 @@
+
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6046666.svg)](https://doi.org/10.5281/zenodo.6046666)
+
+
+
 # squareone
 
 Analyses supporting Diaz and Ernest, "Maintenance of community function through compensation breaks down over time in a desert rodent community", now published in _Ecology_: https://doi.org/10.1002/ecy.3709
